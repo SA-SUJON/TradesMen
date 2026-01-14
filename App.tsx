@@ -5,7 +5,7 @@ import useLocalStorage from './hooks/useLocalStorage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { AIProvider } from './contexts/AIContext';
-import AIAssistant from './components/AIAssistant';
+import AIAssistant, { ChatInterface } from './components/AIAssistant';
 
 // Components
 import Calculator from './components/Calculator';
@@ -15,7 +15,7 @@ import Conversions from './components/Conversions';
 import Settings from './components/Settings';
 
 // Icons
-import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon } from 'lucide-react';
+import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles } from 'lucide-react';
 
 // Demo Data
 const DEMO_PRODUCTS: Product[] = [
@@ -37,6 +37,7 @@ const MainContent: React.FC = () => {
     { id: 'calculator', label: 'Calculator', icon: <CalcIcon className="w-4 h-4" /> },
     { id: 'inventory', label: 'Inventory', icon: <Package className="w-4 h-4" /> },
     { id: 'billing', label: 'Billing', icon: <ShoppingCart className="w-4 h-4" /> },
+    { id: 'manager', label: 'Manager', icon: <Sparkles className="w-4 h-4" /> },
     { id: 'conversions', label: 'Converter', icon: <ArrowRightLeft className="w-4 h-4" /> },
     { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-4 h-4" /> },
   ];
@@ -91,6 +92,7 @@ const MainContent: React.FC = () => {
                       {activeTab === 'calculator' && <Calculator inventory={inventory} />}
                       {activeTab === 'inventory' && <Inventory inventory={inventory} setInventory={setInventory} />}
                       {activeTab === 'billing' && <Billing inventory={inventory} cart={cart} setCart={setCart} />}
+                      {activeTab === 'manager' && <ChatInterface variant="page" />}
                       {activeTab === 'conversions' && <Conversions />}
                       {activeTab === 'settings' && <Settings />}
                   </motion.div>
@@ -135,8 +137,8 @@ const MainContent: React.FC = () => {
               })}
         </div>
 
-        {/* AI Assistant FAB */}
-        <AIAssistant />
+        {/* AI Assistant FAB - Hidden if Manager Tab is Active */}
+        <AIAssistant forceHide={activeTab === 'manager'} />
       </div>
     </AIProvider>
   );
