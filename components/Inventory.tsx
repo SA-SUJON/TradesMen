@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
 import { Card, Input, Button } from './ui/BaseComponents';
-import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck } from 'lucide-react';
+import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAI } from '../contexts/AIContext';
+import { speak, formatUnit } from '../utils/appUtils';
+import BarcodeScanner from './BarcodeScanner';
 
 interface InventoryProps {
   inventory: Product[];
@@ -13,7 +15,7 @@ interface InventoryProps {
 }
 
 const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
-  const { theme } = useTheme();
+  const { theme, unitSystem, voiceEnabled } = useTheme();
   const styles = getThemeClasses(theme);
   const { filterInventory } = useAI();
 
@@ -21,6 +23,8 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanningFor, setScanningFor] = useState<'search' | 'add'>('search');
   
   // AI Search State
   const [isSearchingAI, setIsSearchingAI] = useState(false);
@@ -38,7 +42,8 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
     supplierContact: '',
     notes: '',
     lowStockThreshold: 10,
-    purchaseDate: ''
+    purchaseDate: '',
+    barcode: ''
   });
 
   const handleSave = () => {
@@ -59,7 +64,8 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
             supplierContact: formData.supplierContact,
             notes: formData.notes,
             purchaseDate: formData.purchaseDate,
-            lowStockThreshold: formData.lowStockThreshold || 10
+            lowStockThreshold: formData.lowStockThreshold || 10,
+            barcode: formData.barcode
         };
         setInventory([...inventory, newItem]);
     }
@@ -81,7 +87,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
   const resetForm = () => {
       setFormData({ 
         name: '', buyingPrice: 0, sellingPrice: 0, stock: 0, unit: 'kg', 
-        category: '', supplierName: '', supplierContact: '', notes: '', lowStockThreshold: 10, purchaseDate: ''
+        category: '', supplierName: '', supplierContact: '', notes: '', lowStockThreshold: 10, purchaseDate: '', barcode: ''
       });
       setIsAdding(false);
       setEditId(null);
@@ -101,6 +107,20 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
     }
   };
 
+  const handleScan = (code: string) => {
+      if (scanningFor === 'search') {
+          setSearch(code); // Put code in search bar
+          // Optionally auto search or filter
+          setAiFilteredIds(null); // Clear AI filter to rely on strict text match
+          speak("Barcode scanned", voiceEnabled);
+      } else {
+          // Scanning for Add/Edit form
+          setFormData(prev => ({ ...prev, barcode: code }));
+          speak("Barcode added to product", voiceEnabled);
+      }
+      setShowScanner(false);
+  };
+
   // Determine which items to show
   let filteredInventory = inventory;
   if (aiFilteredIds) {
@@ -110,12 +130,20 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
       filteredInventory = inventory.filter(p => 
         p.name.toLowerCase().includes(q) || 
         p.category?.toLowerCase().includes(q) ||
-        p.supplierName?.toLowerCase().includes(q)
+        p.supplierName?.toLowerCase().includes(q) ||
+        p.barcode?.includes(q)
       );
   }
 
   return (
     <div className="space-y-6">
+      {showScanner && (
+          <BarcodeScanner 
+            onScan={handleScan} 
+            onClose={() => setShowScanner(false)} 
+          />
+      )}
+
       <Card>
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
             <h2 className={`text-xl font-bold flex items-center gap-2 ${styles.accentText}`}>
@@ -124,7 +152,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
             <div className="flex gap-2 w-full md:w-auto">
                 <div className="relative flex-grow md:w-64">
                     <Input 
-                        placeholder="Search items, categories, suppliers..." 
+                        placeholder="Search items, barcodes..." 
                         value={search}
                         onChange={(e) => {
                             setSearch(e.target.value);
@@ -140,6 +168,13 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                     
                     {/* Search Actions */}
                     <div className="absolute right-2 top-1/2 transform -translate-y-[20%] flex items-center gap-1">
+                        <button 
+                            onClick={() => { setScanningFor('search'); setShowScanner(true); }}
+                            className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
+                            title="Scan Barcode"
+                        >
+                            <ScanBarcode className="w-4 h-4 opacity-70" />
+                        </button>
                         {search && (
                             <button 
                                 onClick={() => { setSearch(''); setAiFilteredIds(null); }} 
@@ -206,7 +241,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                         </td>
                                         <td className="p-3 text-right">
                                             <div className={item.stock < (item.lowStockThreshold || 10) ? 'text-orange-500 font-bold' : ''}>
-                                                {item.stock} {item.unit}
+                                                {formatUnit(item.stock, item.unit, unitSystem)}
                                             </div>
                                         </td>
                                         <td className="p-3 text-right font-bold">{item.sellingPrice}</td>
@@ -238,6 +273,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                                         <div className="opacity-50 text-xs mb-1">INVENTORY META</div>
                                                         <div className="flex items-center gap-2"><Tag className="w-3 h-3" /> Buy Price: {item.buyingPrice}</div>
                                                         <div className="flex items-center gap-2 mt-1"><Calendar className="w-3 h-3" /> Purchased: {item.purchaseDate || 'N/A'}</div>
+                                                        <div className="flex items-center gap-2 mt-1"><ScanBarcode className="w-3 h-3" /> Code: {item.barcode || 'N/A'}</div>
                                                     </div>
                                                     <div>
                                                         <div className="opacity-50 text-xs mb-1">NOTES</div>
@@ -289,6 +325,13 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                             {/* Basic Info */}
                             <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-lg space-y-3">
                                 <h4 className="text-xs font-bold opacity-50 uppercase tracking-wide">Product Details</h4>
+                                <div className="flex gap-2 items-end">
+                                    <div className="flex-grow">
+                                        <Input label="Barcode / ID" value={formData.barcode} onChange={e => setFormData({...formData, barcode: e.target.value})} placeholder="Scan or type..." />
+                                    </div>
+                                    <Button onClick={() => { setScanningFor('add'); setShowScanner(true); }} className="mb-[2px] px-3"><ScanBarcode className="w-4 h-4" /></Button>
+                                </div>
+                                
                                 <Input label="Product Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} autoFocus />
                                 <div className="grid grid-cols-2 gap-4">
                                      <Input label="Category" placeholder="e.g. Grains" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />

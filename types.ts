@@ -1,5 +1,6 @@
 
 export type ThemeType = 'material' | 'glass' | 'neumorphism' | 'fluent';
+export type UnitSystem = 'metric' | 'local'; // local = Maund/Seer
 
 export interface Product {
   id: string;
@@ -10,6 +11,7 @@ export interface Product {
   unit: string; // 'kg', 'g', 'pc'
   expiryDate?: string; // YYYY-MM-DD
   // Extended Metadata
+  barcode?: string; // New field for scanning
   supplierName?: string;
   supplierContact?: string;
   category?: string;

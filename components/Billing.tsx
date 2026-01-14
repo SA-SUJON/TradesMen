@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Product, CartItem, Customer, Transaction, Sale } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote } from 'lucide-react';
+import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
+import { speak, formatUnit } from '../utils/appUtils';
+import BarcodeScanner from './BarcodeScanner';
 
 interface BillingProps {
   inventory: Product[];
@@ -16,13 +18,14 @@ interface BillingProps {
 }
 
 const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, setCustomers, sales, setSales }) => {
-  const { theme } = useTheme();
+  const { theme, voiceEnabled, unitSystem } = useTheme();
   const styles = getThemeClasses(theme);
   
   // Adding Item State
   const [selectedId, setSelectedId] = useState('');
   const [qty, setQty] = useState<number | ''>(1);
   const [discount, setDiscount] = useState<number | ''>(0);
+  const [showScanner, setShowScanner] = useState(false);
   
   // Customer State
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -40,10 +43,24 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
     };
 
     setCart([...cart, newItem]);
+    speak(`Added ${qty} ${product.unit} of ${product.name}`, voiceEnabled);
+
     // Reset inputs
     setQty(1);
     setDiscount(0);
     setSelectedId('');
+  };
+
+  const handleScan = (code: string) => {
+      const product = inventory.find(p => p.barcode === code || p.id === code);
+      if (product) {
+          setSelectedId(product.id);
+          speak(`${product.name} found`, voiceEnabled);
+      } else {
+          speak("Item not found", voiceEnabled);
+          alert("Item not found!");
+      }
+      setShowScanner(false);
   };
 
   const removeItem = (cartId: string) => {
@@ -116,11 +133,15 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
 
     // Clear cart
     setCart([]);
-    alert(method === 'credit' ? "Order added to customer debt." : "Order completed successfully!");
+    const msg = method === 'credit' ? "Order added to customer debt." : "Order completed successfully!";
+    alert(msg);
+    speak(`Order completed. Total is ${total}`, voiceEnabled);
   };
 
   return (
     <div className="space-y-6">
+      {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Cart Input Section */}
         <div className="lg:col-span-1 space-y-6">
@@ -129,12 +150,19 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
                     <Plus className="w-5 h-5" /> Add to Bill
                 </h2>
                 <div className="space-y-4">
-                    <Select label="Product" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
-                        <option value="">-- Select Item --</option>
-                        {inventory.map(p => (
-                            <option key={p.id} value={p.id}>{p.name} ({p.sellingPrice}/{p.unit})</option>
-                        ))}
-                    </Select>
+                    <div className="flex gap-2 items-end">
+                         <div className="flex-grow">
+                             <Select label="Product" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+                                <option value="">-- Select Item --</option>
+                                {inventory.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name} ({p.sellingPrice}/{p.unit})</option>
+                                ))}
+                            </Select>
+                         </div>
+                         <Button onClick={() => setShowScanner(true)} className="mb-[2px] px-3">
+                             <ScanBarcode className="w-5 h-5" />
+                         </Button>
+                    </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                         <Input label="Quantity" type="number" value={qty} onChange={(e) => setQty(e.target.valueAsNumber)} />
@@ -191,7 +219,9 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
                                 return (
                                     <tr key={item.cartId} className="group">
                                         <td className="py-3 font-medium">{item.name}</td>
-                                        <td className="py-3 text-right">{item.quantity} {item.unit}</td>
+                                        <td className="py-3 text-right">
+                                            {formatUnit(item.quantity, item.unit, unitSystem)}
+                                        </td>
                                         <td className="py-3 text-right">{item.sellingPrice}</td>
                                         <td className="py-3 text-right text-red-500">{item.discount > 0 ? item.discount + '%' : '-'}</td>
                                         <td className="py-3 text-right font-bold">{lineTotal.toFixed(2)}</td>

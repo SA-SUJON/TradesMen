@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Product } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { Calculator as CalcIcon, DollarSign, RefreshCw } from 'lucide-react';
+import { Calculator as CalcIcon, DollarSign, RefreshCw, Volume2, VolumeX, Scale, ScanBarcode } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
+import { speak, formatUnit } from '../utils/appUtils';
+import BarcodeScanner from './BarcodeScanner';
 
 interface CalculatorProps {
   inventory: Product[];
 }
 
 const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
-  const { theme } = useTheme();
+  const { theme, voiceEnabled, setVoiceEnabled, unitSystem, setUnitSystem } = useTheme();
   const styles = getThemeClasses(theme);
   
   const [mode, setMode] = useState<'price_to_weight' | 'weight_to_price'>('weight_to_price');
   const [basePrice, setBasePrice] = useState<number | ''>('');
   const [weight, setWeight] = useState<number | ''>('');
   const [targetPrice, setTargetPrice] = useState<number | ''>('');
+  
+  // Scanner State
+  const [showScanner, setShowScanner] = useState(false);
   
   // Profit Checker State
   const [buyingPrice, setBuyingPrice] = useState<number | ''>('');
@@ -31,9 +36,10 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
       if (prod) {
         setBasePrice(prod.sellingPrice);
         if (prod.buyingPrice) setBuyingPrice(prod.buyingPrice);
+        speak(`${prod.name} selected. Price is ${prod.sellingPrice} per kilo.`, voiceEnabled);
       }
     }
-  }, [selectedProduct, inventory]);
+  }, [selectedProduct, inventory, voiceEnabled]);
 
   const calculate = () => {
     const bp = Number(basePrice);
@@ -55,6 +61,18 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
     }
   };
 
+  const handleScan = (code: string) => {
+      const prod = inventory.find(p => p.barcode === code || p.id === code);
+      if (prod) {
+          setSelectedProduct(prod.id);
+          speak(`Found ${prod.name}`, voiceEnabled);
+      } else {
+          alert("Product not found in inventory!");
+          speak("Product not found", voiceEnabled);
+      }
+      setShowScanner(false);
+  };
+
   useEffect(() => {
     calculate();
     
@@ -73,32 +91,68 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
 
   return (
     <div className="space-y-6">
+      {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Main Calculator */}
-        <Card className="h-full">
+        <Card className="h-full relative">
+            {/* Tool Bar */}
+            <div className="absolute top-4 right-4 flex gap-2">
+                <button 
+                    onClick={() => setUnitSystem(unitSystem === 'metric' ? 'local' : 'metric')}
+                    className={`p-2 rounded-full transition-all ${theme === 'glass' ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800'}`}
+                    title="Toggle Units (Metric/Local)"
+                >
+                    <Scale className="w-4 h-4" />
+                </button>
+                <button 
+                    onClick={() => setVoiceEnabled(!voiceEnabled)}
+                    className={`p-2 rounded-full transition-all ${theme === 'glass' ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800'}`}
+                    title="Toggle Voice"
+                >
+                    {voiceEnabled ? <Volume2 className="w-4 h-4 text-blue-500" /> : <VolumeX className="w-4 h-4 opacity-50" />}
+                </button>
+            </div>
+
           <div className="flex justify-between items-center mb-6">
             <h2 className={`text-xl font-bold flex items-center gap-2 ${styles.accentText}`}>
               <CalcIcon className="w-5 h-5" /> Quick Calculator
             </h2>
-            <button 
-                onClick={() => setMode(m => m === 'weight_to_price' ? 'price_to_weight' : 'weight_to_price')}
-                className={`text-sm underline opacity-70 hover:opacity-100 ${styles.accentText}`}
-            >
-                Switch to {mode === 'weight_to_price' ? 'Find Weight' : 'Find Price'}
-            </button>
+          </div>
+          
+          <div className="mb-4 flex gap-2">
+                <button 
+                    onClick={() => setMode(m => m === 'weight_to_price' ? 'price_to_weight' : 'weight_to_price')}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-all ${mode === 'weight_to_price' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'opacity-60 hover:opacity-100'}`}
+                >
+                    Find Price
+                </button>
+                <button 
+                    onClick={() => setMode(m => m === 'weight_to_price' ? 'price_to_weight' : 'weight_to_price')}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-all ${mode === 'price_to_weight' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'opacity-60 hover:opacity-100'}`}
+                >
+                    Find Weight
+                </button>
           </div>
 
           <div className="space-y-4">
-             <Select 
-                label="Load Preset Item" 
-                value={selectedProduct}
-                onChange={(e) => setSelectedProduct(e.target.value)}
-            >
-                <option value="">-- Select Item --</option>
-                {inventory.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} (@ {p.sellingPrice}/kg)</option>
-                ))}
-            </Select>
+             <div className="flex gap-2 items-end">
+                 <div className="flex-grow">
+                     <Select 
+                        label="Load Preset Item" 
+                        value={selectedProduct}
+                        onChange={(e) => setSelectedProduct(e.target.value)}
+                    >
+                        <option value="">-- Select Item --</option>
+                        {inventory.map(p => (
+                            <option key={p.id} value={p.id}>{p.name} (@ {p.sellingPrice}/kg)</option>
+                        ))}
+                    </Select>
+                 </div>
+                 <Button onClick={() => setShowScanner(true)} className="mb-[2px] px-3" title="Scan Barcode">
+                     <ScanBarcode className="w-5 h-5" />
+                 </Button>
+             </div>
 
             <div className="flex gap-4 items-end">
                 <Input 
@@ -108,14 +162,14 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
                     value={basePrice} 
                     onChange={(e) => setBasePrice(e.target.valueAsNumber || '')}
                 />
-                <Button variant="secondary" onClick={() => { setBasePrice(''); setSelectedProduct(''); }} className="mb-[2px] px-3">
+                <Button variant="secondary" onClick={() => { setBasePrice(''); setSelectedProduct(''); setWeight(''); setTargetPrice(''); }} className="mb-[2px] px-3">
                     <RefreshCw className="w-4 h-4" />
                 </Button>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <Input 
-                label={mode === 'weight_to_price' ? "Weight (Grams)" : "Weight (Calculated)"}
+                label={mode === 'weight_to_price' ? "Weight (Grams)" : "Weight (Result)"}
                 type="number" 
                 placeholder="Grams" 
                 value={weight} 
@@ -124,7 +178,7 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
                 className={mode === 'price_to_weight' ? 'opacity-70 cursor-not-allowed font-bold' : ''}
               />
               <Input 
-                label={mode === 'weight_to_price' ? "Price (Calculated)" : "Target Price"}
+                label={mode === 'weight_to_price' ? "Price (Result)" : "Target Price"}
                 type="number" 
                 placeholder="Amount" 
                 value={targetPrice} 
@@ -134,11 +188,21 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
               />
             </div>
             
+            {/* Results Display Area */}
             {mode === 'weight_to_price' && targetPrice && (
                  <div className={`mt-4 p-4 rounded-lg text-center ${theme === 'glass' ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800'}`}>
                     <span className="text-sm opacity-70">Final Price</span>
                     <div className={`text-3xl font-bold ${styles.accentText}`}>
                         {Number(targetPrice).toLocaleString()}
+                    </div>
+                    {/* Speak Button for Result */}
+                    <div className="mt-2">
+                        <button 
+                            onClick={() => speak(`The price is ${targetPrice}`, true)}
+                            className="text-xs opacity-50 hover:opacity-100 flex items-center justify-center gap-1 mx-auto"
+                        >
+                            <Volume2 className="w-3 h-3" /> Replay
+                        </button>
                     </div>
                  </div>
             )}
@@ -146,7 +210,10 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
                  <div className={`mt-4 p-4 rounded-lg text-center ${theme === 'glass' ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800'}`}>
                     <span className="text-sm opacity-70">Weight Needed</span>
                     <div className={`text-3xl font-bold ${styles.accentText}`}>
-                        {Number(weight).toLocaleString()} g
+                        {unitSystem === 'local' 
+                            ? formatUnit(Number(weight), 'g', 'local') 
+                            : `${Number(weight).toLocaleString()} g`
+                        }
                     </div>
                     <div className="text-sm opacity-70">
                         ({(Number(weight)/1000).toFixed(3)} kg)
