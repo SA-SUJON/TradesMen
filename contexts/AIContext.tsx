@@ -1,0 +1,216 @@
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
+import { Product, CartItem, ChatMessage } from '../types';
+
+interface AIContextType {
+  messages: ChatMessage[];
+  sendMessage: (text: string, image?: string) => Promise<void>;
+  isProcessing: boolean;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+}
+
+const AIContext = createContext<AIContextType | undefined>(undefined);
+
+interface AIProviderProps {
+  children: ReactNode;
+  inventory: Product[];
+  setInventory: (inv: Product[] | ((val: Product[]) => Product[])) => void;
+  cart: CartItem[];
+  setCart: (cart: CartItem[] | ((val: CartItem[]) => CartItem[])) => void;
+}
+
+// --- Tool Definitions ---
+
+const addInventoryTool: FunctionDeclaration = {
+  name: 'addInventoryItem',
+  description: 'Add a new product to the shop inventory. Use this when the user wants to stock new items or scans a memo.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      name: { type: Type.STRING, description: 'Name of the product' },
+      sellingPrice: { type: Type.NUMBER, description: 'Selling price per unit' },
+      buyingPrice: { type: Type.NUMBER, description: 'Cost price per unit (optional)' },
+      stock: { type: Type.NUMBER, description: 'Quantity to add to stock' },
+      unit: { type: Type.STRING, description: 'Unit of measurement (kg, g, pc)' }
+    },
+    required: ['name', 'sellingPrice']
+  }
+};
+
+const addToCartTool: FunctionDeclaration = {
+  name: 'addToCart',
+  description: 'Add an item to the current billing cart. Use when user says "bill this" or "add to bill".',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      productName: { type: Type.STRING, description: 'Name of the product to find in inventory' },
+      quantity: { type: Type.NUMBER, description: 'Quantity to bill' },
+      discount: { type: Type.NUMBER, description: 'Discount percentage (optional)' }
+    },
+    required: ['productName', 'quantity']
+  }
+};
+
+const checkExpiryTool: FunctionDeclaration = {
+  name: 'setExpiryReminder',
+  description: 'Set a reminder for when a product is expiring.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      productName: { type: Type.STRING, description: 'Name of the product' },
+      daysUntilExpiry: { type: Type.NUMBER, description: 'Number of days until expiry' }
+    },
+    required: ['productName', 'daysUntilExpiry']
+  }
+};
+
+export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, setInventory, cart, setCart }) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([{
+    id: 'intro',
+    role: 'model',
+    text: 'Hello! I can help you manage inventory, bill items, or scan memos. How can I help?'
+  }]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Initialize Gemini Client
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+  const sendMessage = async (text: string, image?: string) => {
+    // 1. Add User Message to UI
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      text,
+      image
+    };
+    setMessages(prev => [...prev, userMsg]);
+    setIsProcessing(true);
+
+    try {
+      // 2. Prepare Context (Simplified Inventory for Grounding)
+      const inventoryList = inventory.map(p => `${p.name} ($${p.sellingPrice}/${p.unit})`).join(', ');
+      const systemInstruction = `You are an AI assistant for a shopkeeper app called "TradesMen". 
+      Current Inventory: [${inventoryList}].
+      If the user sends an image, analyze it as a supplier invoice/memo and extract items to add to inventory using the "addInventoryItem" tool.
+      Be concise.`;
+
+      // 3. Construct Parts
+      const parts: any[] = [];
+      if (image) {
+        // Extract mime type and data
+        let mimeType = 'image/jpeg';
+        let base64Data = image;
+
+        if (image.includes(',')) {
+            const [header, data] = image.split(',');
+            base64Data = data;
+            const match = header.match(/:(.*?);/);
+            if (match) {
+                mimeType = match[1];
+            }
+        }
+
+        parts.push({
+          inlineData: {
+            mimeType: mimeType,
+            data: base64Data
+          }
+        });
+      }
+      if (text) parts.push({ text });
+
+      // 4. Call Gemini 3 Flash Preview (Valid Model)
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: { parts },
+        config: {
+          systemInstruction,
+          tools: [{ functionDeclarations: [addInventoryTool, addToCartTool, checkExpiryTool] }],
+        }
+      });
+
+      // 5. Handle Function Calls
+      const toolCalls = response.functionCalls;
+      let toolResponseText = "";
+
+      if (toolCalls && toolCalls.length > 0) {
+        for (const call of toolCalls) {
+          const args = call.args as any;
+
+          if (call.name === 'addInventoryItem') {
+            const newItem: Product = {
+              id: Date.now().toString() + Math.random().toString().slice(2, 5),
+              name: args.name,
+              sellingPrice: args.sellingPrice,
+              buyingPrice: args.buyingPrice || 0,
+              stock: args.stock || 0,
+              unit: args.unit || 'kg'
+            };
+            setInventory((prev) => [...prev, newItem]);
+            toolResponseText += `Added ${args.name} to inventory. `;
+          } 
+          else if (call.name === 'addToCart') {
+            // Fuzzy search for product
+            const product = inventory.find(p => p.name.toLowerCase().includes(args.productName.toLowerCase()));
+            if (product) {
+              const newItem: CartItem = {
+                ...product,
+                cartId: Date.now().toString(),
+                quantity: args.quantity,
+                discount: args.discount || 0
+              };
+              setCart((prev) => [...prev, newItem]);
+              toolResponseText += `Added ${args.quantity}${product.unit} of ${product.name} to bill. `;
+            } else {
+              toolResponseText += `Could not find "${args.productName}" in inventory. `;
+            }
+          }
+          else if (call.name === 'setExpiryReminder') {
+             // Mock reminder
+             toolResponseText += `Reminder set: ${args.productName} expires in ${args.daysUntilExpiry} days. `;
+          }
+        }
+      }
+
+      // 6. Get Model Text Response
+      const modelText = response.text || "";
+      const finalResponse = toolResponseText ? `${toolResponseText} ${modelText}` : modelText;
+
+      setMessages(prev => [...prev, {
+        id: Date.now().toString() + 'bot',
+        role: 'model',
+        text: finalResponse || "Done."
+      }]);
+
+    } catch (error: any) {
+      console.error("AI Error:", error);
+      let errorMsg = "I'm having trouble connecting right now. Please try again.";
+      if (error?.message?.includes("404")) errorMsg = "Model not found. Please contact developer.";
+      
+      setMessages(prev => [...prev, {
+        id: Date.now().toString() + 'err',
+        role: 'system',
+        text: errorMsg,
+        isError: true
+      }]);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <AIContext.Provider value={{ messages, sendMessage, isProcessing, isOpen, setIsOpen }}>
+      {children}
+    </AIContext.Provider>
+  );
+};
+
+export const useAI = () => {
+  const context = useContext(AIContext);
+  if (!context) {
+    throw new Error('useAI must be used within an AIProvider');
+  }
+  return context;
+};

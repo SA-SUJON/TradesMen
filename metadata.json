@@ -1,5 +1,8 @@
 {
-  "name": "TradesMen Utility",
+  "name": "TradesMen",
   "description": "A comprehensive utility app for shopkeepers featuring price calculators, inventory management, billing, and multi-theme UI.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
 }

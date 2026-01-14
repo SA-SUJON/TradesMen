@@ -1,3 +1,4 @@
+
 export type ThemeType = 'material' | 'glass' | 'neumorphism' | 'fluent';
 
 export interface Product {
@@ -19,4 +20,12 @@ export interface Conversion {
   from: string;
   to: string;
   value: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'model' | 'system';
+  text: string;
+  image?: string; // base64 string for OCR previews
+  isError?: boolean;
 }
