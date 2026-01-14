@@ -12,6 +12,7 @@ export interface Product {
   expiryDate?: string; // YYYY-MM-DD
   // Extended Metadata
   barcode?: string; // New field for scanning
+  shelfId?: string; // New field for Shelf Location
   supplierName?: string;
   supplierContact?: string;
   category?: string;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
 import { Card, Input, Button } from './ui/BaseComponents';
-import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode } from 'lucide-react';
+import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -43,7 +43,8 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
     notes: '',
     lowStockThreshold: 10,
     purchaseDate: '',
-    barcode: ''
+    barcode: '',
+    shelfId: ''
   });
 
   const handleSave = () => {
@@ -65,7 +66,8 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
             notes: formData.notes,
             purchaseDate: formData.purchaseDate,
             lowStockThreshold: formData.lowStockThreshold || 10,
-            barcode: formData.barcode
+            barcode: formData.barcode,
+            shelfId: formData.shelfId
         };
         setInventory([...inventory, newItem]);
     }
@@ -87,7 +89,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
   const resetForm = () => {
       setFormData({ 
         name: '', buyingPrice: 0, sellingPrice: 0, stock: 0, unit: 'kg', 
-        category: '', supplierName: '', supplierContact: '', notes: '', lowStockThreshold: 10, purchaseDate: '', barcode: ''
+        category: '', supplierName: '', supplierContact: '', notes: '', lowStockThreshold: 10, purchaseDate: '', barcode: '', shelfId: ''
       });
       setIsAdding(false);
       setEditId(null);
@@ -131,7 +133,8 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
         p.name.toLowerCase().includes(q) || 
         p.category?.toLowerCase().includes(q) ||
         p.supplierName?.toLowerCase().includes(q) ||
-        p.barcode?.includes(q)
+        p.barcode?.includes(q) ||
+        p.shelfId?.toLowerCase().includes(q)
       );
   }
 
@@ -152,7 +155,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
             <div className="flex gap-2 w-full md:w-auto">
                 <div className="relative flex-grow md:w-64">
                     <Input 
-                        placeholder="Search items, barcodes..." 
+                        placeholder="Search items, shelf, barcodes..." 
                         value={search}
                         onChange={(e) => {
                             setSearch(e.target.value);
@@ -237,7 +240,10 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                     >
                                         <td className="p-3">
                                             <div className="font-medium">{item.name}</div>
-                                            {item.category && <div className="text-xs opacity-60 bg-gray-100 dark:bg-gray-800 inline-block px-1 rounded mt-1">{item.category}</div>}
+                                            <div className="flex gap-1 mt-1">
+                                                {item.category && <div className="text-xs opacity-60 bg-gray-100 dark:bg-gray-800 inline-block px-1 rounded">{item.category}</div>}
+                                                {item.shelfId && <div className="text-xs opacity-80 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 inline-block px-1 rounded flex items-center gap-0.5"><MapPin className="w-2 h-2" />{item.shelfId}</div>}
+                                            </div>
                                         </td>
                                         <td className="p-3 text-right">
                                             <div className={item.stock < (item.lowStockThreshold || 10) ? 'text-orange-500 font-bold' : ''}>
@@ -274,6 +280,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                                         <div className="flex items-center gap-2"><Tag className="w-3 h-3" /> Buy Price: {item.buyingPrice}</div>
                                                         <div className="flex items-center gap-2 mt-1"><Calendar className="w-3 h-3" /> Purchased: {item.purchaseDate || 'N/A'}</div>
                                                         <div className="flex items-center gap-2 mt-1"><ScanBarcode className="w-3 h-3" /> Code: {item.barcode || 'N/A'}</div>
+                                                        <div className="flex items-center gap-2 mt-1 font-medium text-blue-600 dark:text-blue-400"><MapPin className="w-3 h-3" /> Shelf Loc: {item.shelfId || 'Unassigned'}</div>
                                                     </div>
                                                     <div>
                                                         <div className="opacity-50 text-xs mb-1">NOTES</div>
@@ -337,6 +344,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                      <Input label="Category" placeholder="e.g. Grains" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
                                      <Input label="Unit (kg/g/pc)" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} />
                                 </div>
+                                <Input label="Shelf / Rack ID" placeholder="e.g. A-1, B-5" value={formData.shelfId} onChange={e => setFormData({...formData, shelfId: e.target.value})} />
                             </div>
 
                             {/* Pricing & Stock */}

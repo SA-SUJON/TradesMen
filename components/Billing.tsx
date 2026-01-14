@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Product, CartItem, Customer, Transaction, Sale } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle } from 'lucide-react';
+import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle, MapPin } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { speak, formatUnit, openWhatsApp, formatBillMessage } from '../utils/appUtils';
@@ -164,6 +164,12 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
     speak(`Order completed. Total is ${total}`, voiceEnabled);
   };
 
+  // Helper to get selected product for info display
+  const getSelectedProductInfo = () => {
+      return inventory.find(p => p.id === selectedId);
+  }
+  const selectedProduct = getSelectedProductInfo();
+
   return (
     <div className="space-y-6">
       {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
@@ -189,6 +195,13 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
                              <ScanBarcode className="w-5 h-5" />
                          </Button>
                     </div>
+
+                    {/* Product Meta Hint */}
+                    {selectedProduct && selectedProduct.shelfId && (
+                        <div className="text-xs flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+                            <MapPin className="w-3 h-3" /> Location: {selectedProduct.shelfId}
+                        </div>
+                    )}
                     
                     <div className="grid grid-cols-2 gap-4">
                         <Input label="Quantity" type="number" value={qty} onChange={(e) => setQty(e.target.valueAsNumber)} />
@@ -244,7 +257,10 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
                                 const lineTotal = (item.sellingPrice * item.quantity) * (1 - item.discount/100);
                                 return (
                                     <tr key={item.cartId} className="group">
-                                        <td className="py-3 font-medium">{item.name}</td>
+                                        <td className="py-3 font-medium">
+                                            {item.name}
+                                            {item.shelfId && <div className="text-[10px] opacity-50 flex items-center gap-0.5"><MapPin className="w-2 h-2" />{item.shelfId}</div>}
+                                        </td>
                                         <td className="py-3 text-right">
                                             {formatUnit(item.quantity, item.unit, unitSystem)}
                                         </td>

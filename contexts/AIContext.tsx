@@ -37,6 +37,7 @@ const addInventoryTool: FunctionDeclaration = {
       buyingPrice: { type: Type.NUMBER, description: 'Cost price per unit (optional)' },
       stock: { type: Type.NUMBER, description: 'Quantity to add to stock' },
       unit: { type: Type.STRING, description: 'Unit of measurement (kg, g, pc)' },
+      shelfId: { type: Type.STRING, description: 'Shelf or Rack ID location (optional)' },
       expiryDate: { type: Type.STRING, description: 'Expiry date in YYYY-MM-DD format (optional)' },
       supplierName: { type: Type.STRING, description: 'Name of the supplier (optional)' },
       supplierContact: { type: Type.STRING, description: 'Contact number of the supplier (optional)' },
@@ -100,10 +101,11 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
 
     try {
       // 2. Prepare Context (Simplified Inventory for Grounding)
-      const inventoryList = inventory.map(p => `${p.name} ($${p.sellingPrice}/${p.unit})`).join(', ');
+      const inventoryList = inventory.map(p => `${p.name} ($${p.sellingPrice}/${p.unit}) @ ${p.shelfId || 'NoShelf'}`).join(', ');
       const systemInstruction = `You are "Manager", an AI assistant for a shopkeeper app called "TradesMen". 
       Current Inventory: [${inventoryList}].
       If the user sends an image, analyze it as a supplier invoice/memo and extract items to add to inventory using the "addInventoryItem" tool.
+      If shelf/rack locations are mentioned (e.g., "A1", "Top Shelf"), include them in shelfId.
       Be concise.`;
 
       // 3. Construct Parts
@@ -157,6 +159,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
               buyingPrice: args.buyingPrice || 0,
               stock: args.stock || 0,
               unit: args.unit || 'kg',
+              shelfId: args.shelfId,
               expiryDate: args.expiryDate,
               supplierName: args.supplierName,
               supplierContact: args.supplierContact,
@@ -164,7 +167,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
               purchaseDate: args.purchaseDate
             };
             setInventory((prev) => [...prev, newItem]);
-            toolResponseText += `Added ${args.name} to inventory. `;
+            toolResponseText += `Added ${args.name} to inventory${args.shelfId ? ` (Shelf ${args.shelfId})` : ''}. `;
           } 
           else if (call.name === 'addToCart') {
             // Fuzzy search for product
@@ -224,12 +227,13 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
         sellingPrice: p.sellingPrice,
         stock: p.stock,
         category: p.category,
-        supplierName: p.supplierName
+        supplierName: p.supplierName,
+        shelfId: p.shelfId
       }));
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Inventory: ${JSON.stringify(simplifiedInv)}\n\nQuery: "${query}"\n\nTask: Find items in the inventory that match the user's query (e.g., price conditions, stock levels, name keywords, supplier, category). Return ONLY a JSON array of string IDs. Example: ["1", "5"]`,
+        contents: `Inventory: ${JSON.stringify(simplifiedInv)}\n\nQuery: "${query}"\n\nTask: Find items in the inventory that match the user's query (e.g., price conditions, stock levels, name keywords, supplier, category, shelf location). Return ONLY a JSON array of string IDs. Example: ["1", "5"]`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
