@@ -3,7 +3,7 @@ import { Product } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion } from 'framer-motion';
-import { AlertTriangle, TrendingDown, Calendar, AlertCircle, CheckCircle2, Zap } from 'lucide-react';
+import { TrendingDown, Calendar, CheckCircle2, Zap } from 'lucide-react';
 
 interface InsightCardsProps {
     inventory: Product[];
@@ -11,15 +11,16 @@ interface InsightCardsProps {
 
 const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
     const { theme } = useTheme();
-    const styles = getThemeClasses(theme);
+    // unused variable 'styles' removed for cleanliness if not strictly needed, 
+    // or kept if we plan to use it. Here we use getCardStyle logic mostly.
 
-    // Logic for Low Stock: Use product specific threshold or default to 10
+    // Logic for Low Stock
     const lowStockItems = inventory.filter(item => {
         const threshold = item.lowStockThreshold !== undefined ? item.lowStockThreshold : 10;
         return item.stock < threshold;
     });
     
-    // Logic for Expiry (Mock logic as demo data might not have dates)
+    // Logic for Expiry
     const expiringItems = inventory.filter(item => {
         if (!item.expiryDate) return false;
         const today = new Date();
@@ -34,7 +35,7 @@ const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
     // Card Base Styling based on theme
     const getCardStyle = (variant: 'alert' | 'warning' | 'info' | 'success') => {
         // Base classes
-        let classes = "rounded-xl p-4 flex flex-col justify-between h-full relative overflow-hidden transition-all ";
+        let classes = "rounded-xl p-4 flex flex-col justify-between h-full relative overflow-hidden transition-all min-w-[85vw] md:min-w-0 snap-center ";
         
         if (theme === 'glass') {
             classes += "backdrop-blur-md text-white border ";
@@ -63,7 +64,8 @@ const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
     };
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        // Changed grid-cols-1 to flex layout on mobile for horizontal scrolling
+        <div className="flex md:grid md:grid-cols-3 gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide md:overflow-visible md:pb-0">
             {/* 1. Low Stock Card */}
             <motion.div 
                 initial={{ opacity: 0, y: 10 }}

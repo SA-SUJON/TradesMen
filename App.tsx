@@ -110,11 +110,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   };
 
   return (
-      <div className={`min-h-screen transition-colors duration-500 ${styles.appBg} font-sans relative pb-24 md:pb-0`}>
-        <div className="max-w-6xl mx-auto px-4 py-6 md:py-8 h-screen flex flex-col">
+      <div className={`min-h-screen transition-colors duration-500 ${styles.appBg} font-sans relative pb-safe`}>
+        {/* Use pb-safe for mobile home bar area */}
+        <div className="max-w-6xl mx-auto px-4 py-4 md:py-8 h-[100dvh] flex flex-col">
           
           {/* Enhanced Header */}
-          <header className="flex flex-col gap-6 mb-4 md:mb-8 flex-shrink-0">
+          <header className="flex flex-col gap-4 md:gap-6 mb-2 md:mb-8 flex-shrink-0 z-20 relative">
             <div className="flex justify-between items-center w-full">
                 
                 {/* Logo & Title */}
@@ -175,7 +176,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           </nav>
 
           {/* Main Content Area */}
-          <main className="flex-grow relative overflow-y-auto md:overflow-visible no-scrollbar">
+          {/* 
+             IMPORTANT: overflow-y-auto is needed for standard tabs. 
+             For Manager tab, we turn it OFF (overflow-hidden) so the chat container handles its own scroll. 
+             We also add extra padding at bottom for mobile nav on non-manager tabs.
+          */}
+          <main className={`flex-grow relative ${isManagerTab ? 'overflow-hidden' : 'overflow-y-auto no-scrollbar pb-24 md:pb-0'}`}>
               <AnimatePresence mode="wait">
                   <motion.div
                       key={activeTab}
@@ -190,10 +196,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                       {activeTab === 'billing' && <Billing inventory={inventory} cart={cart} setCart={setCart} customers={customers} setCustomers={setCustomers} />}
                       {activeTab === 'customers' && <Customers customers={customers} setCustomers={setCustomers} />}
                       
-                      {/* Dashboard / Manager Tab - Optimized Layout */}
+                      {/* Dashboard / Manager Tab - Optimized Layout for Mobile */}
                       {activeTab === 'manager' && (
-                          <div className="flex flex-col h-full md:h-[calc(100vh-180px)] gap-4 pb-20 md:pb-0">
-                              <div className="flex-shrink-0">
+                          <div className="flex flex-col h-full gap-2 md:gap-4 pb-[85px] md:pb-0">
+                              <div className="flex-shrink-0 z-10">
                                 <InsightCards inventory={inventory} />
                               </div>
                               <div className="flex-grow overflow-hidden rounded-2xl relative">
