@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { Product, CartItem, ChatMessage } from '../types';
+import useLocalStorage from '../hooks/useLocalStorage';
 
 interface AIContextType {
   messages: ChatMessage[];
@@ -8,6 +9,8 @@ interface AIContextType {
   isProcessing: boolean;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  showAssistant: boolean;
+  setShowAssistant: (show: boolean) => void;
 }
 
 const AIContext = createContext<AIContextType | undefined>(undefined);
@@ -69,10 +72,11 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: 'intro',
     role: 'model',
-    text: 'Hello! I can help you manage inventory, bill items, or scan memos. How can I help?'
+    text: 'Hello! I am your Shop Manager. I can help you manage inventory, bill items, or scan memos. How can I help?'
   }]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [showAssistant, setShowAssistant] = useLocalStorage<boolean>('tradesmen-ai-visible', true);
 
   // Initialize Gemini Client
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -91,7 +95,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
     try {
       // 2. Prepare Context (Simplified Inventory for Grounding)
       const inventoryList = inventory.map(p => `${p.name} ($${p.sellingPrice}/${p.unit})`).join(', ');
-      const systemInstruction = `You are an AI assistant for a shopkeeper app called "TradesMen". 
+      const systemInstruction = `You are "Manager", an AI assistant for a shopkeeper app called "TradesMen". 
       Current Inventory: [${inventoryList}].
       If the user sends an image, analyze it as a supplier invoice/memo and extract items to add to inventory using the "addInventoryItem" tool.
       Be concise.`;
@@ -201,7 +205,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
   };
 
   return (
-    <AIContext.Provider value={{ messages, sendMessage, isProcessing, isOpen, setIsOpen }}>
+    <AIContext.Provider value={{ messages, sendMessage, isProcessing, isOpen, setIsOpen, showAssistant, setShowAssistant }}>
       {children}
     </AIContext.Provider>
   );

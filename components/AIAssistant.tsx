@@ -7,7 +7,7 @@ import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2 } from 'lucide-r
 import { Button, Input } from './ui/BaseComponents';
 
 const AIAssistant: React.FC = () => {
-  const { messages, sendMessage, isProcessing, isOpen, setIsOpen } = useAI();
+  const { messages, sendMessage, isProcessing, isOpen, setIsOpen, showAssistant } = useAI();
   const { theme } = useTheme();
   const styles = getThemeClasses(theme);
   
@@ -46,6 +46,8 @@ const AIAssistant: React.FC = () => {
     }
   };
 
+  if (!showAssistant) return null;
+
   return (
     <>
       {/* Floating Action Button */}
@@ -78,7 +80,7 @@ const AIAssistant: React.FC = () => {
             {/* Header */}
             <div className={`p-4 border-b ${theme === 'glass' ? 'border-white/10' : 'border-gray-100'} flex items-center gap-2`}>
               <Sparkles className={`w-5 h-5 ${styles.accentText}`} />
-              <h3 className={`font-bold ${theme === 'glass' ? 'text-white' : 'text-gray-800'}`}>TradesMen AI</h3>
+              <h3 className={`font-bold ${theme === 'glass' ? 'text-white' : 'text-gray-800'}`}>Manager</h3>
               <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold ml-auto">Gemini 3 Flash</span>
             </div>
 
