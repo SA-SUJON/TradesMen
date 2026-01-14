@@ -3,7 +3,7 @@ import { useAI } from '../contexts/AIContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff } from 'lucide-react';
 import { Button, Input } from './ui/BaseComponents';
 
 const AIAssistant: React.FC = () => {
@@ -12,8 +12,10 @@ const AIAssistant: React.FC = () => {
   const styles = getThemeClasses(theme);
   
   const [input, setInput] = useState('');
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -22,6 +24,40 @@ const AIAssistant: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isOpen]);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => setIsListening(true);
+            
+            recognition.onresult = (event: any) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    transcript += event.results[i][0].transcript;
+                }
+                setInput(transcript);
+            };
+
+            recognition.onend = () => {
+                setIsListening(false);
+            };
+
+            recognition.onerror = (event: any) => {
+                console.error("Speech recognition error", event.error);
+                setIsListening(false);
+            };
+
+            recognitionRef.current = recognition;
+        }
+    }
+  }, []);
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -43,6 +79,20 @@ const AIAssistant: React.FC = () => {
         sendMessage("Please scan this memo and add items to inventory.", base64String);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleMicClick = () => {
+    if (!recognitionRef.current) {
+        alert("Voice recognition not supported in this browser.");
+        return;
+    }
+
+    if (isListening) {
+        recognitionRef.current.stop();
+    } else {
+        setInput(''); // Clear input for new command
+        recognitionRef.current.start();
     }
   };
 
@@ -125,19 +175,36 @@ const AIAssistant: React.FC = () => {
                     ref={fileInputRef} 
                     onChange={handleFileUpload}
                 />
-                <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`p-2 rounded-full transition-colors ${theme === 'glass' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 text-gray-600'}`}
-                    title="Scan Memo / Upload Image"
-                >
-                    <Camera className="w-5 h-5" />
-                </button>
+                
+                {/* Tools: Camera & Mic */}
+                <div className="flex items-center gap-1">
+                    <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`p-2 rounded-full transition-colors ${theme === 'glass' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 text-gray-600'}`}
+                        title="Scan Memo / Upload Image"
+                    >
+                        <Camera className="w-5 h-5" />
+                    </button>
+                    <button 
+                        onClick={handleMicClick}
+                        className={`p-2 rounded-full transition-colors ${
+                            isListening 
+                                ? 'bg-red-500 text-white animate-pulse' 
+                                : theme === 'glass' 
+                                    ? 'hover:bg-white/20 text-white' 
+                                    : 'hover:bg-gray-100 text-gray-600'
+                        }`}
+                        title="Voice Command"
+                    >
+                        {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                    </button>
+                </div>
                 
                 <input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Type or command..."
+                  placeholder={isListening ? "Listening..." : "Type or speak..."}
                   className={`flex-grow bg-transparent outline-none px-2 ${theme === 'glass' ? 'text-white placeholder-white/50' : 'text-gray-800'}`}
                 />
                 
