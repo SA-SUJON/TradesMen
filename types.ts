@@ -8,6 +8,7 @@ export interface Product {
   sellingPrice: number;
   stock: number;
   unit: string; // 'kg', 'g', 'pc'
+  expiryDate?: string; // YYYY-MM-DD
 }
 
 export interface CartItem extends Product {

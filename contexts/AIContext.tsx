@@ -36,7 +36,8 @@ const addInventoryTool: FunctionDeclaration = {
       sellingPrice: { type: Type.NUMBER, description: 'Selling price per unit' },
       buyingPrice: { type: Type.NUMBER, description: 'Cost price per unit (optional)' },
       stock: { type: Type.NUMBER, description: 'Quantity to add to stock' },
-      unit: { type: Type.STRING, description: 'Unit of measurement (kg, g, pc)' }
+      unit: { type: Type.STRING, description: 'Unit of measurement (kg, g, pc)' },
+      expiryDate: { type: Type.STRING, description: 'Expiry date in YYYY-MM-DD format (optional)' }
     },
     required: ['name', 'sellingPrice']
   }
@@ -151,7 +152,8 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
               sellingPrice: args.sellingPrice,
               buyingPrice: args.buyingPrice || 0,
               stock: args.stock || 0,
-              unit: args.unit || 'kg'
+              unit: args.unit || 'kg',
+              expiryDate: args.expiryDate
             };
             setInventory((prev) => [...prev, newItem]);
             toolResponseText += `Added ${args.name} to inventory. `;

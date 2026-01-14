@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { AIProvider } from './contexts/AIContext';
 import AIAssistant, { ChatInterface } from './components/AIAssistant';
+import MagicBar from './components/MagicBar';
+import QuickScan from './components/QuickScan';
+import InsightCards from './components/InsightCards';
 
 // Components
 import Calculator from './components/Calculator';
@@ -22,6 +25,7 @@ const DEMO_PRODUCTS: Product[] = [
   { id: '1', name: 'Sugar (Premium)', buyingPrice: 38, sellingPrice: 45, stock: 100, unit: 'kg' },
   { id: '2', name: 'Basmati Rice', buyingPrice: 85, sellingPrice: 110, stock: 50, unit: 'kg' },
   { id: '3', name: 'Almonds', buyingPrice: 600, sellingPrice: 850, stock: 10, unit: 'kg' },
+  { id: '4', name: 'Milk Powder', buyingPrice: 300, sellingPrice: 350, stock: 5, unit: 'kg', expiryDate: '2025-05-20' }, // Low Stock Demo
 ];
 
 const MainContent: React.FC = () => {
@@ -42,22 +46,31 @@ const MainContent: React.FC = () => {
     { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-4 h-4" /> },
   ];
 
+  const handleMagicActivate = () => {
+    setActiveTab('manager');
+  };
+
   return (
     // Wrap main logic in AIProvider to give AI access to state
     <AIProvider inventory={inventory} setInventory={setInventory} cart={cart} setCart={setCart}>
       <div className={`min-h-screen transition-colors duration-500 ${styles.appBg} font-sans relative pb-24 md:pb-0`}>
         <div className="max-w-6xl mx-auto px-4 py-8">
           
-          {/* Header */}
-          <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-            <div className="flex items-center gap-3">
+          {/* Header & Magic Bar */}
+          <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
+            <div className="flex items-center gap-3 w-full md:w-auto justify-center md:justify-start">
                <div className={`p-3 rounded-xl ${theme === 'material' ? 'bg-m3-primary text-white' : 'bg-black text-white dark:bg-white dark:text-black'} shadow-lg`}>
                   <CalcIcon className="w-6 h-6" />
                </div>
-               <div>
+               <div className="hidden sm:block">
                   <h1 className="text-2xl font-display font-bold">TradesMen</h1>
                   <p className="text-xs opacity-70 uppercase tracking-wider">Retail Utility Suite</p>
                </div>
+            </div>
+
+            {/* Magic Bar Section */}
+            <div className="w-full md:max-w-xl">
+                <MagicBar onActivate={handleMagicActivate} />
             </div>
           </header>
 
@@ -92,7 +105,15 @@ const MainContent: React.FC = () => {
                       {activeTab === 'calculator' && <Calculator inventory={inventory} />}
                       {activeTab === 'inventory' && <Inventory inventory={inventory} setInventory={setInventory} />}
                       {activeTab === 'billing' && <Billing inventory={inventory} cart={cart} setCart={setCart} />}
-                      {activeTab === 'manager' && <ChatInterface variant="page" />}
+                      
+                      {/* Dashboard / Manager Tab */}
+                      {activeTab === 'manager' && (
+                          <div className="space-y-4">
+                              <InsightCards inventory={inventory} />
+                              <ChatInterface variant="page" />
+                          </div>
+                      )}
+                      
                       {activeTab === 'conversions' && <Conversions />}
                       {activeTab === 'settings' && <Settings />}
                   </motion.div>
@@ -137,6 +158,10 @@ const MainContent: React.FC = () => {
               })}
         </div>
 
+        {/* Floating Actions */}
+        {/* Quick Scan - Separate FAB */}
+        <QuickScan onScanStart={handleMagicActivate} />
+        
         {/* AI Assistant FAB - Hidden if Manager Tab is Active */}
         <AIAssistant forceHide={activeTab === 'manager'} />
       </div>
