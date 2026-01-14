@@ -9,9 +9,10 @@ import { Button, Card } from './ui/BaseComponents';
 interface ChatInterfaceProps {
     variant?: 'modal' | 'page';
     onClose?: () => void;
+    className?: string;
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal', onClose }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal', onClose, className = '' }) => {
     const { messages, sendMessage, isProcessing } = useAI();
     const { theme } = useTheme();
     const styles = getThemeClasses(theme);
@@ -95,14 +96,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
         }
     };
 
-    // Adjusted container classes for better mobile fit
-    const containerClasses = variant === 'modal' 
-        ? `w-[90vw] md:w-[400px] h-[500px] flex flex-col overflow-hidden shadow-2xl ${
+    // Adjusted container classes for better mobile fit and responsiveness
+    let containerClasses = "";
+    if (variant === 'modal') {
+         containerClasses = `w-[90vw] md:w-[400px] h-[500px] flex flex-col overflow-hidden shadow-2xl ${
             theme === 'glass' ? 'bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl' :
             theme === 'neumorphism' ? 'bg-[#E0E5EC] rounded-2xl border border-white/40' :
             'bg-white rounded-2xl border border-gray-200'
-          }`
-        : `w-full h-[calc(100dvh-220px)] md:h-[calc(100vh-200px)] flex flex-col overflow-hidden shadow-sm ${styles.card} p-0`;
+          }`;
+    } else {
+        // Page Variant
+        containerClasses = `w-full flex flex-col overflow-hidden shadow-sm ${styles.card} p-0 ${className}`;
+        // Remove padding if it's the card style itself adding it, as we want edge-to-edge chat
+    }
 
     // Determine input styling based on theme
     const inputStyles = theme === 'glass' 
@@ -115,20 +121,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
 
     return (
         <div className={containerClasses}>
-            {/* Header */}
-            <div className={`p-4 border-b ${theme === 'glass' ? 'border-white/10' : 'border-gray-100 dark:border-white/10'} flex items-center gap-2`}>
-              <Sparkles className={`w-5 h-5 ${styles.accentText}`} />
-              <h3 className={`font-bold ${theme === 'glass' ? 'text-white' : ''}`}>Manager</h3>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold ml-auto">Gemini 3 Flash</span>
-              {variant === 'modal' && onClose && (
-                  <button onClick={onClose} className="ml-2 opacity-50 hover:opacity-100">
-                      <X className="w-5 h-5" />
-                  </button>
-              )}
-            </div>
-
+            {/* Header - Only show for Modal or if specifically needed. For 'page' variant, keep it minimal. */}
+            {variant === 'modal' && (
+                <div className={`p-4 border-b ${theme === 'glass' ? 'border-white/10' : 'border-gray-100 dark:border-white/10'} flex items-center gap-2`}>
+                <Sparkles className={`w-5 h-5 ${styles.accentText}`} />
+                <h3 className={`font-bold ${theme === 'glass' ? 'text-white' : ''}`}>Manager</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold ml-auto">Gemini 3 Flash</span>
+                <button onClick={onClose} className="ml-2 opacity-50 hover:opacity-100">
+                    <X className="w-5 h-5" />
+                </button>
+                </div>
+            )}
+            
             {/* Messages Area */}
-            <div className="flex-grow overflow-y-auto p-4 space-y-4 scrollbar-hide">
+            <div className={`flex-grow overflow-y-auto p-4 space-y-4 scrollbar-hide ${variant === 'page' ? 'pt-6' : ''}`}>
               {messages.map((msg) => (
                 <div
                   key={msg.id}

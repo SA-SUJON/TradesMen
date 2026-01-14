@@ -111,10 +111,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
   return (
       <div className={`min-h-screen transition-colors duration-500 ${styles.appBg} font-sans relative pb-24 md:pb-0`}>
-        <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
+        <div className="max-w-6xl mx-auto px-4 py-6 md:py-8 h-screen flex flex-col">
           
           {/* Enhanced Header */}
-          <header className="flex flex-col gap-6 mb-8">
+          <header className="flex flex-col gap-6 mb-4 md:mb-8 flex-shrink-0">
             <div className="flex justify-between items-center w-full">
                 
                 {/* Logo & Title */}
@@ -135,9 +135,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                     </div>
                 </div>
 
-                {/* Desktop MagicBar Position */}
+                {/* Desktop MagicBar Position - Hidden on Manager Tab */}
                 <div className="hidden md:block flex-grow max-w-xl mx-8">
-                    <MagicBar onActivate={handleMagicActivate} />
+                    {!isManagerTab && <MagicBar onActivate={handleMagicActivate} />}
                 </div>
 
                 {/* Settings Icon (Top Corner) */}
@@ -150,14 +150,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                 </button>
             </div>
 
-            {/* Mobile MagicBar Position */}
+            {/* Mobile MagicBar Position - Hidden on Manager Tab */}
             <div className="md:hidden w-full">
-                 <MagicBar onActivate={handleMagicActivate} />
+                 {!isManagerTab && <MagicBar onActivate={handleMagicActivate} />}
             </div>
           </header>
 
           {/* Desktop Navigation Tabs */}
-          <nav className="hidden md:flex space-x-1 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+          <nav className="hidden md:flex space-x-1 mb-8 overflow-x-auto pb-2 scrollbar-hide flex-shrink-0">
               {tabs.map((tab) => (
                   <button
                       key={tab.id}
@@ -175,7 +175,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           </nav>
 
           {/* Main Content Area */}
-          <main>
+          <main className="flex-grow relative overflow-y-auto md:overflow-visible no-scrollbar">
               <AnimatePresence mode="wait">
                   <motion.div
                       key={activeTab}
@@ -183,17 +183,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 10 }}
                       transition={{ duration: 0.2 }}
+                      className="h-full"
                   >
                       {activeTab === 'calculator' && <Calculator inventory={inventory} />}
                       {activeTab === 'inventory' && <Inventory inventory={inventory} setInventory={setInventory} />}
                       {activeTab === 'billing' && <Billing inventory={inventory} cart={cart} setCart={setCart} customers={customers} setCustomers={setCustomers} />}
                       {activeTab === 'customers' && <Customers customers={customers} setCustomers={setCustomers} />}
                       
-                      {/* Dashboard / Manager Tab */}
+                      {/* Dashboard / Manager Tab - Optimized Layout */}
                       {activeTab === 'manager' && (
-                          <div className="space-y-4 h-full">
-                              <InsightCards inventory={inventory} />
-                              <ChatInterface variant="page" />
+                          <div className="flex flex-col h-full md:h-[calc(100vh-180px)] gap-4 pb-20 md:pb-0">
+                              <div className="flex-shrink-0">
+                                <InsightCards inventory={inventory} />
+                              </div>
+                              <div className="flex-grow overflow-hidden rounded-2xl relative">
+                                <ChatInterface variant="page" className="h-full" />
+                              </div>
                           </div>
                       )}
                       
@@ -203,15 +208,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               </AnimatePresence>
           </main>
 
-          <footer className="mt-12 text-center opacity-50 text-sm pb-8 hidden md:block">
+          <footer className="mt-12 text-center opacity-50 text-sm pb-8 hidden md:block flex-shrink-0">
               <p>&copy; {new Date().getFullYear()} TradesMen Utility. Local Storage Enabled.</p>
           </footer>
         </div>
 
         {/* Mobile Bottom Navigation - Compact Mode */}
-        {/* Hidden on Settings page for cleaner look, or kept? User said 'Hide Manager & Plus' on Settings, implied nav stays? 
-            Usually Settings is a full page, but bottom nav is good to escape settings. Keeping it.
-        */}
         <div className={`md:hidden fixed bottom-0 left-0 right-0 z-40 px-2 py-2 pb-safe flex justify-between items-center transition-all duration-300 overflow-x-auto scrollbar-hide ${
              theme === 'glass' ? 'bg-black/40 backdrop-blur-xl border-t border-white/10 text-white' : 
              theme === 'neumorphism' ? 'bg-[#E0E5EC] shadow-[0_-5px_10px_#bebebe,0_-5px_10px_#ffffff]' :
@@ -235,7 +237,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                         title={tab.label}
                     >
                         {React.cloneElement(tab.icon as React.ReactElement, { className: "w-5 h-5" })}
-                        {/* Only show label for active tab to save space */}
                         {isActive && showNavLabels && (
                           <motion.span 
                             initial={{ opacity: 0, width: 0 }}
