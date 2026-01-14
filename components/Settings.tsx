@@ -1,0 +1,101 @@
+import React from 'react';
+import { ThemeType } from '../types';
+import { Card } from './ui/BaseComponents';
+import { Palette, Layout, Box, Droplets, Check, AlertCircle } from 'lucide-react';
+import { getThemeClasses } from '../utils/themeUtils';
+import { useTheme } from '../contexts/ThemeContext';
+
+const Settings: React.FC = () => {
+  const { theme, setTheme } = useTheme();
+  const styles = getThemeClasses(theme);
+
+  // Ordered strictly as requested
+  const themeOptions: { id: ThemeType; label: string; desc: string; icon: React.ReactNode }[] = [
+    { 
+      id: 'material', 
+      label: 'Material You', 
+      desc: 'Playful, rounded, pastel colors.',
+      icon: <Palette className="w-5 h-5" />
+    },
+    { 
+      id: 'fluent', 
+      label: 'Microsoft Fluent 2', 
+      desc: 'Professional, clean, acrylic feel.',
+      icon: <Layout className="w-5 h-5" />
+    },
+    { 
+      id: 'neumorphism', 
+      label: 'Neumorphism', 
+      desc: 'Soft 3D shadows and depth.',
+      icon: <Box className="w-5 h-5" />
+    },
+    { 
+      id: 'glass', 
+      label: 'Glassmorphism', 
+      desc: 'Translucent, vibrant, modern.',
+      icon: <Droplets className="w-5 h-5" />
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
+           <Palette className="w-5 h-5" /> Appearance
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {themeOptions.map((option) => {
+            const isSelected = theme === option.id;
+            
+            // Determine border/bg classes based on selection state and current theme
+            let containerClass = "relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-start gap-4 ";
+            
+            if (isSelected) {
+               containerClass += "border-blue-500 bg-blue-500/5 ";
+            } else {
+               containerClass += "border-transparent hover:bg-black/5 dark:hover:bg-white/5 ";
+               if (theme === 'glass') containerClass += "bg-white/5 border-white/10 ";
+               else if (theme === 'neumorphism') containerClass += "shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff] ";
+               else containerClass += "bg-gray-50 dark:bg-gray-800/50 ";
+            }
+
+            return (
+              <button 
+                key={option.id}
+                onClick={() => setTheme(option.id)}
+                className={containerClass}
+              >
+                <div className={`p-3 rounded-full ${isSelected ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
+                  {option.icon}
+                </div>
+                <div className="text-left flex-grow">
+                  <div className="font-bold flex justify-between items-center">
+                    {option.label}
+                    {isSelected && <Check className="w-4 h-4 text-blue-500" />}
+                  </div>
+                  <div className="text-sm opacity-60 mt-1">
+                    {option.desc}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Info Section */}
+      <Card>
+        <h2 className={`text-lg font-bold flex items-center gap-2 mb-4 ${styles.accentText}`}>
+           <AlertCircle className="w-5 h-5" /> About
+        </h2>
+        <div className="opacity-70 text-sm space-y-2">
+            <p>TradesMen Utility v1.0.0</p>
+            <p>Data is stored locally on your device. Clearing your browser cache will remove your inventory.</p>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export default Settings;
