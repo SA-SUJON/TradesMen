@@ -28,7 +28,7 @@ interface AIProviderProps {
 
 const addInventoryTool: FunctionDeclaration = {
   name: 'addInventoryItem',
-  description: 'Add a new product to the shop inventory. Use this when the user wants to stock new items or scans a memo.',
+  description: 'Add a new product to the shop inventory with details. Use this when the user wants to stock new items or scans a memo.',
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -37,7 +37,11 @@ const addInventoryTool: FunctionDeclaration = {
       buyingPrice: { type: Type.NUMBER, description: 'Cost price per unit (optional)' },
       stock: { type: Type.NUMBER, description: 'Quantity to add to stock' },
       unit: { type: Type.STRING, description: 'Unit of measurement (kg, g, pc)' },
-      expiryDate: { type: Type.STRING, description: 'Expiry date in YYYY-MM-DD format (optional)' }
+      expiryDate: { type: Type.STRING, description: 'Expiry date in YYYY-MM-DD format (optional)' },
+      supplierName: { type: Type.STRING, description: 'Name of the supplier (optional)' },
+      supplierContact: { type: Type.STRING, description: 'Contact number of the supplier (optional)' },
+      category: { type: Type.STRING, description: 'Product category (optional)' },
+      purchaseDate: { type: Type.STRING, description: 'Date of purchase YYYY-MM-DD (optional)' }
     },
     required: ['name', 'sellingPrice']
   }
@@ -153,7 +157,11 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
               buyingPrice: args.buyingPrice || 0,
               stock: args.stock || 0,
               unit: args.unit || 'kg',
-              expiryDate: args.expiryDate
+              expiryDate: args.expiryDate,
+              supplierName: args.supplierName,
+              supplierContact: args.supplierContact,
+              category: args.category,
+              purchaseDate: args.purchaseDate
             };
             setInventory((prev) => [...prev, newItem]);
             toolResponseText += `Added ${args.name} to inventory. `;
@@ -214,12 +222,14 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
         id: p.id,
         name: p.name,
         sellingPrice: p.sellingPrice,
-        stock: p.stock
+        stock: p.stock,
+        category: p.category,
+        supplierName: p.supplierName
       }));
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Inventory: ${JSON.stringify(simplifiedInv)}\n\nQuery: "${query}"\n\nTask: Find items in the inventory that match the user's query (e.g., price conditions, stock levels, name keywords). Return ONLY a JSON array of string IDs. Example: ["1", "5"]`,
+        contents: `Inventory: ${JSON.stringify(simplifiedInv)}\n\nQuery: "${query}"\n\nTask: Find items in the inventory that match the user's query (e.g., price conditions, stock levels, name keywords, supplier, category). Return ONLY a JSON array of string IDs. Example: ["1", "5"]`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {

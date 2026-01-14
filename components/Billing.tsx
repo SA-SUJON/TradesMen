@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Product, CartItem } from '../types';
+import { Product, CartItem, Customer, Transaction } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { ShoppingCart, Plus, Trash, Receipt, Printer } from 'lucide-react';
+import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -9,9 +9,11 @@ interface BillingProps {
   inventory: Product[];
   cart: CartItem[];
   setCart: (cart: CartItem[]) => void;
+  customers: Customer[];
+  setCustomers: (customers: Customer[]) => void;
 }
 
-const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart }) => {
+const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, setCustomers }) => {
   const { theme } = useTheme();
   const styles = getThemeClasses(theme);
   
@@ -19,6 +21,9 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart }) => {
   const [selectedId, setSelectedId] = useState('');
   const [qty, setQty] = useState<number | ''>(1);
   const [discount, setDiscount] = useState<number | ''>(0);
+  
+  // Customer State
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
   const addItem = () => {
     if(!selectedId || !qty) return;
@@ -55,6 +60,35 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart }) => {
       window.print();
   }
 
+  const handleCompleteOrder = () => {
+    const total = calculateTotal();
+    
+    // Save to customer history if selected
+    if (selectedCustomerId) {
+        const customer = customers.find(c => c.id === selectedCustomerId);
+        if (customer) {
+            const summary = cart.map(i => `${i.quantity}${i.unit} ${i.name}`).join(', ');
+            const newTransaction: Transaction = {
+                id: Date.now().toString(),
+                date: new Date().toISOString(),
+                amount: total,
+                summary: summary
+            };
+            
+            const updatedCustomer = {
+                ...customer,
+                history: [...customer.history, newTransaction]
+            };
+            
+            setCustomers(customers.map(c => c.id === selectedCustomerId ? updatedCustomer : c));
+        }
+    }
+
+    // Clear cart
+    setCart([]);
+    alert("Order completed successfully!");
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -78,9 +112,22 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart }) => {
                     </div>
 
                     <Button onClick={addItem} className="w-full flex justify-center items-center gap-2">
-                        <ShoppingCart className="w-4 h-4" /> Add
+                        <ShoppingCart className="w-4 h-4" /> Add to Cart
                     </Button>
                 </div>
+            </Card>
+
+            <Card>
+                 <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${styles.accentText}`}>
+                    <User className="w-5 h-5" /> Customer (Optional)
+                </h2>
+                <Select value={selectedCustomerId} onChange={(e) => setSelectedCustomerId(e.target.value)}>
+                    <option value="">-- Walk-in Customer --</option>
+                    {customers.map(c => (
+                        <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
+                    ))}
+                </Select>
+                <p className="text-xs opacity-60 mt-2">Select a customer to save this transaction to their history.</p>
             </Card>
         </div>
 
@@ -138,9 +185,15 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart }) => {
                         <span>Grand Total</span>
                         <span className={styles.accentText}>{calculateTotal().toFixed(2)}</span>
                     </div>
-                    <Button className="w-full flex justify-center gap-2" onClick={handlePrint}>
-                        <Printer className="w-4 h-4" /> Print Receipt
-                    </Button>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        <Button variant="secondary" className="w-full flex justify-center gap-2" onClick={handlePrint}>
+                            <Printer className="w-4 h-4" /> Print
+                        </Button>
+                        <Button className="w-full flex justify-center gap-2 bg-green-600 hover:bg-green-700 text-white" onClick={handleCompleteOrder} disabled={cart.length === 0}>
+                            <Check className="w-4 h-4" /> Complete Order
+                        </Button>
+                    </div>
                 </div>
             </Card>
         </div>

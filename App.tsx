@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Product, CartItem } from './types';
+import { Product, CartItem, Customer } from './types';
 import { getThemeClasses } from './utils/themeUtils';
 import useLocalStorage from './hooks/useLocalStorage';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,35 +14,43 @@ import InsightCards from './components/InsightCards';
 import Calculator from './components/Calculator';
 import Inventory from './components/Inventory';
 import Billing from './components/Billing';
+import Customers from './components/Customers';
 import Conversions from './components/Conversions';
 import Settings from './components/Settings';
 
 // Icons
-import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles } from 'lucide-react';
+import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users } from 'lucide-react';
 
 // Demo Data
 const DEMO_PRODUCTS: Product[] = [
-  { id: '1', name: 'Sugar (Premium)', buyingPrice: 38, sellingPrice: 45, stock: 100, unit: 'kg' },
-  { id: '2', name: 'Basmati Rice', buyingPrice: 85, sellingPrice: 110, stock: 50, unit: 'kg' },
-  { id: '3', name: 'Almonds', buyingPrice: 600, sellingPrice: 850, stock: 10, unit: 'kg' },
-  { id: '4', name: 'Milk Powder', buyingPrice: 300, sellingPrice: 350, stock: 5, unit: 'kg', expiryDate: '2025-05-20' }, // Low Stock Demo
+  { id: '1', name: 'Sugar (Premium)', buyingPrice: 38, sellingPrice: 45, stock: 100, unit: 'kg', lowStockThreshold: 20 },
+  { id: '2', name: 'Basmati Rice', buyingPrice: 85, sellingPrice: 110, stock: 50, unit: 'kg', supplierName: 'Agro Traders' },
+  { id: '3', name: 'Almonds', buyingPrice: 600, sellingPrice: 850, stock: 10, unit: 'kg', lowStockThreshold: 5 },
+  { id: '4', name: 'Milk Powder', buyingPrice: 300, sellingPrice: 350, stock: 5, unit: 'kg', expiryDate: '2025-05-20', lowStockThreshold: 10 }, 
+];
+
+const DEMO_CUSTOMERS: Customer[] = [
+    { id: '1', name: 'John Doe', phone: '9876543210', history: [] },
+    { id: '2', name: 'Jane Smith', phone: '1234567890', history: [] }
 ];
 
 const MainContent: React.FC = () => {
   const { theme, showNavLabels } = useTheme();
   const styles = getThemeClasses(theme);
-  const [activeTab, setActiveTab] = useState('calculator');
+  const [activeTab, setActiveTab] = useState('inventory');
   
   // Data State
   const [inventory, setInventory] = useLocalStorage<Product[]>('tradesmen-inventory', DEMO_PRODUCTS);
   const [cart, setCart] = useLocalStorage<CartItem[]>('tradesmen-cart', []);
+  const [customers, setCustomers] = useLocalStorage<Customer[]>('tradesmen-customers', DEMO_CUSTOMERS);
 
   const tabs = [
-    { id: 'calculator', label: 'Calculator', icon: <CalcIcon className="w-4 h-4" /> },
     { id: 'inventory', label: 'Inventory', icon: <Package className="w-4 h-4" /> },
+    { id: 'customers', label: 'Customers', icon: <Users className="w-4 h-4" /> },
     { id: 'billing', label: 'Billing', icon: <ShoppingCart className="w-4 h-4" /> },
-    { id: 'manager', label: 'Manager', icon: <Sparkles className="w-4 h-4" /> },
+    { id: 'calculator', label: 'Calculator', icon: <CalcIcon className="w-4 h-4" /> },
     { id: 'conversions', label: 'Converter', icon: <ArrowRightLeft className="w-4 h-4" /> },
+    { id: 'manager', label: 'Manager', icon: <Sparkles className="w-4 h-4" /> },
     { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-4 h-4" /> },
   ];
 
@@ -104,7 +112,8 @@ const MainContent: React.FC = () => {
                   >
                       {activeTab === 'calculator' && <Calculator inventory={inventory} />}
                       {activeTab === 'inventory' && <Inventory inventory={inventory} setInventory={setInventory} />}
-                      {activeTab === 'billing' && <Billing inventory={inventory} cart={cart} setCart={setCart} />}
+                      {activeTab === 'billing' && <Billing inventory={inventory} cart={cart} setCart={setCart} customers={customers} setCustomers={setCustomers} />}
+                      {activeTab === 'customers' && <Customers customers={customers} setCustomers={setCustomers} />}
                       
                       {/* Dashboard / Manager Tab */}
                       {activeTab === 'manager' && (

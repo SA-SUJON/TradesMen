@@ -13,8 +13,11 @@ const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
     const { theme } = useTheme();
     const styles = getThemeClasses(theme);
 
-    // Logic for Low Stock
-    const lowStockItems = inventory.filter(item => item.stock < 15);
+    // Logic for Low Stock: Use product specific threshold or default to 10
+    const lowStockItems = inventory.filter(item => {
+        const threshold = item.lowStockThreshold !== undefined ? item.lowStockThreshold : 10;
+        return item.stock < threshold;
+    });
     
     // Logic for Expiry (Mock logic as demo data might not have dates, but interface supports it)
     const expiringItems = inventory.filter(item => {
