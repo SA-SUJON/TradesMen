@@ -1,5 +1,5 @@
 
-import { UnitSystem } from "../types";
+import { UnitSystem, CartItem } from "../types";
 
 // Text to Speech Utility
 export const speak = (text: string, enabled: boolean = true) => {
@@ -56,4 +56,40 @@ export const getUnitMultiplier = (unit: string): number => {
     if (unit === 'g') return 0.001;
     if (unit === 'maund') return 40;
     return 1; // kg or pc
+};
+
+// WhatsApp Integration Helpers
+export const openWhatsApp = (phone: string, text: string) => {
+    if (!phone) {
+        alert("Phone number is required to send WhatsApp message.");
+        return;
+    }
+    // Basic cleaning: remove spaces, dashes, parentheses. 
+    // Ideally should ensure country code exists, but we'll try raw first or assume user inputs it.
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
+    const encodedText = encodeURIComponent(text);
+    const url = `https://wa.me/${cleanPhone}?text=${encodedText}`;
+    window.open(url, '_blank');
+};
+
+export const formatBillMessage = (cart: CartItem[], total: number, customerName?: string) => {
+    const date = new Date().toLocaleDateString();
+    let msg = `🧾 *SHOP INVOICE* \n`;
+    if(customerName) msg += `Customer: ${customerName}\n`;
+    msg += `Date: ${date}\n`;
+    msg += `------------------------\n`;
+    
+    cart.forEach(item => {
+        const itemTotal = (item.sellingPrice * item.quantity) * (1 - item.discount/100);
+        const qtyDisplay = item.unit === 'g' && item.quantity >= 1000 
+            ? `${item.quantity/1000}kg` 
+            : `${item.quantity}${item.unit}`;
+            
+        msg += `${item.name} x ${qtyDisplay} = ${itemTotal.toFixed(2)}\n`;
+    });
+    
+    msg += `------------------------\n`;
+    msg += `*GRAND TOTAL: ${total.toFixed(2)}*\n`;
+    msg += `\nThank you for your business! 🙏`;
+    return msg;
 };

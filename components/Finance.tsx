@@ -4,7 +4,8 @@ import { Card, Input, Button, Select } from './ui/BaseComponents';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PieChart, TrendingUp, DollarSign, Wallet, ArrowUpRight, ArrowDownLeft, AlertCircle, Calendar, Trash2, Plus, Bell } from 'lucide-react';
+import { PieChart, TrendingUp, DollarSign, Wallet, ArrowUpRight, ArrowDownLeft, AlertCircle, Calendar, Trash2, Plus, Bell, MessageCircle } from 'lucide-react';
+import { openWhatsApp } from '../utils/appUtils';
 
 interface FinanceProps {
     sales: Sale[];
@@ -69,6 +70,12 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
 
     // --- DEBT LOGIC ---
     const debtCustomers = useMemo(() => customers.filter(c => c.debt > 0), [customers]);
+    
+    const sendDebtReminder = (customer: Customer) => {
+        const msg = `Hello ${customer.name}, your total outstanding balance at our shop is ${customer.debt.toFixed(2)}. Please pay at your earliest convenience. Thank you!`;
+        openWhatsApp(customer.phone, msg);
+    };
+
     const settleDebt = (id: string, amount: number) => {
         const customer = customers.find(c => c.id === id);
         if(!customer) return;
@@ -304,12 +311,10 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                                         <div className="flex gap-2 w-full md:w-auto">
                                             <Button 
                                                 variant="secondary" 
-                                                onClick={() => {
-                                                    alert(`Reminder sent to ${c.name} via WhatsApp/SMS!`);
-                                                }}
-                                                className="flex-1 md:flex-none"
+                                                onClick={() => sendDebtReminder(c)}
+                                                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-green-50 text-green-700 hover:bg-green-100 border-none"
                                             >
-                                                <Bell className="w-4 h-4" /> Remind
+                                                <MessageCircle className="w-4 h-4" /> Remind
                                             </Button>
                                             <Button 
                                                 onClick={() => {

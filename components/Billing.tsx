@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Product, CartItem, Customer, Transaction, Sale } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode } from 'lucide-react';
+import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
-import { speak, formatUnit } from '../utils/appUtils';
+import { speak, formatUnit, openWhatsApp, formatBillMessage } from '../utils/appUtils';
 import BarcodeScanner from './BarcodeScanner';
 
 interface BillingProps {
@@ -86,6 +86,32 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
   const handlePrint = () => {
       window.print();
   }
+
+  const handleWhatsAppShare = () => {
+      if (cart.length === 0) return;
+      
+      const total = calculateTotal();
+      let phone = '';
+      let name = 'Valued Customer';
+
+      if (selectedCustomerId) {
+          const c = customers.find(cust => cust.id === selectedCustomerId);
+          if (c) {
+              phone = c.phone;
+              name = c.name;
+          }
+      }
+
+      // If no phone from customer record, prompt user
+      if (!phone) {
+          const input = prompt("Enter Customer WhatsApp Number (with country code):", "");
+          if (!input) return;
+          phone = input;
+      }
+
+      const message = formatBillMessage(cart, total, name);
+      openWhatsApp(phone, message);
+  };
 
   const handleCompleteOrder = (method: 'cash' | 'credit') => {
     const total = calculateTotal();
@@ -246,23 +272,31 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
                         <span className={styles.accentText}>{calculateTotal().toFixed(2)}</span>
                     </div>
                     
-                    <div className="grid grid-cols-3 gap-2 md:gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
                          <Button variant="secondary" className="flex justify-center gap-2" onClick={handlePrint}>
                             <Printer className="w-4 h-4" /> <span className="hidden md:inline">Print</span>
+                        </Button>
+                         <Button 
+                            className="flex justify-center gap-2 bg-green-500/10 hover:bg-green-500/20 text-green-700 border border-green-200 dark:text-green-400 dark:border-green-800"
+                            onClick={handleWhatsAppShare}
+                            disabled={cart.length === 0}
+                            variant="secondary"
+                        >
+                            <MessageCircle className="w-4 h-4" /> <span className="hidden md:inline">WhatsApp</span>
                         </Button>
                         <Button 
                             className="flex justify-center gap-2 bg-orange-100 hover:bg-orange-200 text-orange-700 border-none"
                             onClick={() => handleCompleteOrder('credit')}
                             disabled={cart.length === 0}
                         >
-                            <CreditCard className="w-4 h-4" /> <span className="hidden md:inline">On Credit</span>
+                            <CreditCard className="w-4 h-4" /> <span className="hidden md:inline">Credit</span>
                         </Button>
                         <Button 
                             className="flex justify-center gap-2 bg-green-600 hover:bg-green-700 text-white" 
                             onClick={() => handleCompleteOrder('cash')} 
                             disabled={cart.length === 0}
                         >
-                            <Banknote className="w-4 h-4" /> Complete
+                            <Banknote className="w-4 h-4" /> Pay
                         </Button>
                     </div>
                 </div>
