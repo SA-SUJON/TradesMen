@@ -4,7 +4,7 @@ import { getThemeClasses } from './utils/themeUtils';
 import useLocalStorage from './hooks/useLocalStorage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { AIProvider } from './contexts/AIContext';
+import { AIProvider, useAI } from './contexts/AIContext';
 import AIAssistant, { ChatInterface } from './components/AIAssistant';
 import MagicBar from './components/MagicBar';
 import QuickScan from './components/QuickScan';
@@ -34,16 +34,27 @@ const DEMO_CUSTOMERS: Customer[] = [
     { id: '2', name: 'Jane Smith', phone: '1234567890', history: [] }
 ];
 
-const MainContent: React.FC = () => {
+// Type for state setters to match useLocalStorage signature
+type SetValue<T> = (value: T | ((val: T) => T)) => void;
+
+interface MainLayoutProps {
+  inventory: Product[];
+  setInventory: SetValue<Product[]>;
+  cart: CartItem[];
+  setCart: SetValue<CartItem[]>;
+  customers: Customer[];
+  setCustomers: SetValue<Customer[]>;
+}
+
+const MainLayout: React.FC<MainLayoutProps> = ({ 
+  inventory, setInventory, cart, setCart, customers, setCustomers 
+}) => {
   const { theme, showNavLabels } = useTheme();
+  const { showAssistant } = useAI(); 
   const styles = getThemeClasses(theme);
   const [activeTab, setActiveTab] = useState('inventory');
-  
-  // Data State
-  const [inventory, setInventory] = useLocalStorage<Product[]>('tradesmen-inventory', DEMO_PRODUCTS);
-  const [cart, setCart] = useLocalStorage<CartItem[]>('tradesmen-cart', []);
-  const [customers, setCustomers] = useLocalStorage<Customer[]>('tradesmen-customers', DEMO_CUSTOMERS);
 
+  // Removed Settings from tabs as it is now in the header
   const tabs = [
     { id: 'inventory', label: 'Inventory', icon: <Package className="w-4 h-4" /> },
     { id: 'customers', label: 'Customers', icon: <Users className="w-4 h-4" /> },
@@ -51,34 +62,97 @@ const MainContent: React.FC = () => {
     { id: 'calculator', label: 'Calculator', icon: <CalcIcon className="w-4 h-4" /> },
     { id: 'conversions', label: 'Converter', icon: <ArrowRightLeft className="w-4 h-4" /> },
     { id: 'manager', label: 'Manager', icon: <Sparkles className="w-4 h-4" /> },
-    { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-4 h-4" /> },
   ];
 
   const handleMagicActivate = () => {
     setActiveTab('manager');
   };
 
+  // Logic for Floating Buttons
+  const isSettings = activeTab === 'settings';
+  const isManagerTab = activeTab === 'manager';
+  
+  // Assistant is visible if enabled in settings, NOT on manager tab (embedded there), and NOT on settings tab
+  const isAssistantVisible = showAssistant && !isManagerTab && !isSettings;
+  
+  // QuickScan is visible if NOT on settings tab
+  const isQuickScanVisible = !isSettings;
+
+  // QuickScan takes primary position (corner) if Assistant is hidden
+  const isQuickScanPrimary = !isAssistantVisible;
+
+  // Header Styling Logic
+  const getLogoStyle = () => {
+      switch(theme) {
+          case 'material': return 'bg-m3-primary text-white shadow-md';
+          case 'glass': return 'bg-white/20 text-white backdrop-blur-md border border-white/30';
+          case 'neumorphism': return 'bg-[#E0E5EC] text-slate-700 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff]';
+          case 'fluent': default: return 'bg-white text-blue-600 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-white';
+      }
+  };
+
+  const getTitleStyle = () => {
+      switch(theme) {
+          case 'material': return 'text-[#6750A4]';
+          case 'glass': return 'text-white drop-shadow-md tracking-wide';
+          case 'neumorphism': return 'text-slate-700 tracking-tight';
+          case 'fluent': default: return 'text-gray-900 dark:text-white';
+      }
+  };
+
+  const getSettingsBtnStyle = () => {
+    switch(theme) {
+        case 'material': return 'bg-[#F3EDF7] text-[#49454F] hover:bg-[#E8DEF8]';
+        case 'glass': return 'bg-white/10 text-white border border-white/20 hover:bg-white/20';
+        case 'neumorphism': return 'bg-[#E0E5EC] text-slate-600 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] active:shadow-[inset_5px_5px_10px_#bebebe,inset_-5px_-5px_10px_#ffffff] active:translate-y-[1px]';
+        case 'fluent': default: return 'bg-transparent hover:bg-black/5 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300';
+    }
+  };
+
   return (
-    // Wrap main logic in AIProvider to give AI access to state
-    <AIProvider inventory={inventory} setInventory={setInventory} cart={cart} setCart={setCart}>
       <div className={`min-h-screen transition-colors duration-500 ${styles.appBg} font-sans relative pb-24 md:pb-0`}>
-        <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
           
-          {/* Header & Magic Bar */}
-          <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
-            <div className="flex items-center gap-3 w-full md:w-auto justify-center md:justify-start">
-               <div className={`p-3 rounded-xl ${theme === 'material' ? 'bg-m3-primary text-white' : 'bg-black text-white dark:bg-white dark:text-black'} shadow-lg`}>
-                  <CalcIcon className="w-6 h-6" />
-               </div>
-               <div className="hidden sm:block">
-                  <h1 className="text-2xl font-display font-bold">TradesMen</h1>
-                  <p className="text-xs opacity-70 uppercase tracking-wider">Retail Utility Suite</p>
-               </div>
+          {/* Enhanced Header */}
+          <header className="flex flex-col gap-6 mb-8">
+            <div className="flex justify-between items-center w-full">
+                
+                {/* Logo & Title */}
+                <div 
+                    className="flex items-center gap-3 select-none cursor-pointer group"
+                    onClick={() => setActiveTab('inventory')}
+                >
+                    <div className={`p-2.5 rounded-xl transition-all duration-300 group-hover:scale-105 ${getLogoStyle()}`}>
+                        <CalcIcon className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h1 className={`text-2xl font-display font-bold leading-none ${getTitleStyle()}`}>
+                            TradesMen
+                        </h1>
+                        <p className={`text-[10px] font-medium uppercase tracking-widest opacity-60 ml-0.5 mt-0.5 ${theme === 'glass' ? 'text-white' : ''}`}>
+                            Retail Suite
+                        </p>
+                    </div>
+                </div>
+
+                {/* Desktop MagicBar Position */}
+                <div className="hidden md:block flex-grow max-w-xl mx-8">
+                    <MagicBar onActivate={handleMagicActivate} />
+                </div>
+
+                {/* Settings Icon (Top Corner) */}
+                <button 
+                    onClick={() => setActiveTab('settings')}
+                    className={`p-3 rounded-full transition-all duration-200 ${getSettingsBtnStyle()}`}
+                    title="Settings"
+                >
+                    <SettingsIcon className={`w-6 h-6 ${activeTab === 'settings' ? 'animate-spin-slow' : ''}`} />
+                </button>
             </div>
 
-            {/* Magic Bar Section */}
-            <div className="w-full md:max-w-xl">
-                <MagicBar onActivate={handleMagicActivate} />
+            {/* Mobile MagicBar Position */}
+            <div className="md:hidden w-full">
+                 <MagicBar onActivate={handleMagicActivate} />
             </div>
           </header>
 
@@ -117,7 +191,7 @@ const MainContent: React.FC = () => {
                       
                       {/* Dashboard / Manager Tab */}
                       {activeTab === 'manager' && (
-                          <div className="space-y-4">
+                          <div className="space-y-4 h-full">
                               <InsightCards inventory={inventory} />
                               <ChatInterface variant="page" />
                           </div>
@@ -134,8 +208,11 @@ const MainContent: React.FC = () => {
           </footer>
         </div>
 
-        {/* Mobile Bottom Navigation */}
-        <div className={`md:hidden fixed bottom-0 left-0 right-0 z-40 px-2 py-2 pb-safe flex justify-around items-center transition-all duration-300 ${
+        {/* Mobile Bottom Navigation - Compact Mode */}
+        {/* Hidden on Settings page for cleaner look, or kept? User said 'Hide Manager & Plus' on Settings, implied nav stays? 
+            Usually Settings is a full page, but bottom nav is good to escape settings. Keeping it.
+        */}
+        <div className={`md:hidden fixed bottom-0 left-0 right-0 z-40 px-2 py-2 pb-safe flex justify-between items-center transition-all duration-300 overflow-x-auto scrollbar-hide ${
              theme === 'glass' ? 'bg-black/40 backdrop-blur-xl border-t border-white/10 text-white' : 
              theme === 'neumorphism' ? 'bg-[#E0E5EC] shadow-[0_-5px_10px_#bebebe,0_-5px_10px_#ffffff]' :
              'bg-white dark:bg-[#0f0f0f] border-t border-gray-200 dark:border-gray-800 shadow-lg'
@@ -147,20 +224,26 @@ const MainContent: React.FC = () => {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`
-                            flex flex-col items-center justify-center p-2 rounded-xl transition-all w-16
-                            ${isActive ? 'scale-110' : 'opacity-60 scale-100'}
+                            flex flex-col items-center justify-center p-2 rounded-xl transition-all min-w-[3.5rem]
+                            ${isActive ? 'flex-grow max-w-[5rem]' : 'flex-grow-0'}
                             ${isActive && theme === 'material' ? 'bg-[#E8DEF8] text-[#1D192B]' : ''}
                             ${isActive && theme === 'glass' ? 'bg-white/20 text-white' : ''}
                             ${isActive && theme === 'fluent' ? 'text-[#0078D4]' : ''}
                             ${isActive && theme === 'neumorphism' ? 'shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] text-slate-700' : ''}
+                            ${!isActive ? 'opacity-60 grayscale' : ''}
                         `}
                         title={tab.label}
                     >
-                        {React.cloneElement(tab.icon as React.ReactElement, { className: "w-6 h-6" })}
-                        {showNavLabels && (
-                          <span className="text-[10px] mt-1 font-medium truncate w-full text-center">
+                        {React.cloneElement(tab.icon as React.ReactElement, { className: "w-5 h-5" })}
+                        {/* Only show label for active tab to save space */}
+                        {isActive && showNavLabels && (
+                          <motion.span 
+                            initial={{ opacity: 0, width: 0 }}
+                            animate={{ opacity: 1, width: 'auto' }}
+                            className="text-[10px] mt-1 font-medium truncate w-full text-center"
+                          >
                               {tab.label}
-                          </span>
+                          </motion.span>
                         )}
                     </button>
                   );
@@ -168,20 +251,45 @@ const MainContent: React.FC = () => {
         </div>
 
         {/* Floating Actions */}
-        {/* Quick Scan - Separate FAB */}
-        <QuickScan onScanStart={handleMagicActivate} />
+        <QuickScan 
+            onScanStart={handleMagicActivate} 
+            isVisible={isQuickScanVisible}
+            isPrimary={isQuickScanPrimary}
+        />
         
-        {/* AI Assistant FAB - Hidden if Manager Tab is Active */}
-        <AIAssistant forceHide={activeTab === 'manager'} />
+        <AIAssistant 
+            isVisible={isAssistantVisible}
+            forceHide={activeTab === 'manager'} 
+        />
       </div>
+  );
+};
+
+// Data Layer: Handles State & AI Provider
+const AppDataWrapper: React.FC = () => {
+  const [inventory, setInventory] = useLocalStorage<Product[]>('tradesmen-inventory', DEMO_PRODUCTS);
+  const [cart, setCart] = useLocalStorage<CartItem[]>('tradesmen-cart', []);
+  const [customers, setCustomers] = useLocalStorage<Customer[]>('tradesmen-customers', DEMO_CUSTOMERS);
+
+  return (
+    <AIProvider inventory={inventory} setInventory={setInventory} cart={cart} setCart={setCart}>
+      <MainLayout 
+        inventory={inventory} 
+        setInventory={setInventory}
+        cart={cart}
+        setCart={setCart}
+        customers={customers}
+        setCustomers={setCustomers}
+      />
     </AIProvider>
   );
 };
 
+// Root Component: Handles Theme
 const App: React.FC = () => {
   return (
     <ThemeProvider>
-      <MainContent />
+      <AppDataWrapper /> 
     </ThemeProvider>
   );
 };

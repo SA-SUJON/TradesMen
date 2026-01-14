@@ -54,11 +54,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                     setIsListening(false);
                 };
 
-                recognition.onerror = (event: any) => {
-                    console.error("Speech recognition error", event.error);
-                    setIsListening(false);
-                };
-
                 recognitionRef.current = recognition;
             }
         }
@@ -100,13 +95,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
         }
     };
 
+    // Adjusted container classes for better mobile fit
     const containerClasses = variant === 'modal' 
         ? `w-[90vw] md:w-[400px] h-[500px] flex flex-col overflow-hidden shadow-2xl ${
             theme === 'glass' ? 'bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl' :
             theme === 'neumorphism' ? 'bg-[#E0E5EC] rounded-2xl border border-white/40' :
             'bg-white rounded-2xl border border-gray-200'
           }`
-        : `w-full h-[calc(100vh-200px)] min-h-[500px] flex flex-col overflow-hidden shadow-sm ${styles.card} p-0`;
+        : `w-full h-[calc(100dvh-220px)] md:h-[calc(100vh-200px)] flex flex-col overflow-hidden shadow-sm ${styles.card} p-0`;
 
     // Determine input styling based on theme
     const inputStyles = theme === 'glass' 
@@ -132,7 +128,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
             </div>
 
             {/* Messages Area */}
-            <div className="flex-grow overflow-y-auto p-4 space-y-4">
+            <div className="flex-grow overflow-y-auto p-4 space-y-4 scrollbar-hide">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
@@ -163,7 +159,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
             </div>
 
             {/* Input Area */}
-            <div className={`p-4 border-t ${theme === 'glass' ? 'border-white/10' : 'border-gray-100 dark:border-white/10'}`}>
+            <div className={`p-3 md:p-4 border-t ${theme === 'glass' ? 'border-white/10' : 'border-gray-100 dark:border-white/10'}`}>
               <div className="flex gap-2 items-center">
                  <input 
                     type="file" 
@@ -201,8 +197,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder={isListening ? "Listening..." : "Type or speak..."}
-                  className={`flex-grow px-4 py-2 rounded-xl outline-none transition-all mx-1 ${inputStyles}`}
+                  placeholder={isListening ? "Listening..." : "Type/Speak..."}
+                  className={`flex-grow px-3 py-2 md:px-4 rounded-xl outline-none transition-all mx-1 ${inputStyles} text-sm md:text-base`}
                 />
                 
                 <Button 
@@ -219,17 +215,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     );
 };
 
-const AIAssistant: React.FC<{ forceHide?: boolean }> = ({ forceHide = false }) => {
+const AIAssistant: React.FC<{ forceHide?: boolean, isVisible?: boolean }> = ({ forceHide = false, isVisible = true }) => {
   const { isOpen, setIsOpen, showAssistant } = useAI();
   const { theme } = useTheme();
 
-  // Hide if strictly forced (e.g. on Manager screen) or if user disabled it in settings
-  if (forceHide || !showAssistant) return null;
+  // Hide if explicitly forced, if global setting is off, or if passed visibility prop is false
+  if (forceHide || !showAssistant || !isVisible) return null;
 
   return (
     <>
       {/* Floating Action Button */}
       <motion.button
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0, opacity: 0 }}
         className={`fixed bottom-24 md:bottom-6 right-6 z-50 p-4 rounded-full shadow-xl flex items-center justify-center transition-all ${
            theme === 'material' ? 'bg-[#6750A4] text-white' : 
            theme === 'fluent' ? 'bg-[#0078D4] text-white' :
