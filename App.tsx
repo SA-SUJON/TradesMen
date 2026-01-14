@@ -49,7 +49,7 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ 
   inventory, setInventory, cart, setCart, customers, setCustomers 
 }) => {
-  const { theme, showNavLabels } = useTheme();
+  const { theme, showNavLabels, showQuickScan } = useTheme();
   const { showAssistant } = useAI(); 
   const styles = getThemeClasses(theme);
   const [activeTab, setActiveTab] = useState('inventory');
@@ -75,11 +75,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   // Assistant is visible if enabled in settings, NOT on manager tab (embedded there), and NOT on settings tab
   const isAssistantVisible = showAssistant && !isManagerTab && !isSettings;
   
-  // QuickScan is visible if NOT on settings tab
-  const isQuickScanVisible = !isSettings;
+  // QuickScan is visible if enabled in settings, NOT on settings tab, and NOT on manager tab
+  const isQuickScanVisible = showQuickScan && !isSettings && !isManagerTab;
 
   // QuickScan takes primary position (corner) if Assistant is hidden
   const isQuickScanPrimary = !isAssistantVisible;
+
+  // Magic Bar Visibility: Hidden on Manager AND Settings
+  const isMagicBarVisible = !isManagerTab && !isSettings;
 
   // Header Styling Logic
   const getLogoStyle = () => {
@@ -136,9 +139,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                     </div>
                 </div>
 
-                {/* Desktop MagicBar Position - Hidden on Manager Tab */}
+                {/* Desktop MagicBar Position */}
                 <div className="hidden md:block flex-grow max-w-xl mx-8">
-                    {!isManagerTab && <MagicBar onActivate={handleMagicActivate} />}
+                    {isMagicBarVisible && <MagicBar onActivate={handleMagicActivate} />}
                 </div>
 
                 {/* Settings Icon (Top Corner) */}
@@ -151,9 +154,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                 </button>
             </div>
 
-            {/* Mobile MagicBar Position - Hidden on Manager Tab */}
+            {/* Mobile MagicBar Position */}
             <div className="md:hidden w-full">
-                 {!isManagerTab && <MagicBar onActivate={handleMagicActivate} />}
+                 {isMagicBarVisible && <MagicBar onActivate={handleMagicActivate} />}
             </div>
           </header>
 
@@ -176,11 +179,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           </nav>
 
           {/* Main Content Area */}
-          {/* 
-             IMPORTANT: overflow-y-auto is needed for standard tabs. 
-             For Manager tab, we turn it OFF (overflow-hidden) so the chat container handles its own scroll. 
-             We also add extra padding at bottom for mobile nav on non-manager tabs.
-          */}
           <main className={`flex-grow relative ${isManagerTab ? 'overflow-hidden' : 'overflow-y-auto no-scrollbar pb-24 md:pb-0'}`}>
               <AnimatePresence mode="wait">
                   <motion.div
@@ -196,7 +194,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                       {activeTab === 'billing' && <Billing inventory={inventory} cart={cart} setCart={setCart} customers={customers} setCustomers={setCustomers} />}
                       {activeTab === 'customers' && <Customers customers={customers} setCustomers={setCustomers} />}
                       
-                      {/* Dashboard / Manager Tab - Optimized Layout for Mobile */}
+                      {/* Dashboard / Manager Tab */}
                       {activeTab === 'manager' && (
                           <div className="flex flex-col h-full gap-2 md:gap-4 pb-[85px] md:pb-0">
                               <div className="flex-shrink-0 z-10">

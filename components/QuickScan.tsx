@@ -2,12 +2,12 @@ import React, { useRef } from 'react';
 import { useAI } from '../contexts/AIContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Camera } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface QuickScanProps {
     onScanStart: () => void;
     isVisible?: boolean;
-    isPrimary?: boolean; // If true, occupies the main FAB spot (right-6)
+    isPrimary?: boolean; // If true, occupies the main FAB spot
 }
 
 const QuickScan: React.FC<QuickScanProps> = ({ onScanStart, isVisible = true, isPrimary = false }) => {
@@ -28,6 +28,15 @@ const QuickScan: React.FC<QuickScanProps> = ({ onScanStart, isVisible = true, is
         }
     };
 
+    // Calculate position classes based on whether it is primary (alone) or secondary (with AI button)
+    // Mobile Bottom Nav height is ~70px. We need to clear it.
+    // If Primary: Bottom-24 (approx 96px, safe above nav).
+    // If Secondary (AI btn present): Side by side on mobile? 
+    //   - AI Btn is bottom-24 right-6. 
+    //   - QuickScan should be bottom-24 right-24 (left of AI btn).
+    
+    // We use a dynamic calculation for 'right' and 'bottom' in style/animate prop to be safe.
+    
     return (
         <AnimatePresence>
             {isVisible && (
@@ -44,7 +53,14 @@ const QuickScan: React.FC<QuickScanProps> = ({ onScanStart, isVisible = true, is
                         animate={{ 
                             scale: 1, 
                             opacity: 1,
-                            right: isPrimary ? '1.5rem' : '6rem', // 1.5rem = right-6, 6rem = right-24
+                            // On Mobile (<768px):
+                            //   If Primary: Right-6 (1.5rem), Bottom-24 (6rem) -> Above Nav
+                            //   If Secondary: Right-24 (6rem), Bottom-24 (6rem) -> Left of AI Btn, Above Nav
+                            // On Desktop (>=768px):
+                            //   If Primary: Right-6, Bottom-6
+                            //   If Secondary: Right-24, Bottom-6 (Left of AI Btn)
+                            
+                            right: isPrimary ? '1.5rem' : '6rem', 
                             bottom: typeof window !== 'undefined' && window.innerWidth < 768 ? '6rem' : '1.5rem'
                         }}
                         exit={{ scale: 0, opacity: 0 }}
