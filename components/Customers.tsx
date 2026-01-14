@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Customer, Transaction } from '../types';
 import { Card, Input, Button } from './ui/BaseComponents';
-import { Users, Search, Plus, Trash2, Edit2, X, Phone, History, Calendar } from 'lucide-react';
+import { Users, Search, Plus, Trash2, Edit2, X, Phone, History, Calendar, AlertCircle } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -36,6 +36,7 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
             id: Date.now().toString(),
             name: formData.name,
             phone: formData.phone || '',
+            debt: 0,
             history: []
         };
         setCustomers([...customers, newCustomer]);
@@ -109,6 +110,11 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
                                         <div className="text-xs opacity-60 flex items-center gap-1">
                                             <Phone className="w-3 h-3" /> {customer.phone || 'No Phone'}
                                         </div>
+                                        {customer.debt > 0 && (
+                                            <div className="mt-1 text-[10px] font-bold text-orange-500 flex items-center gap-1">
+                                                <AlertCircle className="w-3 h-3" /> Due: {customer.debt}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex gap-1">
                                          <button 
@@ -156,8 +162,10 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
                                     </p>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-sm opacity-60">Total Visits</div>
-                                    <div className={`text-xl font-bold ${styles.accentText}`}>{selectedCustomer.history.length}</div>
+                                    <div className="text-sm opacity-60">Balance Due</div>
+                                    <div className={`text-xl font-bold ${selectedCustomer.debt > 0 ? 'text-orange-500' : 'text-green-500'}`}>
+                                        {selectedCustomer.debt.toFixed(2)}
+                                    </div>
                                 </div>
                             </div>
 
@@ -170,7 +178,8 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
                                         <thead>
                                             <tr className="opacity-60 text-xs uppercase tracking-wide border-b border-gray-200 dark:border-white/10">
                                                 <th className="pb-2">Date</th>
-                                                <th className="pb-2">Items</th>
+                                                <th className="pb-2">Type</th>
+                                                <th className="pb-2">Details</th>
                                                 <th className="pb-2 text-right">Amount</th>
                                             </tr>
                                         </thead>
@@ -181,8 +190,19 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
                                                         <Calendar className="w-3 h-3 opacity-50" />
                                                         {new Date(tx.date).toLocaleDateString()}
                                                     </td>
+                                                    <td className="py-3 text-xs">
+                                                        <span className={`px-1.5 py-0.5 rounded ${
+                                                            tx.type === 'credit' ? 'bg-orange-100 text-orange-700' : 
+                                                            tx.type === 'payment' ? 'bg-green-100 text-green-700' : 
+                                                            'bg-gray-100 dark:bg-white/10'
+                                                        }`}>
+                                                            {tx.type || 'sale'}
+                                                        </span>
+                                                    </td>
                                                     <td className="py-3 text-sm opacity-80">{tx.summary}</td>
-                                                    <td className="py-3 font-bold text-right">{tx.amount.toFixed(2)}</td>
+                                                    <td className={`py-3 font-bold text-right ${tx.type === 'payment' ? 'text-green-600' : ''}`}>
+                                                        {tx.type === 'payment' ? '-' : ''}{tx.amount.toFixed(2)}
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>

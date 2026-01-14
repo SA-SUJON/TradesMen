@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Product, CartItem, Customer } from './types';
+import { Product, CartItem, Customer, Sale, Expense } from './types';
 import { getThemeClasses } from './utils/themeUtils';
 import useLocalStorage from './hooks/useLocalStorage';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,9 +17,10 @@ import Billing from './components/Billing';
 import Customers from './components/Customers';
 import Conversions from './components/Conversions';
 import Settings from './components/Settings';
+import Finance from './components/Finance';
 
 // Icons
-import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users } from 'lucide-react';
+import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users, PieChart } from 'lucide-react';
 
 // Demo Data
 const DEMO_PRODUCTS: Product[] = [
@@ -30,8 +31,8 @@ const DEMO_PRODUCTS: Product[] = [
 ];
 
 const DEMO_CUSTOMERS: Customer[] = [
-    { id: '1', name: 'John Doe', phone: '9876543210', history: [] },
-    { id: '2', name: 'Jane Smith', phone: '1234567890', history: [] }
+    { id: '1', name: 'John Doe', phone: '9876543210', debt: 500, history: [] },
+    { id: '2', name: 'Jane Smith', phone: '1234567890', debt: 0, history: [] }
 ];
 
 // Type for state setters to match useLocalStorage signature
@@ -44,21 +45,25 @@ interface MainLayoutProps {
   setCart: SetValue<CartItem[]>;
   customers: Customer[];
   setCustomers: SetValue<Customer[]>;
+  sales: Sale[];
+  setSales: SetValue<Sale[]>;
+  expenses: Expense[];
+  setExpenses: SetValue<Expense[]>;
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ 
-  inventory, setInventory, cart, setCart, customers, setCustomers 
+  inventory, setInventory, cart, setCart, customers, setCustomers, sales, setSales, expenses, setExpenses
 }) => {
   const { theme, showNavLabels, showQuickScan } = useTheme();
   const { showAssistant } = useAI(); 
   const styles = getThemeClasses(theme);
   const [activeTab, setActiveTab] = useState('inventory');
 
-  // Removed Settings from tabs as it is now in the header
   const tabs = [
     { id: 'inventory', label: 'Inventory', icon: <Package className="w-4 h-4" /> },
-    { id: 'customers', label: 'Customers', icon: <Users className="w-4 h-4" /> },
     { id: 'billing', label: 'Billing', icon: <ShoppingCart className="w-4 h-4" /> },
+    { id: 'finance', label: 'Finance', icon: <PieChart className="w-4 h-4" /> },
+    { id: 'customers', label: 'Customers', icon: <Users className="w-4 h-4" /> },
     { id: 'calculator', label: 'Calculator', icon: <CalcIcon className="w-4 h-4" /> },
     { id: 'conversions', label: 'Converter', icon: <ArrowRightLeft className="w-4 h-4" /> },
     { id: 'manager', label: 'Manager', icon: <Sparkles className="w-4 h-4" /> },
@@ -68,23 +73,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     setActiveTab('manager');
   };
 
-  // Logic for Floating Buttons
   const isSettings = activeTab === 'settings';
   const isManagerTab = activeTab === 'manager';
-  
-  // Assistant is visible if enabled in settings, NOT on manager tab (embedded there), and NOT on settings tab
   const isAssistantVisible = showAssistant && !isManagerTab && !isSettings;
-  
-  // QuickScan is visible if enabled in settings, NOT on settings tab, and NOT on manager tab
   const isQuickScanVisible = showQuickScan && !isSettings && !isManagerTab;
-
-  // QuickScan takes primary position (corner) if Assistant is hidden
   const isQuickScanPrimary = !isAssistantVisible;
-
-  // Magic Bar Visibility: Hidden on Manager AND Settings
   const isMagicBarVisible = !isManagerTab && !isSettings;
 
-  // Header Styling Logic
   const getLogoStyle = () => {
       switch(theme) {
           case 'material': return 'bg-m3-primary text-white shadow-md';
@@ -114,14 +109,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
   return (
       <div className={`min-h-screen transition-colors duration-500 ${styles.appBg} font-sans relative pb-safe`}>
-        {/* Use pb-safe for mobile home bar area */}
         <div className="max-w-6xl mx-auto px-4 py-4 md:py-8 h-[100dvh] flex flex-col">
           
-          {/* Enhanced Header */}
           <header className="flex flex-col gap-4 md:gap-6 mb-2 md:mb-8 flex-shrink-0 z-20 relative">
             <div className="flex justify-between items-center w-full">
-                
-                {/* Logo & Title */}
                 <div 
                     className="flex items-center gap-3 select-none cursor-pointer group"
                     onClick={() => setActiveTab('inventory')}
@@ -139,12 +130,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                     </div>
                 </div>
 
-                {/* Desktop MagicBar Position */}
                 <div className="hidden md:block flex-grow max-w-xl mx-8">
                     {isMagicBarVisible && <MagicBar onActivate={handleMagicActivate} />}
                 </div>
 
-                {/* Settings Icon (Top Corner) */}
                 <button 
                     onClick={() => setActiveTab('settings')}
                     className={`p-3 rounded-full transition-all duration-200 ${getSettingsBtnStyle()}`}
@@ -154,13 +143,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                 </button>
             </div>
 
-            {/* Mobile MagicBar Position */}
             <div className="md:hidden w-full">
                  {isMagicBarVisible && <MagicBar onActivate={handleMagicActivate} />}
             </div>
           </header>
 
-          {/* Desktop Navigation Tabs */}
           <nav className="hidden md:flex space-x-1 mb-8 overflow-x-auto pb-2 scrollbar-hide flex-shrink-0">
               {tabs.map((tab) => (
                   <button
@@ -178,7 +165,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               ))}
           </nav>
 
-          {/* Main Content Area */}
           <main className={`flex-grow relative ${isManagerTab ? 'overflow-hidden' : 'overflow-y-auto no-scrollbar pb-24 md:pb-0'}`}>
               <AnimatePresence mode="wait">
                   <motion.div
@@ -191,10 +177,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                   >
                       {activeTab === 'calculator' && <Calculator inventory={inventory} />}
                       {activeTab === 'inventory' && <Inventory inventory={inventory} setInventory={setInventory} />}
-                      {activeTab === 'billing' && <Billing inventory={inventory} cart={cart} setCart={setCart} customers={customers} setCustomers={setCustomers} />}
+                      {activeTab === 'billing' && (
+                        <Billing 
+                            inventory={inventory} 
+                            cart={cart} setCart={setCart} 
+                            customers={customers} setCustomers={setCustomers}
+                            sales={sales} setSales={setSales}
+                        />
+                      )}
+                      {activeTab === 'finance' && (
+                        <Finance 
+                            sales={sales} 
+                            expenses={expenses} setExpenses={setExpenses}
+                            customers={customers} setCustomers={setCustomers}
+                        />
+                      )}
                       {activeTab === 'customers' && <Customers customers={customers} setCustomers={setCustomers} />}
-                      
-                      {/* Dashboard / Manager Tab */}
                       {activeTab === 'manager' && (
                           <div className="flex flex-col h-full gap-2 md:gap-4 pb-[85px] md:pb-0">
                               <div className="flex-shrink-0 z-10">
@@ -205,7 +203,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                               </div>
                           </div>
                       )}
-                      
                       {activeTab === 'conversions' && <Conversions />}
                       {activeTab === 'settings' && <Settings />}
                   </motion.div>
@@ -217,7 +214,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           </footer>
         </div>
 
-        {/* Mobile Bottom Navigation - Compact Mode */}
         <div className={`md:hidden fixed bottom-0 left-0 right-0 z-40 px-2 py-2 pb-safe flex justify-between items-center transition-all duration-300 overflow-x-auto scrollbar-hide ${
              theme === 'glass' ? 'bg-black/40 backdrop-blur-xl border-t border-white/10 text-white' : 
              theme === 'neumorphism' ? 'bg-[#E0E5EC] shadow-[0_-5px_10px_#bebebe,0_-5px_10px_#ffffff]' :
@@ -255,7 +251,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               })}
         </div>
 
-        {/* Floating Actions */}
         <QuickScan 
             onScanStart={handleMagicActivate} 
             isVisible={isQuickScanVisible}
@@ -270,11 +265,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   );
 };
 
-// Data Layer: Handles State & AI Provider
 const AppDataWrapper: React.FC = () => {
   const [inventory, setInventory] = useLocalStorage<Product[]>('tradesmen-inventory', DEMO_PRODUCTS);
   const [cart, setCart] = useLocalStorage<CartItem[]>('tradesmen-cart', []);
   const [customers, setCustomers] = useLocalStorage<Customer[]>('tradesmen-customers', DEMO_CUSTOMERS);
+  const [sales, setSales] = useLocalStorage<Sale[]>('tradesmen-sales', []);
+  const [expenses, setExpenses] = useLocalStorage<Expense[]>('tradesmen-expenses', []);
 
   return (
     <AIProvider inventory={inventory} setInventory={setInventory} cart={cart} setCart={setCart}>
@@ -285,12 +281,15 @@ const AppDataWrapper: React.FC = () => {
         setCart={setCart}
         customers={customers}
         setCustomers={setCustomers}
+        sales={sales}
+        setSales={setSales}
+        expenses={expenses}
+        setExpenses={setExpenses}
       />
     </AIProvider>
   );
 };
 
-// Root Component: Handles Theme
 const App: React.FC = () => {
   return (
     <ThemeProvider>

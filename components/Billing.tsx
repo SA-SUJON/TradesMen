@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Product, CartItem, Customer, Transaction } from '../types';
+import { Product, CartItem, Customer, Transaction, Sale } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check } from 'lucide-react';
+import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -11,9 +11,11 @@ interface BillingProps {
   setCart: (cart: CartItem[]) => void;
   customers: Customer[];
   setCustomers: (customers: Customer[]) => void;
+  sales: Sale[];
+  setSales: (sales: Sale[]) => void;
 }
 
-const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, setCustomers }) => {
+const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, setCustomers, sales, setSales }) => {
   const { theme } = useTheme();
   const styles = getThemeClasses(theme);
   
@@ -56,37 +58,65 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
     }, 0);
   };
 
+  const calculateTotalProfit = () => {
+      return cart.reduce((acc, item) => {
+          const revenue = (item.sellingPrice * item.quantity) * (1 - item.discount/100);
+          const cost = (item.buyingPrice || 0) * item.quantity;
+          return acc + (revenue - cost);
+      }, 0);
+  };
+
   const handlePrint = () => {
       window.print();
   }
 
-  const handleCompleteOrder = () => {
+  const handleCompleteOrder = (method: 'cash' | 'credit') => {
     const total = calculateTotal();
+    const profit = calculateTotalProfit();
     
-    // Save to customer history if selected
+    // 1. Create Sale Record (Global Analytics)
+    const newSale: Sale = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        totalAmount: total,
+        totalProfit: profit,
+        paymentMethod: method,
+        items: [...cart],
+        customerId: selectedCustomerId || undefined
+    };
+    setSales([...sales, newSale]);
+
+    // 2. Update Customer History & Debt
     if (selectedCustomerId) {
         const customer = customers.find(c => c.id === selectedCustomerId);
         if (customer) {
             const summary = cart.map(i => `${i.quantity}${i.unit} ${i.name}`).join(', ');
+            
             const newTransaction: Transaction = {
                 id: Date.now().toString(),
                 date: new Date().toISOString(),
                 amount: total,
-                summary: summary
+                summary: summary,
+                type: method === 'credit' ? 'credit' : 'sale'
             };
             
             const updatedCustomer = {
                 ...customer,
-                history: [...customer.history, newTransaction]
+                history: [...customer.history, newTransaction],
+                // Add to debt if credit, otherwise debt remains same (or handled via separate payment)
+                debt: method === 'credit' ? (customer.debt || 0) + total : (customer.debt || 0)
             };
             
             setCustomers(customers.map(c => c.id === selectedCustomerId ? updatedCustomer : c));
         }
+    } else if (method === 'credit') {
+        alert("Please select a customer to sell on credit.");
+        return;
     }
 
     // Clear cart
     setCart([]);
-    alert("Order completed successfully!");
+    alert(method === 'credit' ? "Order added to customer debt." : "Order completed successfully!");
   };
 
   return (
@@ -127,7 +157,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
                         <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
                     ))}
                 </Select>
-                <p className="text-xs opacity-60 mt-2">Select a customer to save this transaction to their history.</p>
+                <p className="text-xs opacity-60 mt-2">Select a customer to track history or allow credit sales.</p>
             </Card>
         </div>
 
@@ -186,12 +216,23 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
                         <span className={styles.accentText}>{calculateTotal().toFixed(2)}</span>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
-                        <Button variant="secondary" className="w-full flex justify-center gap-2" onClick={handlePrint}>
-                            <Printer className="w-4 h-4" /> Print
+                    <div className="grid grid-cols-3 gap-2 md:gap-4">
+                         <Button variant="secondary" className="flex justify-center gap-2" onClick={handlePrint}>
+                            <Printer className="w-4 h-4" /> <span className="hidden md:inline">Print</span>
                         </Button>
-                        <Button className="w-full flex justify-center gap-2 bg-green-600 hover:bg-green-700 text-white" onClick={handleCompleteOrder} disabled={cart.length === 0}>
-                            <Check className="w-4 h-4" /> Complete Order
+                        <Button 
+                            className="flex justify-center gap-2 bg-orange-100 hover:bg-orange-200 text-orange-700 border-none"
+                            onClick={() => handleCompleteOrder('credit')}
+                            disabled={cart.length === 0}
+                        >
+                            <CreditCard className="w-4 h-4" /> <span className="hidden md:inline">On Credit</span>
+                        </Button>
+                        <Button 
+                            className="flex justify-center gap-2 bg-green-600 hover:bg-green-700 text-white" 
+                            onClick={() => handleCompleteOrder('cash')} 
+                            disabled={cart.length === 0}
+                        >
+                            <Banknote className="w-4 h-4" /> Complete
                         </Button>
                     </div>
                 </div>

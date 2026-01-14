@@ -29,13 +29,33 @@ export interface Transaction {
   date: string;
   amount: number;
   summary: string;
+  type?: 'sale' | 'payment' | 'credit';
 }
 
 export interface Customer {
   id: string;
   name: string;
   phone: string;
+  debt: number; // Total outstanding debt
   history: Transaction[];
+}
+
+export interface Expense {
+  id: string;
+  title: string;
+  amount: number;
+  category: string; // Rent, Utilities, Salary, Misc
+  date: string;
+}
+
+export interface Sale {
+  id: string;
+  date: string; // ISO String
+  totalAmount: number;
+  totalProfit: number;
+  paymentMethod: 'cash' | 'credit';
+  items: CartItem[];
+  customerId?: string;
 }
 
 export interface Conversion {
