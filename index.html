@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>TradesMen Utility</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,6 +13,7 @@
 
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
@@ -27,26 +28,41 @@
                 onContainer: '#21005D',
                 bg: '#FFFBFE'
               }
+            },
+            animation: {
+              'spin-slow': 'spin 3s linear infinite',
             }
           },
         },
       }
     </script>
     <style>
-      /* Custom Scrollbar for sleek look */
+      /* Mobile App Optimizations */
+      html, body {
+        height: 100%;
+        overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile web */
+        -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
+        touch-action: manipulation;
+      }
+
+      /* Global Scrollbar Hiding - Clean Look */
       ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+          display: none;
+          width: 0;
+          height: 0;
       }
-      ::-webkit-scrollbar-track {
-        background: transparent;
+      
+      * {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
       }
-      ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 3px;
+
+      /* Safe Area Utilities */
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom);
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
+      .pt-safe {
+        padding-top: env(safe-area-inset-top);
       }
       
       /* Glassmorphism Background Animation */
@@ -58,6 +74,29 @@
       .animate-gradient {
         background-size: 200% 200%;
         animation: gradient-xy 15s ease infinite;
+      }
+
+      /* PRINT STYLES */
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #printable-invoice, #printable-invoice * {
+          visibility: visible;
+        }
+        #printable-invoice {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          margin: 0;
+          padding: 0;
+          background: white;
+          color: black;
+        }
+        nav, header, footer, button, .no-print {
+            display: none !important;
+        }
       }
     </style>
   <script type="importmap">

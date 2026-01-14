@@ -9,6 +9,7 @@ import AIAssistant, { ChatInterface } from './components/AIAssistant';
 import MagicBar from './components/MagicBar';
 import QuickScan from './components/QuickScan';
 import InsightCards from './components/InsightCards';
+import { Card } from './components/ui/BaseComponents';
 
 // Components
 import Calculator from './components/Calculator';
@@ -18,9 +19,10 @@ import Customers from './components/Customers';
 import Conversions from './components/Conversions';
 import Settings from './components/Settings';
 import Finance from './components/Finance';
+import Reports from './components/Reports';
 
 // Icons
-import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users, PieChart } from 'lucide-react';
+import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users, PieChart, FileBarChart, Grid, ChevronLeft, Store, Menu } from 'lucide-react';
 
 // Demo Data
 const DEMO_PRODUCTS: Product[] = [
@@ -59,26 +61,34 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   const styles = getThemeClasses(theme);
   const [activeTab, setActiveTab] = useState('inventory');
 
-  const tabs = [
-    { id: 'inventory', label: 'Inventory', icon: <Package className="w-4 h-4" /> },
-    { id: 'billing', label: 'Billing', icon: <ShoppingCart className="w-4 h-4" /> },
-    { id: 'finance', label: 'Finance', icon: <PieChart className="w-4 h-4" /> },
-    { id: 'customers', label: 'Customers', icon: <Users className="w-4 h-4" /> },
-    { id: 'calculator', label: 'Calculator', icon: <CalcIcon className="w-4 h-4" /> },
-    { id: 'conversions', label: 'Converter', icon: <ArrowRightLeft className="w-4 h-4" /> },
-    { id: 'manager', label: 'Manager', icon: <Sparkles className="w-4 h-4" /> },
+  // Primary Navigation (Bottom Bar)
+  const MAIN_TABS = [
+    { id: 'inventory', label: 'Items', icon: <Package className="w-5 h-5" /> },
+    { id: 'billing', label: 'Bill', icon: <ShoppingCart className="w-5 h-5" /> },
+    { id: 'customers', label: 'Parties', icon: <Users className="w-5 h-5" /> },
+    { id: 'manager', label: 'Manager', icon: <Sparkles className="w-5 h-5" /> },
+    { id: 'menu', label: 'More', icon: <Menu className="w-5 h-5" /> },
+  ];
+
+  // Secondary Tools (Available in More Menu)
+  const MENU_TOOLS = [
+    { id: 'finance', label: 'Business Biz', icon: <PieChart className="w-6 h-6 text-teal-600" />, desc: 'Expenses, Profits & Dashboard' },
+    { id: 'reports', label: 'Reports', icon: <FileBarChart className="w-6 h-6 text-blue-500" />, desc: 'GSTR-1, Stock & Daybook' },
+    { id: 'calculator', label: 'Calculator', icon: <CalcIcon className="w-6 h-6 text-green-500" />, desc: 'Price & Weight Calc' },
+    { id: 'conversions', label: 'Tools', icon: <ArrowRightLeft className="w-6 h-6 text-purple-500" />, desc: 'Unit Converter & Bulk' },
   ];
 
   const handleMagicActivate = () => {
     setActiveTab('manager');
   };
 
+  const isMenuContext = ['menu', 'finance', 'calculator', 'conversions', 'reports', 'settings'].includes(activeTab);
   const isSettings = activeTab === 'settings';
   const isManagerTab = activeTab === 'manager';
   const isAssistantVisible = showAssistant && !isManagerTab && !isSettings;
   const isQuickScanVisible = showQuickScan && !isSettings && !isManagerTab;
   const isQuickScanPrimary = !isAssistantVisible;
-  const isMagicBarVisible = !isManagerTab && !isSettings;
+  const isMagicBarVisible = !isManagerTab && !isSettings && !isMenuContext;
 
   const getLogoStyle = () => {
       switch(theme) {
@@ -89,54 +99,92 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       }
   };
 
-  const getTitleStyle = () => {
-      switch(theme) {
-          case 'material': return 'text-[#6750A4]';
-          case 'glass': return 'text-white drop-shadow-md tracking-wide';
-          case 'neumorphism': return 'text-slate-700 tracking-tight';
-          case 'fluent': default: return 'text-gray-900 dark:text-white';
-      }
+  const getHeaderTitle = () => {
+      if (activeTab === 'settings') return 'Settings';
+      const tool = MENU_TOOLS.find(t => t.id === activeTab);
+      return tool ? tool.label : 'Menu';
   };
 
-  const getSettingsBtnStyle = () => {
-    switch(theme) {
-        case 'material': return 'bg-[#F3EDF7] text-[#49454F] hover:bg-[#E8DEF8]';
-        case 'glass': return 'bg-white/10 text-white border border-white/20 hover:bg-white/20';
-        case 'neumorphism': return 'bg-[#E0E5EC] text-slate-600 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] active:shadow-[inset_5px_5px_10px_#bebebe,inset_-5px_-5px_10px_#ffffff] active:translate-y-[1px]';
-        case 'fluent': default: return 'bg-transparent hover:bg-black/5 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300';
-    }
-  };
+  const MenuGrid = () => (
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="grid grid-cols-2 gap-4">
+              {MENU_TOOLS.map(tool => (
+                  <Card 
+                    key={tool.id} 
+                    className="!p-4 cursor-pointer active:scale-95 transition-transform flex flex-col items-center justify-center text-center gap-3 min-h-[120px]"
+                    onClick={() => setActiveTab(tool.id)}
+                  >
+                      <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full mb-1">
+                          {tool.icon}
+                      </div>
+                      <div>
+                          <div className="font-bold text-base">{tool.label}</div>
+                          <div className="text-xs opacity-60 mt-1 line-clamp-1">{tool.desc}</div>
+                      </div>
+                  </Card>
+              ))}
+          </div>
+          
+          <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 flex items-start gap-3">
+              <Store className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                  <h3 className="font-bold text-blue-800 dark:text-blue-300 text-sm">TradesMen Pro</h3>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 opacity-80">
+                      Version 1.2.0 • Local Storage Active
+                  </p>
+              </div>
+          </div>
+      </div>
+  );
 
   return (
-      <div className={`min-h-screen transition-colors duration-500 ${styles.appBg} font-sans relative pb-safe`}>
-        <div className="max-w-6xl mx-auto px-4 py-4 md:py-8 h-[100dvh] flex flex-col">
+      <div className={`min-h-screen transition-colors duration-500 ${styles.appBg} font-sans relative`}>
+        <div className="max-w-6xl mx-auto px-4 pt-4 md:py-8 h-[100dvh] flex flex-col">
           
-          <header className="flex flex-col gap-4 md:gap-6 mb-2 md:mb-8 flex-shrink-0 z-20 relative">
+          <header className="flex flex-col gap-2 md:gap-6 mb-2 md:mb-8 flex-shrink-0 z-20 relative">
             <div className="flex justify-between items-center w-full">
+                {/* Header Title / Back Button Logic */}
                 <div 
                     className="flex items-center gap-3 select-none cursor-pointer group"
-                    onClick={() => setActiveTab('inventory')}
+                    onClick={() => {
+                        if (isMenuContext && activeTab !== 'menu') setActiveTab('menu');
+                        else setActiveTab('inventory');
+                    }}
                 >
-                    <div className={`p-2.5 rounded-xl transition-all duration-300 group-hover:scale-105 ${getLogoStyle()}`}>
-                        <CalcIcon className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <h1 className={`text-2xl font-display font-bold leading-none ${getTitleStyle()}`}>
-                            TradesMen
-                        </h1>
-                        <p className={`text-[10px] font-medium uppercase tracking-widest opacity-60 ml-0.5 mt-0.5 ${theme === 'glass' ? 'text-white' : ''}`}>
-                            Retail Suite
-                        </p>
-                    </div>
+                    {isMenuContext && activeTab !== 'menu' ? (
+                        <div className="flex items-center gap-2">
+                             <div className={`p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10`}>
+                                <ChevronLeft className="w-6 h-6" />
+                             </div>
+                             <h1 className="text-xl font-bold">
+                                {getHeaderTitle()}
+                             </h1>
+                        </div>
+                    ) : (
+                        <>
+                            <div className={`p-2.5 rounded-xl transition-all duration-300 ${getLogoStyle()}`}>
+                                <Store className="w-5 h-5 md:w-6 md:h-6" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl md:text-2xl font-display font-bold leading-none">
+                                    TradesMen
+                                </h1>
+                                <p className={`hidden md:block text-[10px] font-medium uppercase tracking-widest opacity-60 ml-0.5 mt-0.5 ${theme === 'glass' ? 'text-white' : ''}`}>
+                                    Retail Suite
+                                </p>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 <div className="hidden md:block flex-grow max-w-xl mx-8">
                     {isMagicBarVisible && <MagicBar onActivate={handleMagicActivate} />}
                 </div>
 
+                {/* Quick Settings Access - Visible on ALL devices */}
                 <button 
                     onClick={() => setActiveTab('settings')}
-                    className={`p-3 rounded-full transition-all duration-200 ${getSettingsBtnStyle()}`}
+                    className={`p-3 rounded-full transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/10`}
                     title="Settings"
                 >
                     <SettingsIcon className={`w-6 h-6 ${activeTab === 'settings' ? 'animate-spin-slow' : ''}`} />
@@ -148,34 +196,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             </div>
           </header>
 
-          <nav className="hidden md:flex space-x-1 mb-8 overflow-x-auto pb-2 scrollbar-hide flex-shrink-0">
-              {tabs.map((tab) => (
-                  <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`
-                          flex items-center gap-2 px-6 py-3 rounded-xl transition-all whitespace-nowrap
-                          ${activeTab === tab.id ? styles.tabActive : styles.tabInactive}
-                      `}
-                      title={tab.label}
-                  >
-                      {tab.icon}
-                      {showNavLabels && tab.label}
-                  </button>
-              ))}
-          </nav>
-
-          <main className={`flex-grow relative ${isManagerTab ? 'overflow-hidden' : 'overflow-y-auto no-scrollbar pb-24 md:pb-0'}`}>
+          {/* Increased bottom padding on mobile to pb-[160px] to ensure content clears Floating Buttons & Nav */}
+          <main className={`flex-grow relative ${isManagerTab ? 'overflow-hidden' : 'overflow-y-auto no-scrollbar'} pb-[160px] md:pb-0`}>
               <AnimatePresence mode="wait">
                   <motion.div
                       key={activeTab}
-                      initial={{ opacity: 0, x: -10 }}
+                      initial={{ opacity: 0, x: -5 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 10 }}
-                      transition={{ duration: 0.2 }}
+                      exit={{ opacity: 0, x: 5 }}
+                      transition={{ duration: 0.15 }}
                       className="h-full"
                   >
-                      {activeTab === 'calculator' && <Calculator inventory={inventory} />}
                       {activeTab === 'inventory' && <Inventory inventory={inventory} setInventory={setInventory} />}
                       {activeTab === 'billing' && (
                         <Billing 
@@ -194,8 +225,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                         />
                       )}
                       {activeTab === 'customers' && <Customers customers={customers} setCustomers={setCustomers} />}
+                      
+                      {/* Menu Context Views */}
+                      {activeTab === 'menu' && <MenuGrid />}
+                      {activeTab === 'reports' && <Reports sales={sales} inventory={inventory} expenses={expenses} />}
+                      {activeTab === 'calculator' && <Calculator inventory={inventory} />}
+                      {activeTab === 'conversions' && <Conversions />}
+                      {activeTab === 'settings' && <Settings />}
                       {activeTab === 'manager' && (
-                          <div className="flex flex-col h-full gap-2 md:gap-4 pb-[85px] md:pb-0">
+                          <div className="flex flex-col h-full gap-2 md:gap-4 pb-0 md:pb-0">
                               <div className="flex-shrink-0 z-10">
                                 <InsightCards inventory={inventory} />
                               </div>
@@ -204,52 +242,49 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                               </div>
                           </div>
                       )}
-                      {activeTab === 'conversions' && <Conversions />}
-                      {activeTab === 'settings' && <Settings />}
                   </motion.div>
               </AnimatePresence>
           </main>
-
-          <footer className="mt-12 text-center opacity-50 text-sm pb-8 hidden md:block flex-shrink-0">
-              <p>&copy; {new Date().getFullYear()} TradesMen Utility. Local Storage Enabled.</p>
-          </footer>
         </div>
 
-        <div className={`md:hidden fixed bottom-0 left-0 right-0 z-40 px-2 py-2 pb-safe flex justify-between items-center transition-all duration-300 overflow-x-auto scrollbar-hide ${
-             theme === 'glass' ? 'bg-black/40 backdrop-blur-xl border-t border-white/10 text-white' : 
-             theme === 'neumorphism' ? 'bg-[#E0E5EC] shadow-[0_-5px_10px_#bebebe,0_-5px_10px_#ffffff]' :
-             'bg-white dark:bg-[#0f0f0f] border-t border-gray-200 dark:border-gray-800 shadow-lg'
+        {/* Simplified Mobile Bottom Nav (5 Items) */}
+        <div className={`md:hidden fixed bottom-0 left-0 right-0 z-[50] pb-safe pt-2 px-2 transition-all duration-300 ${
+             theme === 'glass' ? 'bg-black/40 backdrop-blur-xl border-t border-white/10' : 
+             theme === 'neumorphism' ? 'bg-[#E0E5EC] shadow-[0_-5px_10px_#bebebe]' :
+             'bg-white dark:bg-[#0f0f0f] border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]'
         }`}>
-              {tabs.map((tab) => {
-                  const isActive = activeTab === tab.id;
+            <div className="grid grid-cols-5 gap-1 w-full">
+              {MAIN_TABS.map((tab) => {
+                  const isActive = activeTab === tab.id || (tab.id === 'menu' && isMenuContext);
                   return (
                     <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => {
+                             // If clicking Menu while in a sub-tool, go back to main menu grid
+                             if (tab.id === 'menu' && isMenuContext) setActiveTab('menu');
+                             else setActiveTab(tab.id);
+                        }}
                         className={`
-                            flex flex-col items-center justify-center p-2 rounded-xl transition-all min-w-[3.5rem]
-                            ${isActive ? 'flex-grow max-w-[5rem]' : 'flex-grow-0'}
-                            ${isActive && theme === 'material' ? 'bg-[#E8DEF8] text-[#1D192B]' : ''}
-                            ${isActive && theme === 'glass' ? 'bg-white/20 text-white' : ''}
-                            ${isActive && theme === 'fluent' ? 'text-[#0078D4]' : ''}
-                            ${isActive && theme === 'neumorphism' ? 'shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] text-slate-700' : ''}
-                            ${!isActive ? 'opacity-60 grayscale' : ''}
+                            flex flex-col items-center justify-center py-2 rounded-xl transition-all
+                            ${isActive && theme === 'material' ? 'text-[#6750A4]' : ''}
+                            ${isActive && theme === 'glass' ? 'text-white bg-white/10' : ''}
+                            ${isActive && theme === 'fluent' ? 'text-blue-600' : ''}
+                            ${!isActive ? 'opacity-50 grayscale' : 'opacity-100'}
                         `}
-                        title={tab.label}
                     >
-                        {React.cloneElement(tab.icon as React.ReactElement, { className: "w-5 h-5" })}
-                        {isActive && showNavLabels && (
-                          <motion.span 
-                            initial={{ opacity: 0, width: 0 }}
-                            animate={{ opacity: 1, width: 'auto' }}
-                            className="text-[10px] mt-1 font-medium truncate w-full text-center"
-                          >
+                        <div className={`transition-transform duration-200 ${isActive ? 'scale-110 mb-1' : 'mb-0.5'}`}>
+                            {React.cloneElement(tab.icon as React.ReactElement, { className: "w-6 h-6" })}
+                        </div>
+                        {showNavLabels && (
+                          <span className={`text-[10px] font-medium truncate w-full text-center leading-none ${isActive ? 'font-bold' : ''}`}>
                               {tab.label}
-                          </motion.span>
+                          </span>
                         )}
+                        {isActive && <div className="h-1 w-8 bg-current rounded-full mt-1 opacity-20" />}
                     </button>
                   );
               })}
+            </div>
         </div>
 
         <QuickScan 

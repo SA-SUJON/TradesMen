@@ -2,6 +2,17 @@
 export type ThemeType = 'material' | 'glass' | 'neumorphism' | 'fluent';
 export type UnitSystem = 'metric' | 'local'; // local = Maund/Seer
 
+export interface BusinessProfile {
+  name: string;
+  address: string;
+  phone: string;
+  email?: string;
+  gstin?: string; // Tax ID
+  logo?: string; // base64
+  signature?: string; // base64
+  terms?: string;
+}
+
 export interface ProductHistoryEvent {
   id: string;
   date: string;
@@ -18,21 +29,25 @@ export interface Product {
   unit: string; // 'kg', 'g', 'pc'
   expiryDate?: string; // YYYY-MM-DD
   // Extended Metadata
-  barcode?: string; // New field for scanning
-  shelfId?: string; // New field for Shelf Location
+  barcode?: string;
+  shelfId?: string;
   supplierName?: string;
   supplierContact?: string;
   category?: string;
   notes?: string;
   purchaseDate?: string;
   lowStockThreshold?: number;
-  history?: ProductHistoryEvent[]; // Timeline of product life
+  // GST Fields
+  hsnCode?: string;
+  gstRate?: number; // 0, 5, 12, 18, 28
+  history?: ProductHistoryEvent[]; 
 }
 
 export interface CartItem extends Product {
   cartId: string;
-  quantity: number; // in unit (e.g., 1.5 for 1.5kg)
-  discount: number; // percentage
+  quantity: number; 
+  discount: number; 
+  taxAmount?: number; // Calculated tax
 }
 
 export interface Transaction {
@@ -47,7 +62,7 @@ export interface Customer {
   id: string;
   name: string;
   phone: string;
-  debt: number; // Total outstanding debt
+  debt: number; 
   history: Transaction[];
 }
 
@@ -55,16 +70,18 @@ export interface Expense {
   id: string;
   title: string;
   amount: number;
-  category: string; // Rent, Utilities, Salary, Misc
+  category: string; 
   date: string;
 }
 
 export interface Sale {
   id: string;
-  date: string; // ISO String
+  invoiceNumber: string; // Sequential ID
+  date: string; 
   totalAmount: number;
+  totalTax?: number; // GST Total
   totalProfit: number;
-  paymentMethod: 'cash' | 'credit';
+  paymentMethod: 'cash' | 'credit' | 'upi' | 'bank';
   items: CartItem[];
   customerId?: string;
 }
@@ -79,6 +96,6 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'model' | 'system';
   text: string;
-  image?: string; // base64 string for OCR previews
+  image?: string; 
   isError?: boolean;
 }

@@ -20,8 +20,8 @@ export const Button: React.FC<ButtonProps> = ({ variant = 'primary', className =
   
   return (
     <motion.button
-      whileTap={{ scale: 0.98 }}
-      className={`${baseClass} ${className}`}
+      whileTap={{ scale: 0.96 }}
+      className={`${baseClass} min-h-[48px] flex items-center justify-center ${className}`} // Enforce min-height for touch
       {...props as any}
     >
       {children}
@@ -34,13 +34,14 @@ interface CardProps extends HTMLMotionProps<"div">, BaseProps {}
 export const Card: React.FC<CardProps> = ({ className = '', children, ...props }) => {
   const { theme } = useTheme();
   const styles = getThemeClasses(theme);
+  // Adjusted padding: p-4 on mobile, p-6 on desktop
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`${styles.card} ${className}`}
+      className={`${styles.card} p-4 md:p-6 ${className}`}
       {...props}
     >
       {children}
@@ -52,13 +53,22 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement>, BasePr
   label?: string;
 }
 
-export const Input: React.FC<InputProps> = ({ label, className = '', ...props }) => {
+export const Input: React.FC<InputProps> = ({ label, className = '', type="text", ...props }) => {
   const { theme } = useTheme();
   const styles = getThemeClasses(theme);
+  
+  // Use inputMode for better mobile keyboards
+  const inputMode = type === 'number' ? 'decimal' : props.inputMode;
+
   return (
     <div className="w-full">
       {label && <label className={styles.label}>{label}</label>}
-      <input className={`${styles.input} w-full ${className}`} {...props} />
+      <input 
+        type={type}
+        inputMode={inputMode}
+        className={`${styles.input} w-full min-h-[48px] ${className}`} // Enforce min-height
+        {...props} 
+      />
     </div>
   );
 };
@@ -115,7 +125,7 @@ export const Select: React.FC<SelectProps> = ({ label, className = '', children,
              {/* Trigger */}
              <div 
                 onClick={() => setIsOpen(!isOpen)}
-                className={`${styles.input} w-full flex items-center justify-between cursor-pointer relative ${className}`}
+                className={`${styles.input} w-full min-h-[48px] flex items-center justify-between cursor-pointer relative ${className}`}
              >
                 <span className={`truncate block w-full pr-6 ${!selectedOption?.value ? 'opacity-50' : ''}`}>
                     {selectedOption ? selectedOption.label : "Select..."}
@@ -131,17 +141,17 @@ export const Select: React.FC<SelectProps> = ({ label, className = '', children,
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className={`absolute left-0 right-0 max-h-60 overflow-y-auto custom-scrollbar ${styles.dropdownMenu}`}
+                        className={`absolute left-0 right-0 max-h-60 overflow-y-auto custom-scrollbar ${styles.dropdownMenu} z-[100]`}
                     >
                         {options.map((opt, idx) => (
                             <div 
                                 key={idx}
                                 onClick={() => handleSelect(opt.value)}
-                                className={`${styles.dropdownItem} ${String(props.value) === String(opt.value) ? styles.dropdownItemActive : ''}`}
+                                className={`${styles.dropdownItem} min-h-[44px] flex items-center ${String(props.value) === String(opt.value) ? styles.dropdownItemActive : ''}`}
                             >
                                 {opt.label}
                                 {String(props.value) === String(opt.value) && (
-                                    <Check className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 opacity-70" />
+                                    <Check className="w-4 h-4 absolute right-3 opacity-70" />
                                 )}
                             </div>
                         ))}

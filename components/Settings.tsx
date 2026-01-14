@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
-import { ThemeType } from '../types';
-import { Card } from './ui/BaseComponents';
-import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock } from 'lucide-react';
+import { ThemeType, BusinessProfile } from '../types';
+import { Card, Input, Button } from './ui/BaseComponents';
+import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAI } from '../contexts/AIContext';
 import { initGapi, handleAuth, uploadBackup, downloadBackup, getClientIdStatus } from '../utils/googleDrive';
+import useLocalStorage from '../hooks/useLocalStorage';
 
 const Settings: React.FC = () => {
   const { 
@@ -19,6 +19,16 @@ const Settings: React.FC = () => {
   
   const { showAssistant, setShowAssistant } = useAI();
   const styles = getThemeClasses(theme);
+
+  // Business Profile State
+  const [profile, setProfile] = useLocalStorage<BusinessProfile>('tradesmen-business-profile', {
+      name: 'My Store',
+      address: '',
+      phone: '',
+      email: '',
+      gstin: '',
+      terms: 'Thank you for your business! Goods once sold will not be taken back.'
+  });
 
   // Cloud Sync State
   const [isDriveReady, setIsDriveReady] = useState(false);
@@ -167,8 +177,6 @@ const Settings: React.FC = () => {
 
       try {
           const data = await downloadBackup();
-          // The data might be strictly the JSON object or wrapped depending on how GAPI returns it
-          // GAPI media download usually returns the body object directly if JSON
           performRestore(data);
           setSyncStatus('idle'); // usually page reloads before this
       } catch (e: any) {
@@ -179,7 +187,6 @@ const Settings: React.FC = () => {
   };
 
 
-  // Ordered strictly as requested
   const themeOptions: { id: ThemeType; label: string; desc: string; icon: React.ReactNode }[] = [
     { 
       id: 'material', 
@@ -208,7 +215,27 @@ const Settings: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
+
+      {/* Business Profile (Vyapar Style) */}
+      <Card>
+          <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
+             <Building2 className="w-5 h-5" /> Business Profile & Invoice Settings
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="col-span-2">
+                  <Input label="Business Name" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} placeholder="e.g. Gupta Traders" />
+              </div>
+              <Input label="GSTIN (Tax ID)" value={profile.gstin || ''} onChange={e => setProfile({...profile, gstin: e.target.value})} placeholder="29ABCDE1234F1Z5" />
+              <Input label="Phone Number" value={profile.phone} onChange={e => setProfile({...profile, phone: e.target.value})} />
+              <div className="col-span-2">
+                  <Input label="Address" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} placeholder="Shop No, Street, City" />
+              </div>
+              <div className="col-span-2">
+                  <Input label="Invoice Terms & Conditions" value={profile.terms || ''} onChange={e => setProfile({...profile, terms: e.target.value})} placeholder="Terms printed at bottom of invoice" />
+              </div>
+          </div>
+      </Card>
       
       {/* Cloud Sync Section */}
       <Card className={`${theme === 'glass' ? 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40' : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:bg-blue-900/10'}`}>
@@ -226,11 +253,11 @@ const Settings: React.FC = () => {
          {!getClientIdStatus() ? (
              <div className="p-4 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 rounded-lg text-sm border border-yellow-200 dark:border-yellow-700/50">
                  <div className="font-bold flex items-center gap-2 mb-1"><Lock className="w-4 h-4" /> Configuration Required</div>
-                 <p>To use Google Drive Sync, you must add your <code>CLIENT_ID</code> and <code>API_KEY</code> in the code (<code>utils/googleDrive.ts</code>). This is a security requirement for personal cloud access.</p>
+                 <p>To use Google Drive Sync, you must add your <code>CLIENT_ID</code> and <code>API_KEY</code> in the code. This is a security requirement for personal cloud access.</p>
              </div>
          ) : !isConnected ? (
              <div className="flex flex-col items-center justify-center p-6 gap-4">
-                 <p className="text-center opacity-70 text-sm max-w-md">Connect your Google Drive to automatically backup your inventory, sales, and customer data. Your data stays private in your own Drive.</p>
+                 <p className="text-center opacity-70 text-sm max-w-md">Connect your Google Drive to automatically backup your inventory, sales, and customer data.</p>
                  <button 
                     onClick={connectDrive}
                     disabled={!isDriveReady}
@@ -275,25 +302,47 @@ const Settings: React.FC = () => {
          )}
       </Card>
 
-      {/* AI Settings Section */}
+      {/* AI & Quick Scan Settings Section */}
       <Card>
         <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
-           <Sparkles className="w-5 h-5" /> Smart Manager
+           <Sparkles className="w-5 h-5" /> Smart Features
         </h2>
-        <div className="flex items-center justify-between">
-            <div>
-                <div className="font-bold">Manager Visibility</div>
-                <div className="text-sm opacity-60">Show the floating AI button on screen.</div>
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <div className="font-bold flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-blue-500" /> Manager Button
+                    </div>
+                    <div className="text-sm opacity-60">Show the floating AI Assistant button.</div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={showAssistant}
+                        onChange={(e) => setShowAssistant(e.target.checked)}
+                    />
+                    <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
+                </label>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                    type="checkbox" 
-                    className="sr-only peer"
-                    checked={showAssistant}
-                    onChange={(e) => setShowAssistant(e.target.checked)}
-                />
-                <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
-            </label>
+
+            <div className="flex items-center justify-between">
+                <div>
+                    <div className="font-bold flex items-center gap-2">
+                        <Plus className="w-4 h-4 text-green-500" /> Quick Scan Button
+                    </div>
+                    <div className="text-sm opacity-60">Show the floating (+) button for memos.</div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={showQuickScan}
+                        onChange={(e) => setShowQuickScan(e.target.checked)}
+                    />
+                    <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
+                </label>
+            </div>
         </div>
       </Card>
 
@@ -345,7 +394,7 @@ const Settings: React.FC = () => {
           <div className="flex items-center justify-between">
               <div>
                   <div className="font-bold">Show Navigation Labels</div>
-                  <div className="text-sm opacity-60">Display text labels next to icons in the navigation bar.</div>
+                  <div className="text-sm opacity-60">Display text labels next to icons.</div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                   <input 
@@ -353,22 +402,6 @@ const Settings: React.FC = () => {
                       className="sr-only peer"
                       checked={showNavLabels}
                       onChange={(e) => setShowNavLabels(e.target.checked)}
-                  />
-                  <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
-              </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-              <div>
-                  <div className="font-bold flex items-center gap-2"><Camera className="w-4 h-4" /> Quick Scan Button</div>
-                  <div className="text-sm opacity-60">Show the floating camera button for quick invoice scanning.</div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                      type="checkbox" 
-                      className="sr-only peer"
-                      checked={showQuickScan}
-                      onChange={(e) => setShowQuickScan(e.target.checked)}
                   />
                   <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
               </label>
@@ -445,17 +478,6 @@ const Settings: React.FC = () => {
               </button>
             );
           })}
-        </div>
-      </Card>
-      
-      {/* About */}
-       <Card>
-        <h2 className={`text-lg font-bold flex items-center gap-2 mb-4 ${styles.accentText}`}>
-           <AlertCircle className="w-5 h-5" /> About
-        </h2>
-        <div className="opacity-70 text-sm space-y-2">
-            <p>TradesMen Utility v1.2.0 (Cloud Sync Enabled)</p>
-            <p>Data is stored locally on your device or in your Google Drive.</p>
         </div>
       </Card>
     </div>
