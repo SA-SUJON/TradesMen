@@ -1,6 +1,30 @@
 
 import { UnitSystem, CartItem } from "../types";
 
+export const UNIT_OPTIONS = [
+  { value: 'kg', label: 'KILOGRAMS (kg)' },
+  { value: 'g', label: 'GRAMMES (g)' },
+  { value: 'l', label: 'LITER (l)' },
+  { value: 'ml', label: 'MILILITRE (ml)' },
+  { value: 'pc', label: 'PIECES (pc)' },
+  { value: 'bags', label: 'BAGS' },
+  { value: 'bottles', label: 'BOTTLES' },
+  { value: 'box', label: 'BOX' },
+  { value: 'bundles', label: 'BUNDLES' },
+  { value: 'cans', label: 'CANS' },
+  { value: 'cartons', label: 'CARTONS' },
+  { value: 'dozens', label: 'DOZENS' },
+  { value: 'm', label: 'METERS' },
+  { value: 'nos', label: 'NUMBERS' },
+  { value: 'packs', label: 'PACKS' },
+  { value: 'pairs', label: 'PAIRS' },
+  { value: 'quintal', label: 'QUINTAL' },
+  { value: 'rolls', label: 'ROLLS' },
+  { value: 'sq_ft', label: 'SQUARE FEET' },
+  { value: 'sq_m', label: 'SQUARE METRES' },
+  { value: 'tablets', label: 'TABLETS' },
+];
+
 // Text to Speech Utility
 export const speak = (text: string, enabled: boolean = true) => {
     if (!enabled || typeof window === 'undefined' || !window.speechSynthesis) return;
@@ -22,40 +46,47 @@ export const speak = (text: string, enabled: boolean = true) => {
 // Unit Conversion Utility
 // Assumes base unit is 'kg' for weight-based items
 export const formatUnit = (value: number, unit: string, system: UnitSystem): string => {
-    if (unit !== 'kg' && unit !== 'g') return `${value} ${unit}`;
+    // Volume Handling
+    if (unit === 'l') return `${value.toFixed(2)} L`;
+    if (unit === 'ml') {
+        if (value >= 1000) return `${(value / 1000).toFixed(2)} L`;
+        return `${value} ml`;
+    }
 
-    // Normalize to KG first
-    const valInKg = unit === 'g' ? value / 1000 : value;
+    // Weight Handling
+    if (unit === 'kg' || unit === 'g') {
+        // Normalize to KG first
+        const valInKg = unit === 'g' ? value / 1000 : value;
 
-    if (system === 'local') {
-        // Local System: 1 Maund = 40 KG, 1 Seer = 1 KG (Common Approximation in some trades, or 1/40 Maund)
-        // Let's use: 40kg = 1 Maund.
-        if (valInKg >= 40) {
-            const maunds = valInKg / 40;
-            return `${maunds.toFixed(2)} Maund`;
-        } else {
-            // Display as Seer (where 1 Seer ~= 1 KG roughly or exactly depending on region)
-            // We will assume 1 Seer = 1 KG for simplicity of display in this context 
-            // OR we can leave it as KG if less than a Maund. 
-            // Let's stick to showing KG for smaller amounts but labeling it appropriately if needed.
-            // Actually, usually users want to see Maund for bulk.
-            return `${valInKg.toFixed(2)} kg`; // Or 'Seer' if strictly local
+        if (system === 'local') {
+            // Local System: 1 Maund = 40 KG
+            if (valInKg >= 40) {
+                const maunds = valInKg / 40;
+                return `${maunds.toFixed(2)} Maund`;
+            } else {
+                return `${valInKg.toFixed(2)} kg`; 
+            }
         }
+
+        // Metric System
+        if (valInKg < 1 && valInKg > 0) {
+            return `${(valInKg * 1000).toFixed(0)} g`;
+        }
+        return `${valInKg.toFixed(2)} kg`;
     }
 
-    // Metric System
-    if (valInKg < 1 && unit === 'kg') {
-        return `${(valInKg * 1000).toFixed(0)} g`;
-    }
-    return `${valInKg.toFixed(2)} kg`;
+    // Default for others (Pieces, Boxes, etc.)
+    return `${value} ${unit}`;
 };
 
 // Helper to convert inputs for calculation
 // Returns factor to multiply with base price (assuming base price is per KG)
 export const getUnitMultiplier = (unit: string): number => {
     if (unit === 'g') return 0.001;
+    if (unit === 'ml') return 0.001;
     if (unit === 'maund') return 40;
-    return 1; // kg or pc
+    if (unit === 'quintal') return 100;
+    return 1; // kg, l, pc, etc.
 };
 
 // WhatsApp Integration Helpers
@@ -81,9 +112,13 @@ export const formatBillMessage = (cart: CartItem[], total: number, customerName?
     
     cart.forEach(item => {
         const itemTotal = (item.sellingPrice * item.quantity) * (1 - item.discount/100);
-        const qtyDisplay = item.unit === 'g' && item.quantity >= 1000 
-            ? `${item.quantity/1000}kg` 
-            : `${item.quantity}${item.unit}`;
+        
+        let qtyDisplay = `${item.quantity} ${item.unit}`;
+        // Smart Format for Weight/Volume
+        if ((item.unit === 'g' || item.unit === 'ml') && item.quantity >= 1000) {
+             const baseUnit = item.unit === 'g' ? 'kg' : 'L';
+             qtyDisplay = `${item.quantity/1000}${baseUnit}`;
+        }
             
         msg += `${item.name} x ${qtyDisplay} = ${itemTotal.toFixed(2)}\n`;
     });

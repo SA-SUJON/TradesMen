@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Product, ProductHistoryEvent } from '../types';
-import { Card, Input, Button } from './ui/BaseComponents';
+import { Card, Input, Button, Select } from './ui/BaseComponents';
 import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin, History, ShoppingBag, Clock, PlusCircle } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAI } from '../contexts/AIContext';
-import { speak, formatUnit } from '../utils/appUtils';
+import { speak, formatUnit, UNIT_OPTIONS } from '../utils/appUtils';
 import BarcodeScanner from './BarcodeScanner';
 
 interface InventoryProps {
@@ -435,7 +435,17 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                 <Input label="Product Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} autoFocus />
                                 <div className="grid grid-cols-2 gap-4">
                                      <Input label="Category" placeholder="e.g. Grains" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
-                                     <Input label="Unit (kg/g/pc)" value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} />
+                                     <div className="flex-grow">
+                                        <Select 
+                                            label="Unit" 
+                                            value={formData.unit} 
+                                            onChange={e => setFormData({...formData, unit: e.target.value})}
+                                        >
+                                            {UNIT_OPTIONS.map(u => (
+                                                <option key={u.value} value={u.value}>{u.label}</option>
+                                            ))}
+                                        </Select>
+                                     </div>
                                 </div>
                                 <Input label="Shelf / Rack ID" placeholder="e.g. A-1, B-5" value={formData.shelfId} onChange={e => setFormData({...formData, shelfId: e.target.value})} />
                             </div>

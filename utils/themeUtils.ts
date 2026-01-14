@@ -1,3 +1,4 @@
+
 import { ThemeType } from '../types';
 
 export const getThemeClasses = (theme: ThemeType) => {
@@ -13,6 +14,10 @@ export const getThemeClasses = (theme: ThemeType) => {
         tabActive: 'bg-[#E8DEF8] text-[#1D192B] font-bold shadow-sm',
         tabInactive: 'text-[#49454F] hover:bg-[#F7F2FA]',
         accentText: 'text-[#6750A4]',
+        // Dropdown Specifics
+        dropdownMenu: 'bg-[#F3EDF7] rounded-xl shadow-lg border border-gray-100 mt-1 p-2 z-[60]',
+        dropdownItem: 'p-3 rounded-lg hover:bg-[#E8DEF8] transition-colors text-sm font-medium text-[#1D192B] cursor-pointer relative',
+        dropdownItemActive: 'bg-[#E8DEF8] font-bold',
       };
     case 'glass':
       return {
@@ -25,6 +30,10 @@ export const getThemeClasses = (theme: ThemeType) => {
         tabActive: 'bg-white/20 backdrop-blur-lg border border-white/40 text-white font-bold shadow-lg',
         tabInactive: 'text-white/70 hover:bg-white/10 border border-transparent',
         accentText: 'text-white font-bold drop-shadow-md',
+        // Dropdown Specifics
+        dropdownMenu: 'bg-black/80 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl mt-2 p-2 z-[60]',
+        dropdownItem: 'p-3 rounded-lg hover:bg-white/20 transition-colors text-sm text-white cursor-pointer relative',
+        dropdownItemActive: 'bg-white/20 font-bold border border-white/10',
       };
     case 'neumorphism':
       return {
@@ -37,6 +46,10 @@ export const getThemeClasses = (theme: ThemeType) => {
         tabActive: 'text-slate-700 font-bold shadow-[inset_5px_5px_10px_#a3b1c6,inset_-5px_-5px_10px_#ffffff] rounded-xl',
         tabInactive: 'text-slate-500 hover:text-slate-700',
         accentText: 'text-slate-700',
+        // Dropdown Specifics
+        dropdownMenu: 'bg-[#E0E5EC] rounded-xl shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] border border-white/40 mt-3 p-3 z-[60]',
+        dropdownItem: 'p-3 rounded-lg mb-2 last:mb-0 hover:bg-[#d6dbe4] text-slate-700 font-medium cursor-pointer transition-all relative',
+        dropdownItemActive: 'shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] text-blue-600 font-bold',
       };
     case 'fluent':
     default:
@@ -50,6 +63,10 @@ export const getThemeClasses = (theme: ThemeType) => {
         tabActive: 'bg-white text-[#0078D4] font-bold border-b-2 border-[#0078D4] shadow-sm',
         tabInactive: 'text-[#605E5C] hover:bg-[#F3F2F1] hover:text-[#201F1E]',
         accentText: 'text-[#0078D4]',
+        // Dropdown Specifics
+        dropdownMenu: 'bg-white rounded-lg shadow-xl border border-gray-200 mt-1 p-1 z-[60] dark:bg-[#201F1E] dark:border-gray-700',
+        dropdownItem: 'px-3 py-2 rounded-md hover:bg-[#F3F2F1] dark:hover:bg-[#323130] text-sm text-[#201F1E] dark:text-white cursor-pointer relative',
+        dropdownItemActive: 'bg-[#E1DFDD] dark:bg-[#3B3A39] font-semibold',
       };
   }
 };
