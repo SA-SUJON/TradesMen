@@ -6,6 +6,7 @@ import useLocalStorage from '../hooks/useLocalStorage';
 interface AIContextType {
   messages: ChatMessage[];
   sendMessage: (text: string, image?: string) => Promise<void>;
+  filterInventory: (query: string, currentInventory: Product[]) => Promise<string[]>;
   isProcessing: boolean;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
@@ -204,8 +205,40 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
     }
   };
 
+  const filterInventory = async (query: string, currentInventory: Product[]): Promise<string[]> => {
+    try {
+      // Simplify inventory for token efficiency
+      const simplifiedInv = currentInventory.map(p => ({
+        id: p.id,
+        name: p.name,
+        sellingPrice: p.sellingPrice,
+        stock: p.stock
+      }));
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Inventory: ${JSON.stringify(simplifiedInv)}\n\nQuery: "${query}"\n\nTask: Find items in the inventory that match the user's query (e.g., price conditions, stock levels, name keywords). Return ONLY a JSON array of string IDs. Example: ["1", "5"]`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          }
+        }
+      });
+      
+      const text = response.text;
+      if (!text) return [];
+      return JSON.parse(text);
+
+    } catch (error) {
+      console.error("Filter Error:", error);
+      return [];
+    }
+  };
+
   return (
-    <AIContext.Provider value={{ messages, sendMessage, isProcessing, isOpen, setIsOpen, showAssistant, setShowAssistant }}>
+    <AIContext.Provider value={{ messages, sendMessage, filterInventory, isProcessing, isOpen, setIsOpen, showAssistant, setShowAssistant }}>
       {children}
     </AIContext.Provider>
   );

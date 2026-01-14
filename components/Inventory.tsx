@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
 import { Card, Input, Button } from './ui/BaseComponents';
-import { Package, Search, Plus, Trash2, Edit2, X } from 'lucide-react';
+import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2 } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAI } from '../contexts/AIContext';
 
 interface InventoryProps {
   inventory: Product[];
@@ -14,9 +15,15 @@ interface InventoryProps {
 const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
   const { theme } = useTheme();
   const styles = getThemeClasses(theme);
+  const { filterInventory } = useAI();
+
   const [search, setSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  
+  // AI Search State
+  const [isSearchingAI, setIsSearchingAI] = useState(false);
+  const [aiFilteredIds, setAiFilteredIds] = useState<string[] | null>(null);
 
   // Form State
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -64,7 +71,27 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
       setEditId(null);
   }
 
-  const filteredInventory = inventory.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  // AI Search Handler
+  const handleAISearch = async () => {
+    if (!search.trim()) return;
+    setIsSearchingAI(true);
+    try {
+        const ids = await filterInventory(search, inventory);
+        setAiFilteredIds(ids);
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setIsSearchingAI(false);
+    }
+  };
+
+  // Determine which items to show
+  let filteredInventory = inventory;
+  if (aiFilteredIds) {
+      filteredInventory = inventory.filter(p => aiFilteredIds.includes(p.id));
+  } else if (search) {
+      filteredInventory = inventory.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  }
 
   return (
     <div className="space-y-6">
@@ -74,20 +101,60 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                 <Package className="w-5 h-5" /> Inventory Management
             </h2>
             <div className="flex gap-2 w-full md:w-auto">
-                <div className="relative flex-grow">
+                <div className="relative flex-grow md:w-64">
                     <Input 
-                        placeholder="Search items..." 
+                        placeholder="Search or ask AI..." 
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="pl-10"
+                        onChange={(e) => {
+                            setSearch(e.target.value);
+                            // If user types, reset AI filter to allow normal search
+                            if (aiFilteredIds) setAiFilteredIds(null);
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleAISearch();
+                        }}
+                        className="pl-10 pr-20"
                     />
                     <Search className="absolute left-3 top-1/2 transform -translate-y-[20%] w-4 h-4 opacity-50" />
+                    
+                    {/* Search Actions */}
+                    <div className="absolute right-2 top-1/2 transform -translate-y-[20%] flex items-center gap-1">
+                        {search && (
+                            <button 
+                                onClick={() => { setSearch(''); setAiFilteredIds(null); }} 
+                                className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
+                            >
+                                <X className="w-3 h-3 opacity-50" />
+                            </button>
+                        )}
+                        <button 
+                            onClick={handleAISearch}
+                            disabled={!search.trim() || isSearchingAI}
+                            className={`p-1.5 rounded-lg transition-all ${
+                                aiFilteredIds ? 'bg-blue-100 text-blue-600' : 'hover:bg-blue-50 text-blue-500'
+                            }`}
+                            title="AI Smart Search"
+                        >
+                            {isSearchingAI ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        </button>
+                    </div>
                 </div>
                 <Button onClick={() => setIsAdding(true)} className="flex items-center gap-2 whitespace-nowrap">
                     <Plus className="w-4 h-4" /> Add Item
                 </Button>
             </div>
         </div>
+
+        {/* AI Filter Status Banner */}
+        {aiFilteredIds && (
+            <div className="mb-4 p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 text-sm rounded-lg flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Showing results for: <strong>"{search}"</strong>
+                </span>
+                <button onClick={() => setAiFilteredIds(null)} className="underline opacity-70 hover:opacity-100">Clear Filter</button>
+            </div>
+        )}
 
         {/* Product List */}
         <div className="overflow-x-auto">
@@ -128,7 +195,9 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={5} className="p-8 text-center opacity-50">No items found.</td>
+                                <td colSpan={5} className="p-8 text-center opacity-50">
+                                    {isSearchingAI ? "Thinking..." : "No items found."}
+                                </td>
                             </tr>
                         )}
                     </AnimatePresence>
