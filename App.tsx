@@ -25,7 +25,7 @@ const DEMO_PRODUCTS: Product[] = [
 ];
 
 const MainContent: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, showNavLabels } = useTheme();
   const styles = getThemeClasses(theme);
   const [activeTab, setActiveTab] = useState('calculator');
   
@@ -44,7 +44,7 @@ const MainContent: React.FC = () => {
   return (
     // Wrap main logic in AIProvider to give AI access to state
     <AIProvider inventory={inventory} setInventory={setInventory} cart={cart} setCart={setCart}>
-      <div className={`min-h-screen transition-colors duration-500 ${styles.appBg} font-sans relative`}>
+      <div className={`min-h-screen transition-colors duration-500 ${styles.appBg} font-sans relative pb-24 md:pb-0`}>
         <div className="max-w-6xl mx-auto px-4 py-8">
           
           {/* Header */}
@@ -60,8 +60,8 @@ const MainContent: React.FC = () => {
             </div>
           </header>
 
-          {/* Navigation Tabs */}
-          <nav className="flex space-x-1 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+          {/* Desktop Navigation Tabs */}
+          <nav className="hidden md:flex space-x-1 mb-8 overflow-x-auto pb-2 scrollbar-hide">
               {tabs.map((tab) => (
                   <button
                       key={tab.id}
@@ -70,9 +70,10 @@ const MainContent: React.FC = () => {
                           flex items-center gap-2 px-6 py-3 rounded-xl transition-all whitespace-nowrap
                           ${activeTab === tab.id ? styles.tabActive : styles.tabInactive}
                       `}
+                      title={tab.label}
                   >
                       {tab.icon}
-                      {tab.label}
+                      {showNavLabels && tab.label}
                   </button>
               ))}
           </nav>
@@ -96,9 +97,42 @@ const MainContent: React.FC = () => {
               </AnimatePresence>
           </main>
 
-          <footer className="mt-12 text-center opacity-50 text-sm pb-8">
+          <footer className="mt-12 text-center opacity-50 text-sm pb-8 hidden md:block">
               <p>&copy; {new Date().getFullYear()} TradesMen Utility. Local Storage Enabled.</p>
           </footer>
+        </div>
+
+        {/* Mobile Bottom Navigation */}
+        <div className={`md:hidden fixed bottom-0 left-0 right-0 z-40 px-2 py-2 pb-safe flex justify-around items-center transition-all duration-300 ${
+             theme === 'glass' ? 'bg-black/40 backdrop-blur-xl border-t border-white/10 text-white' : 
+             theme === 'neumorphism' ? 'bg-[#E0E5EC] shadow-[0_-5px_10px_#bebebe,0_-5px_10px_#ffffff]' :
+             'bg-white dark:bg-[#0f0f0f] border-t border-gray-200 dark:border-gray-800 shadow-lg'
+        }`}>
+              {tabs.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`
+                            flex flex-col items-center justify-center p-2 rounded-xl transition-all w-16
+                            ${isActive ? 'scale-110' : 'opacity-60 scale-100'}
+                            ${isActive && theme === 'material' ? 'bg-[#E8DEF8] text-[#1D192B]' : ''}
+                            ${isActive && theme === 'glass' ? 'bg-white/20 text-white' : ''}
+                            ${isActive && theme === 'fluent' ? 'text-[#0078D4]' : ''}
+                            ${isActive && theme === 'neumorphism' ? 'shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] text-slate-700' : ''}
+                        `}
+                        title={tab.label}
+                    >
+                        {React.cloneElement(tab.icon as React.ReactElement, { className: "w-6 h-6" })}
+                        {showNavLabels && (
+                          <span className="text-[10px] mt-1 font-medium truncate w-full text-center">
+                              {tab.label}
+                          </span>
+                        )}
+                    </button>
+                  );
+              })}
         </div>
 
         {/* AI Assistant FAB */}

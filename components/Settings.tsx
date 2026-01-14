@@ -1,13 +1,13 @@
 import React from 'react';
 import { ThemeType } from '../types';
 import { Card } from './ui/BaseComponents';
-import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles } from 'lucide-react';
+import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAI } from '../contexts/AIContext';
 
 const Settings: React.FC = () => {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, showNavLabels, setShowNavLabels } = useTheme();
   const { showAssistant, setShowAssistant } = useAI();
   const styles = getThemeClasses(theme);
 
@@ -63,6 +63,29 @@ const Settings: React.FC = () => {
         </div>
       </Card>
 
+      {/* Interface Settings */}
+      <Card>
+        <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
+           <Monitor className="w-5 h-5" /> Interface
+        </h2>
+        <div className="flex items-center justify-between">
+            <div>
+                <div className="font-bold">Show Navigation Labels</div>
+                <div className="text-sm opacity-60">Display text labels next to icons in the navigation bar.</div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={showNavLabels}
+                    onChange={(e) => setShowNavLabels(e.target.checked)}
+                />
+                <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
+            </label>
+        </div>
+      </Card>
+
+      {/* Theme Settings */}
       <Card>
         <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
            <Palette className="w-5 h-5" /> Appearance

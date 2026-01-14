@@ -102,7 +102,7 @@ const AIAssistant: React.FC = () => {
     <>
       {/* Floating Action Button */}
       <motion.button
-        className={`fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-xl flex items-center justify-center transition-all ${
+        className={`fixed bottom-24 md:bottom-6 right-6 z-50 p-4 rounded-full shadow-xl flex items-center justify-center transition-all ${
            theme === 'material' ? 'bg-[#6750A4] text-white' : 
            theme === 'fluent' ? 'bg-[#0078D4] text-white' :
            'bg-black text-white dark:bg-white dark:text-black'
@@ -121,7 +121,7 @@ const AIAssistant: React.FC = () => {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className={`fixed bottom-24 right-6 w-[90vw] md:w-[400px] h-[500px] z-40 flex flex-col overflow-hidden shadow-2xl ${
+            className={`fixed bottom-40 md:bottom-24 right-6 w-[90vw] md:w-[400px] h-[500px] z-40 flex flex-col overflow-hidden shadow-2xl ${
                 theme === 'glass' ? 'bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl' :
                 theme === 'neumorphism' ? 'bg-[#E0E5EC] rounded-2xl border border-white/40' :
                 'bg-white rounded-2xl border border-gray-200'
