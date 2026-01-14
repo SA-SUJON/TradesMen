@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Product, CartItem, Customer, Transaction, Sale } from '../types';
+import { Product, CartItem, Customer, Transaction, Sale, ProductHistoryEvent } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
 import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle, MapPin } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
@@ -9,6 +9,7 @@ import BarcodeScanner from './BarcodeScanner';
 
 interface BillingProps {
   inventory: Product[];
+  setInventory: (inv: Product[]) => void;
   cart: CartItem[];
   setCart: (cart: CartItem[]) => void;
   customers: Customer[];
@@ -17,7 +18,7 @@ interface BillingProps {
   setSales: (sales: Sale[]) => void;
 }
 
-const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, setCustomers, sales, setSales }) => {
+const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCart, customers, setCustomers, sales, setSales }) => {
   const { theme, voiceEnabled, unitSystem } = useTheme();
   const styles = getThemeClasses(theme);
   
@@ -114,6 +115,8 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
   };
 
   const handleCompleteOrder = (method: 'cash' | 'credit') => {
+    if (cart.length === 0) return;
+
     const total = calculateTotal();
     const profit = calculateTotalProfit();
     
@@ -129,7 +132,30 @@ const Billing: React.FC<BillingProps> = ({ inventory, cart, setCart, customers, 
     };
     setSales([...sales, newSale]);
 
-    // 2. Update Customer History & Debt
+    // 2. Update Stock and Product History
+    const updatedInventory = inventory.map(prod => {
+        const cartItem = cart.find(c => c.id === prod.id);
+        if (cartItem) {
+            // Create History Event
+            const newHistory: ProductHistoryEvent[] = [...(prod.history || [])];
+            newHistory.push({
+                id: Date.now().toString() + Math.random(),
+                date: new Date().toISOString(),
+                type: 'sale',
+                description: `Sold ${formatUnit(cartItem.quantity, cartItem.unit, unitSystem)}`
+            });
+
+            return {
+                ...prod,
+                stock: prod.stock - cartItem.quantity,
+                history: newHistory
+            };
+        }
+        return prod;
+    });
+    setInventory(updatedInventory);
+
+    // 3. Update Customer History & Debt
     if (selectedCustomerId) {
         const customer = customers.find(c => c.id === selectedCustomerId);
         if (customer) {

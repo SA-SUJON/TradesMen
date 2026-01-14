@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Product } from '../types';
+import { Product, ProductHistoryEvent } from '../types';
 import { Card, Input, Button } from './ui/BaseComponents';
-import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin } from 'lucide-react';
+import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin, History, ShoppingBag, Clock, PlusCircle } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -49,9 +49,46 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
 
   const handleSave = () => {
     if (!formData.name || !formData.sellingPrice) return;
+    const now = new Date().toISOString();
 
     if (editId) {
-        setInventory(inventory.map(item => item.id === editId ? { ...item, ...formData } as Product : item));
+        const oldItem = inventory.find(i => i.id === editId);
+        const newHistory: ProductHistoryEvent[] = [...(oldItem?.history || [])];
+
+        // Track History: Price Change
+        if (oldItem && formData.sellingPrice !== oldItem.sellingPrice) {
+            newHistory.push({
+                id: Date.now().toString() + 'p',
+                date: now,
+                type: 'update',
+                description: `Price changed from ${oldItem.sellingPrice} to ${formData.sellingPrice}`
+            });
+        }
+        // Track History: Supplier Change
+        if (oldItem && formData.supplierName !== oldItem.supplierName && formData.supplierName) {
+            newHistory.push({
+                id: Date.now().toString() + 's',
+                date: now,
+                type: 'update',
+                description: `Supplier changed to ${formData.supplierName}`
+            });
+        }
+        // Track History: Stock Adjustment (Manual)
+        if (oldItem && formData.stock !== oldItem.stock) {
+             newHistory.push({
+                id: Date.now().toString() + 'st',
+                date: now,
+                type: 'stock',
+                description: `Stock adjusted from ${oldItem.stock} to ${formData.stock}`
+            });
+        }
+
+        const updatedItem: Product = { 
+            ...oldItem, 
+            ...formData, 
+            history: newHistory 
+        } as Product;
+        setInventory(inventory.map(item => item.id === editId ? updatedItem : item));
     } else {
         const newItem: Product = {
             id: Date.now().toString(),
@@ -67,7 +104,13 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
             purchaseDate: formData.purchaseDate,
             lowStockThreshold: formData.lowStockThreshold || 10,
             barcode: formData.barcode,
-            shelfId: formData.shelfId
+            shelfId: formData.shelfId,
+            history: [{
+                id: Date.now().toString(),
+                date: now,
+                type: 'create',
+                description: 'Added to inventory'
+            }]
         };
         setInventory([...inventory, newItem]);
     }
@@ -121,6 +164,16 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
           speak("Barcode added to product", voiceEnabled);
       }
       setShowScanner(false);
+  };
+
+  const getEventIcon = (type: string) => {
+      switch(type) {
+          case 'create': return <PlusCircle className="w-3 h-3 text-green-500" />;
+          case 'sale': return <ShoppingBag className="w-3 h-3 text-blue-500" />;
+          case 'update': return <Tag className="w-3 h-3 text-orange-500" />;
+          case 'stock': return <Package className="w-3 h-3 text-purple-500" />;
+          default: return <Clock className="w-3 h-3 text-gray-500" />;
+      }
   };
 
   // Determine which items to show
@@ -269,22 +322,62 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                             className="bg-gray-50 dark:bg-gray-900/50"
                                         >
                                             <td colSpan={5} className="p-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                                    <div>
-                                                        <div className="opacity-50 text-xs mb-1">SUPPLIER DETAILS</div>
-                                                        <div className="flex items-center gap-2"><Truck className="w-3 h-3" /> {item.supplierName || 'N/A'}</div>
-                                                        <div className="flex items-center gap-2 mt-1"><Phone className="w-3 h-3" /> {item.supplierContact || 'N/A'}</div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    {/* Left: Standard Details */}
+                                                    <div className="space-y-4">
+                                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                                            <div>
+                                                                <div className="opacity-50 text-xs mb-1">SUPPLIER DETAILS</div>
+                                                                <div className="flex items-center gap-2"><Truck className="w-3 h-3" /> {item.supplierName || 'N/A'}</div>
+                                                                <div className="flex items-center gap-2 mt-1"><Phone className="w-3 h-3" /> {item.supplierContact || 'N/A'}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="opacity-50 text-xs mb-1">INVENTORY META</div>
+                                                                <div className="flex items-center gap-2"><Tag className="w-3 h-3" /> Buy Price: {item.buyingPrice}</div>
+                                                                <div className="flex items-center gap-2 mt-1"><Calendar className="w-3 h-3" /> Purchased: {item.purchaseDate || 'N/A'}</div>
+                                                                <div className="flex items-center gap-2 mt-1"><ScanBarcode className="w-3 h-3" /> Code: {item.barcode || 'N/A'}</div>
+                                                                <div className="flex items-center gap-2 mt-1 font-medium text-blue-600 dark:text-blue-400"><MapPin className="w-3 h-3" /> Shelf Loc: {item.shelfId || 'Unassigned'}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="opacity-50 text-xs mb-1">NOTES</div>
+                                                            <p className="opacity-80 italic text-sm">{item.notes || 'No notes available.'}</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <div className="opacity-50 text-xs mb-1">INVENTORY META</div>
-                                                        <div className="flex items-center gap-2"><Tag className="w-3 h-3" /> Buy Price: {item.buyingPrice}</div>
-                                                        <div className="flex items-center gap-2 mt-1"><Calendar className="w-3 h-3" /> Purchased: {item.purchaseDate || 'N/A'}</div>
-                                                        <div className="flex items-center gap-2 mt-1"><ScanBarcode className="w-3 h-3" /> Code: {item.barcode || 'N/A'}</div>
-                                                        <div className="flex items-center gap-2 mt-1 font-medium text-blue-600 dark:text-blue-400"><MapPin className="w-3 h-3" /> Shelf Loc: {item.shelfId || 'Unassigned'}</div>
-                                                    </div>
-                                                    <div>
-                                                        <div className="opacity-50 text-xs mb-1">NOTES</div>
-                                                        <p className="opacity-80 italic">{item.notes || 'No notes available.'}</p>
+
+                                                    {/* Right: History Timeline */}
+                                                    <div className="border-l border-gray-200 dark:border-white/10 pl-4 md:pl-8">
+                                                        <div className="flex items-center gap-2 font-bold mb-4 opacity-80">
+                                                            <History className="w-4 h-4" /> Product Journey
+                                                        </div>
+                                                        <div className="space-y-0 relative">
+                                                            {/* Vertical Line */}
+                                                            <div className="absolute left-[5px] top-2 bottom-2 w-[1px] bg-gray-200 dark:bg-white/10"></div>
+                                                            
+                                                            {item.history && item.history.length > 0 ? (
+                                                                item.history.slice().reverse().slice(0, 5).map((event) => (
+                                                                    <div key={event.id} className="relative pl-6 pb-4 last:pb-0 group">
+                                                                        <div className="absolute left-0 top-1 w-[11px] h-[11px] rounded-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 group-hover:border-blue-500 z-10 flex items-center justify-center">
+                                                                            <div className="w-1 h-1 rounded-full bg-transparent group-hover:bg-blue-500"></div>
+                                                                        </div>
+                                                                        <div className="text-xs opacity-50 mb-0.5 flex items-center gap-1">
+                                                                            {new Date(event.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
+                                                                            <span>•</span>
+                                                                            <span className="uppercase tracking-wider font-medium">{event.type}</span>
+                                                                        </div>
+                                                                        <div className="text-sm font-medium flex items-start gap-2">
+                                                                            <span className="mt-0.5 opacity-70">{getEventIcon(event.type)}</span>
+                                                                            <span>{event.description}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div className="text-sm opacity-40 italic pl-4">No history recorded yet.</div>
+                                                            )}
+                                                            {item.history && item.history.length > 5 && (
+                                                                <div className="pl-6 pt-2 text-xs opacity-40">...and {item.history.length - 5} more events.</div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>

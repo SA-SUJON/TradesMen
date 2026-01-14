@@ -2,6 +2,13 @@
 export type ThemeType = 'material' | 'glass' | 'neumorphism' | 'fluent';
 export type UnitSystem = 'metric' | 'local'; // local = Maund/Seer
 
+export interface ProductHistoryEvent {
+  id: string;
+  date: string;
+  type: 'create' | 'update' | 'sale' | 'stock';
+  description: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -19,6 +26,7 @@ export interface Product {
   notes?: string;
   purchaseDate?: string;
   lowStockThreshold?: number;
+  history?: ProductHistoryEvent[]; // Timeline of product life
 }
 
 export interface CartItem extends Product {

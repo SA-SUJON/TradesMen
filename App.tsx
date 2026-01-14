@@ -24,10 +24,10 @@ import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings
 
 // Demo Data
 const DEMO_PRODUCTS: Product[] = [
-  { id: '1', name: 'Sugar (Premium)', buyingPrice: 38, sellingPrice: 45, stock: 100, unit: 'kg', lowStockThreshold: 20 },
-  { id: '2', name: 'Basmati Rice', buyingPrice: 85, sellingPrice: 110, stock: 50, unit: 'kg', supplierName: 'Agro Traders' },
-  { id: '3', name: 'Almonds', buyingPrice: 600, sellingPrice: 850, stock: 10, unit: 'kg', lowStockThreshold: 5 },
-  { id: '4', name: 'Milk Powder', buyingPrice: 300, sellingPrice: 350, stock: 5, unit: 'kg', expiryDate: '2025-05-20', lowStockThreshold: 10 }, 
+  { id: '1', name: 'Sugar (Premium)', buyingPrice: 38, sellingPrice: 45, stock: 100, unit: 'kg', lowStockThreshold: 20, history: [{ id: 'h1', date: new Date().toISOString(), type: 'create', description: 'Item added to inventory' }] },
+  { id: '2', name: 'Basmati Rice', buyingPrice: 85, sellingPrice: 110, stock: 50, unit: 'kg', supplierName: 'Agro Traders', history: [{ id: 'h2', date: new Date().toISOString(), type: 'create', description: 'Item added to inventory' }] },
+  { id: '3', name: 'Almonds', buyingPrice: 600, sellingPrice: 850, stock: 10, unit: 'kg', lowStockThreshold: 5, history: [{ id: 'h3', date: new Date().toISOString(), type: 'create', description: 'Item added to inventory' }] },
+  { id: '4', name: 'Milk Powder', buyingPrice: 300, sellingPrice: 350, stock: 5, unit: 'kg', expiryDate: '2025-05-20', lowStockThreshold: 10, history: [{ id: 'h4', date: new Date().toISOString(), type: 'create', description: 'Item added to inventory' }] }, 
 ];
 
 const DEMO_CUSTOMERS: Customer[] = [
@@ -179,7 +179,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                       {activeTab === 'inventory' && <Inventory inventory={inventory} setInventory={setInventory} />}
                       {activeTab === 'billing' && (
                         <Billing 
-                            inventory={inventory} 
+                            inventory={inventory}
+                            setInventory={setInventory}
                             cart={cart} setCart={setCart} 
                             customers={customers} setCustomers={setCustomers}
                             sales={sales} setSales={setSales}
