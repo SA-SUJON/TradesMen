@@ -20,12 +20,18 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
 
   const setValue = (value: T | ((val: T) => T)) => {
     try {
-      // Allow value to be a function so we have same API as useState
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-      }
+      // Use functional update to ensure we refer to the latest state (prevValue)
+      setStoredValue((prevValue) => {
+        // Resolve the value: if it's a function, call it with the previous value
+        const valueToStore = value instanceof Function ? value(prevValue) : value;
+        
+        // Save to local storage
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        }
+        
+        return valueToStore;
+      });
     } catch (error) {
       console.warn(`Error setting localStorage key “${key}”:`, error);
     }

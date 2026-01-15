@@ -8,7 +8,7 @@ import { useTheme } from '../contexts/ThemeContext';
 
 interface CustomersProps {
   customers: Customer[];
-  setCustomers: (customers: Customer[]) => void;
+  setCustomers: (customers: Customer[] | ((val: Customer[]) => Customer[])) => void;
 }
 
 const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
@@ -30,7 +30,7 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
     if (!formData.name) return;
 
     if (editId) {
-        setCustomers(customers.map(c => c.id === editId ? { ...c, ...formData } as Customer : c));
+        setCustomers(prev => prev.map(c => c.id === editId ? { ...c, ...formData } as Customer : c));
     } else {
         const newCustomer: Customer = {
             id: Date.now().toString(),
@@ -39,14 +39,14 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
             debt: 0,
             history: []
         };
-        setCustomers([...customers, newCustomer]);
+        setCustomers(prev => [...prev, newCustomer]);
     }
     resetForm();
   };
 
   const handleDelete = (id: string) => {
     if(window.confirm("Are you sure? This will delete the customer and their history.")) {
-        setCustomers(customers.filter(c => c.id !== id));
+        setCustomers(prev => prev.filter(c => c.id !== id));
         if (selectedCustomer?.id === id) setSelectedCustomer(null);
     }
   };
@@ -122,12 +122,14 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                          <button 
+                                            type="button"
                                             onClick={(e) => { e.stopPropagation(); handleEdit(customer); }}
                                             className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer"
                                          >
                                             <Edit2 className="w-3 h-3 text-blue-500" />
                                          </button>
                                           <button 
+                                            type="button"
                                             onClick={(e) => { e.stopPropagation(); handleDelete(customer.id); }}
                                             className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer"
                                          >

@@ -11,7 +11,7 @@ import BarcodeScanner from './BarcodeScanner';
 
 interface InventoryProps {
   inventory: Product[];
-  setInventory: (inv: Product[]) => void;
+  setInventory: (inv: Product[] | ((val: Product[]) => Product[])) => void;
 }
 
 const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
@@ -54,40 +54,45 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
     const now = new Date().toISOString();
 
     if (editId) {
-        const oldItem = inventory.find(i => i.id === editId);
-        const newHistory: ProductHistoryEvent[] = [...(oldItem?.history || [])];
+        setInventory(prev => {
+            const oldItem = prev.find(i => i.id === editId);
+            if (!oldItem) return prev;
 
-        // Track History: Price Change
-        if (oldItem && formData.sellingPrice !== oldItem.sellingPrice) {
-            newHistory.push({
-                id: Date.now().toString() + 'p',
-                date: now,
-                type: 'update',
-                description: `Price changed from ${oldItem.sellingPrice} to ${formData.sellingPrice}`
-            });
-        }
-        // Track History: Stock Adjustment (Manual)
-        if (oldItem && formData.stock !== oldItem.stock) {
-             newHistory.push({
-                id: Date.now().toString() + 'st',
-                date: now,
-                type: 'stock',
-                description: `Stock adjusted from ${oldItem.stock} to ${formData.stock}`
-            });
-        }
+            const newHistory: ProductHistoryEvent[] = [...(oldItem.history || [])];
 
-        const updatedItem: Product = { 
-            ...oldItem, 
-            ...formData, 
-            history: newHistory 
-        } as Product;
-        setInventory(inventory.map(item => item.id === editId ? updatedItem : item));
+            // Track History: Price Change
+            if (formData.sellingPrice !== oldItem.sellingPrice) {
+                newHistory.push({
+                    id: Date.now().toString() + 'p',
+                    date: now,
+                    type: 'update',
+                    description: `Price changed from ${oldItem.sellingPrice} to ${formData.sellingPrice}`
+                });
+            }
+            // Track History: Stock Adjustment (Manual)
+            if (formData.stock !== oldItem.stock) {
+                 newHistory.push({
+                    id: Date.now().toString() + 'st',
+                    date: now,
+                    type: 'stock',
+                    description: `Stock adjusted from ${oldItem.stock} to ${formData.stock}`
+                });
+            }
+
+            const updatedItem: Product = { 
+                ...oldItem, 
+                ...formData, 
+                history: newHistory 
+            } as Product;
+            
+            return prev.map(item => item.id === editId ? updatedItem : item);
+        });
     } else {
         const newItem: Product = {
             id: Date.now().toString(),
-            name: formData.name,
+            name: formData.name || '',
             buyingPrice: formData.buyingPrice || 0,
-            sellingPrice: formData.sellingPrice,
+            sellingPrice: formData.sellingPrice || 0,
             stock: formData.stock || 0,
             unit: formData.unit || 'kg',
             category: formData.category,
@@ -107,14 +112,14 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                 description: 'Added to inventory'
             }]
         };
-        setInventory([...inventory, newItem]);
+        setInventory(prev => [...prev, newItem]);
     }
     resetForm();
   };
 
   const handleDelete = (id: string) => {
     if(window.confirm("Are you sure you want to delete this item?")) {
-        setInventory(inventory.filter(i => i.id !== id));
+        setInventory(prev => prev.filter(i => i.id !== id));
     }
   };
 
@@ -351,11 +356,19 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                             </div>
                                         </td>
                                         <td className="p-4 text-right font-bold text-lg">{item.sellingPrice}</td>
-                                        <td className="p-4 flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 transition-colors">
+                                        <td className="p-4 flex justify-center gap-2">
+                                            <button 
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); handleEdit(item); }} 
+                                                className="p-2 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 transition-colors z-10"
+                                            >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
-                                            <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 transition-colors">
+                                            <button 
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} 
+                                                className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 transition-colors z-10"
+                                            >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         </td>
@@ -420,6 +433,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <button 
+                                    type="button"
                                     onClick={() => setExpandedRow(expandedRow === item.id ? null : item.id)}
                                     className="text-xs flex items-center gap-1 opacity-50 p-2 -ml-2"
                                 >
@@ -428,12 +442,14 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                 </button>
                                 <div className="flex gap-2">
                                     <button 
+                                        type="button"
                                         onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
                                         className="text-blue-600 p-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors cursor-pointer"
                                     >
                                         <Edit2 className="w-5 h-5" />
                                     </button>
                                     <button 
+                                        type="button"
                                         onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
                                         className="text-red-600 p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors cursor-pointer"
                                     >

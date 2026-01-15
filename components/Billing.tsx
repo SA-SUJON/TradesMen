@@ -10,13 +10,13 @@ import useLocalStorage from '../hooks/useLocalStorage';
 
 interface BillingProps {
   inventory: Product[];
-  setInventory: (inv: Product[]) => void;
+  setInventory: (inv: Product[] | ((val: Product[]) => Product[])) => void;
   cart: CartItem[];
-  setCart: (cart: CartItem[]) => void;
+  setCart: (cart: CartItem[] | ((val: CartItem[]) => CartItem[])) => void;
   customers: Customer[];
-  setCustomers: (customers: Customer[]) => void;
+  setCustomers: (customers: Customer[] | ((val: Customer[]) => Customer[])) => void;
   sales: Sale[];
-  setSales: (sales: Sale[]) => void;
+  setSales: (sales: Sale[] | ((val: Sale[]) => Sale[])) => void;
 }
 
 const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCart, customers, setCustomers, sales, setSales }) => {
@@ -58,7 +58,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
         taxAmount: taxAmount
     };
 
-    setCart([...cart, newItem]);
+    setCart(prev => [...prev, newItem]);
     speak(`Added ${qty} ${product.unit} of ${product.name}`, voiceEnabled);
 
     // Reset inputs
@@ -80,7 +80,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
   };
 
   const removeItem = (cartId: string) => {
-    setCart(cart.filter(c => c.cartId !== cartId));
+    setCart(prev => prev.filter(c => c.cartId !== cartId));
   };
 
   const calculateSubTotal = () => {
@@ -149,10 +149,10 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
         items: [...cart],
         customerId: selectedCustomerId || undefined
     };
-    setSales([...sales, newSale]);
+    setSales(prev => [...prev, newSale]);
 
     // 2. Update Stock
-    const updatedInventory = inventory.map(prod => {
+    setInventory(prev => prev.map(prod => {
         const cartItem = cart.find(c => c.id === prod.id);
         if (cartItem) {
             const newHistory: ProductHistoryEvent[] = [...(prod.history || [])];
@@ -165,27 +165,29 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
             return { ...prod, stock: prod.stock - cartItem.quantity, history: newHistory };
         }
         return prod;
-    });
-    setInventory(updatedInventory);
+    }));
 
     // 3. Update Customer
     if (selectedCustomerId) {
-        const customer = customers.find(c => c.id === selectedCustomerId);
-        if (customer) {
-            const newTransaction: Transaction = {
-                id: Date.now().toString(),
-                date: new Date().toISOString(),
-                amount: total,
-                summary: `Invoice #${invoiceNumber}`,
-                type: method === 'credit' ? 'credit' : 'sale'
-            };
-            const updatedCustomer = {
-                ...customer,
-                history: [...customer.history, newTransaction],
-                debt: method === 'credit' ? (customer.debt || 0) + total : (customer.debt || 0)
-            };
-            setCustomers(customers.map(c => c.id === selectedCustomerId ? updatedCustomer : c));
-        }
+        setCustomers(prev => {
+             const customer = prev.find(c => c.id === selectedCustomerId);
+             if (customer) {
+                const newTransaction: Transaction = {
+                    id: Date.now().toString(),
+                    date: new Date().toISOString(),
+                    amount: total,
+                    summary: `Invoice #${invoiceNumber}`,
+                    type: method === 'credit' ? 'credit' : 'sale'
+                };
+                const updatedCustomer = {
+                    ...customer,
+                    history: [...customer.history, newTransaction],
+                    debt: method === 'credit' ? (customer.debt || 0) + total : (customer.debt || 0)
+                };
+                return prev.map(c => c.id === selectedCustomerId ? updatedCustomer : c);
+             }
+             return prev;
+        });
     } else if (method === 'credit') {
         alert("Please select a customer to sell on credit.");
         return;
@@ -247,10 +249,26 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
       {/* HIDDEN INVOICE TEMPLATE (Visible only on Print) */}
       <div id="printable-invoice" className="hidden print:block p-8 bg-white text-black font-sans max-w-[210mm] mx-auto h-full">
            {/* ... Print Template Content ... */}
-           {/* (Kept minimal for brevity as it's hidden on mobile view) */}
            <h1 className="text-3xl font-bold">{profile.name}</h1>
-           <p>Invoice #{invoiceNumber}</p>
-           {/* ... */}
+           <p className="mb-4">Invoice #{invoiceNumber}</p>
+           <div className="border-t border-b border-black py-2 mb-4">
+                <div className="flex justify-between font-bold">
+                    <span>Item</span>
+                    <span>Qty</span>
+                    <span>Total</span>
+                </div>
+           </div>
+           {cart.map(item => (
+               <div key={item.cartId} className="flex justify-between mb-2">
+                   <span>{item.name}</span>
+                   <span>{item.quantity} {item.unit}</span>
+                   <span>{((item.sellingPrice * item.quantity) * (1 - item.discount/100)).toFixed(2)}</span>
+               </div>
+           ))}
+           <div className="border-t border-black pt-2 mt-4 flex justify-between font-bold text-xl">
+               <span>TOTAL</span>
+               <span>{calculateGrandTotal().toFixed(2)}</span>
+           </div>
       </div>
 
       {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
@@ -361,7 +379,11 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                                         <td className="py-3 text-right hidden md:table-cell">{item.sellingPrice}</td>
                                         <td className="py-3 text-right font-bold">{lineTotal.toFixed(2)}</td>
                                         <td className="py-3 text-center">
-                                            <button onClick={() => removeItem(item.cartId)} className="text-red-500 p-2">
+                                            <button 
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); removeItem(item.cartId); }} 
+                                                className="text-red-500 p-2 cursor-pointer relative z-10"
+                                            >
                                                 <Trash className="w-4 h-4" />
                                             </button>
                                         </td>

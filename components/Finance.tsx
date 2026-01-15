@@ -10,9 +10,9 @@ import { openWhatsApp } from '../utils/appUtils';
 interface FinanceProps {
     sales: Sale[];
     expenses: Expense[];
-    setExpenses: (expenses: Expense[]) => void;
+    setExpenses: (expenses: Expense[] | ((val: Expense[]) => Expense[])) => void;
     customers: Customer[];
-    setCustomers: (customers: Customer[]) => void;
+    setCustomers: (customers: Customer[] | ((val: Customer[]) => Customer[])) => void;
 }
 
 const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, customers, setCustomers }) => {
@@ -63,10 +63,10 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
             category: newExpense.category,
             date: new Date().toISOString()
         };
-        setExpenses([exp, ...expenses]);
+        setExpenses(prev => [exp, ...prev]);
         setNewExpense({ title: '', amount: '', category: 'Rent' });
     };
-    const deleteExpense = (id: string) => setExpenses(expenses.filter(e => e.id !== id));
+    const deleteExpense = (id: string) => setExpenses(prev => prev.filter(e => e.id !== id));
 
     // --- DEBT LOGIC ---
     const debtCustomers = useMemo(() => customers.filter(c => c.debt > 0), [customers]);
@@ -77,26 +77,28 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
     };
 
     const settleDebt = (id: string, amount: number) => {
-        const customer = customers.find(c => c.id === id);
-        if(!customer) return;
-        
-        // Ensure we don't pay more than debt
-        const payAmount = Math.min(amount, customer.debt);
-        
-        const newTx: Transaction = {
-            id: Date.now().toString(),
-            date: new Date().toISOString(),
-            amount: payAmount,
-            summary: `Debt Payment Received`,
-            type: 'payment'
-        };
+        setCustomers(prev => {
+             const customer = prev.find(c => c.id === id);
+             if(!customer) return prev;
+             
+             // Ensure we don't pay more than debt
+             const payAmount = Math.min(amount, customer.debt);
+             
+             const newTx: Transaction = {
+                id: Date.now().toString(),
+                date: new Date().toISOString(),
+                amount: payAmount,
+                summary: `Debt Payment Received`,
+                type: 'payment'
+             };
 
-        const updated = {
-            ...customer,
-            debt: customer.debt - payAmount,
-            history: [...customer.history, newTx]
-        };
-        setCustomers(customers.map(c => c.id === id ? updated : c));
+             const updated = {
+                ...customer,
+                debt: customer.debt - payAmount,
+                history: [...customer.history, newTx]
+             };
+             return prev.map(c => c.id === id ? updated : c);
+        });
     };
 
     return (
@@ -265,6 +267,7 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                                     <div className="flex items-center gap-4">
                                         <span className="font-bold text-red-500">- {exp.amount.toFixed(2)}</span>
                                         <button 
+                                            type="button"
                                             onClick={(e) => { e.stopPropagation(); deleteExpense(exp.id); }}
                                             className="text-gray-400 hover:text-red-500 cursor-pointer p-2"
                                         >
