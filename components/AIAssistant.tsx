@@ -116,7 +116,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     if (variant === 'modal') {
          containerClasses = `w-[90vw] md:w-[400px] h-[500px] flex flex-col overflow-hidden shadow-2xl ${
             theme === 'glass' ? 'bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl' :
-            theme === 'neumorphism' ? 'bg-[#E0E5EC] rounded-2xl border border-white/40' :
+            theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-2xl border border-white/40 dark:border-white/5' :
             'bg-white rounded-2xl border border-gray-200'
           }`;
     } else {
@@ -127,7 +127,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     const inputStyles = theme === 'glass' 
         ? 'bg-white/10 border border-white/10 focus:bg-white/20 text-white placeholder-white/50' 
         : theme === 'neumorphism'
-            ? 'bg-[#E0E5EC] shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff] text-slate-700 placeholder-slate-400'
+            ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff] dark:shadow-[inset_2px_2px_5px_#1f2330,inset_-2px_-2px_5px_#33374a] text-slate-700 dark:text-white placeholder-slate-400 dark:placeholder-gray-500'
             : theme === 'material'
                 ? 'bg-[#E7E0EC] focus:bg-[#EADDFF] text-slate-900 placeholder-slate-500'
                 : 'bg-gray-50 border border-gray-200 focus:bg-white focus:border-blue-500 text-gray-800 placeholder-gray-400';
@@ -329,6 +329,7 @@ const AIAssistant: React.FC<{ forceHide?: boolean, isVisible?: boolean }> = ({ f
         className={`fixed bottom-24 md:bottom-6 right-6 z-50 p-4 rounded-full shadow-xl flex items-center justify-center transition-all ${
            theme === 'material' ? 'bg-[#6750A4] text-white' : 
            theme === 'fluent' ? 'bg-[#0078D4] text-white' :
+           theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-700 dark:text-blue-400 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a]' :
            'bg-black text-white dark:bg-white dark:text-black'
         }`}
         whileHover={{ scale: 1.1 }}

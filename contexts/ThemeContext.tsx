@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { ThemeType, UnitSystem } from '../types';
 
@@ -13,6 +13,8 @@ interface ThemeContextType {
   setVoiceEnabled: (enabled: boolean) => void;
   unitSystem: UnitSystem;
   setUnitSystem: (system: UnitSystem) => void;
+  darkMode: boolean;
+  setDarkMode: (enabled: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -27,13 +29,26 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   
   const [unitSystem, setUnitSystem] = useLocalStorage<UnitSystem>('tradesmen-unit-system', 'metric');
 
+  // Dark Mode State
+  const [darkMode, setDarkMode] = useLocalStorage<boolean>('tradesmen-dark-mode', false);
+
+  // Apply Dark Mode to HTML Root
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
   return (
     <ThemeContext.Provider value={{ 
         theme, setTheme, 
         showNavLabels, setShowNavLabels, 
         showQuickScan, setShowQuickScan,
         voiceEnabled, setVoiceEnabled,
-        unitSystem, setUnitSystem
+        unitSystem, setUnitSystem,
+        darkMode, setDarkMode
     }}>
       {children}
     </ThemeContext.Provider>

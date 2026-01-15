@@ -94,7 +94,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       switch(theme) {
           case 'material': return 'bg-m3-primary text-white shadow-md';
           case 'glass': return 'bg-white/20 text-white backdrop-blur-md border border-white/30';
-          case 'neumorphism': return 'bg-[#E0E5EC] text-slate-700 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff]';
+          case 'neumorphism': return 'bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-700 dark:text-gray-200 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a]';
           case 'fluent': default: return 'bg-white text-blue-600 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-white';
       }
   };
@@ -250,7 +250,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         {/* Simplified Mobile Bottom Nav (5 Items) */}
         <div className={`md:hidden fixed bottom-0 left-0 right-0 z-[50] pb-safe pt-2 px-2 transition-all duration-300 ${
              theme === 'glass' ? 'bg-black/40 backdrop-blur-xl border-t border-white/10' : 
-             theme === 'neumorphism' ? 'bg-[#E0E5EC] shadow-[0_-5px_10px_#bebebe]' :
+             theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[0_-5px_10px_#bebebe] dark:shadow-[0_-5px_10px_#1f2330]' :
              'bg-white dark:bg-[#0f0f0f] border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]'
         }`}>
             <div className="grid grid-cols-5 gap-1 w-full">
@@ -269,6 +269,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                             ${isActive && theme === 'material' ? 'text-[#6750A4]' : ''}
                             ${isActive && theme === 'glass' ? 'text-white bg-white/10' : ''}
                             ${isActive && theme === 'fluent' ? 'text-blue-600' : ''}
+                            ${isActive && theme === 'neumorphism' ? 'text-blue-600 dark:text-blue-400 shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a] bg-[#E0E5EC] dark:bg-[#292d3e]' : ''}
                             ${!isActive ? 'opacity-50 grayscale' : 'opacity-100'}
                         `}
                     >
@@ -280,7 +281,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                               {tab.label}
                           </span>
                         )}
-                        {isActive && <div className="h-1 w-8 bg-current rounded-full mt-1 opacity-20" />}
+                        {isActive && theme !== 'neumorphism' && <div className="h-1 w-8 bg-current rounded-full mt-1 opacity-20" />}
                     </button>
                   );
               })}

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Product, CartItem, Customer, Transaction, Sale, ProductHistoryEvent, BusinessProfile } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
@@ -219,11 +220,11 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
               };
           case 'neumorphism':
               return {
-                  container: 'bg-[#E0E5EC] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] border border-white/40',
-                  label: 'text-slate-500 font-bold',
-                  value: 'text-slate-700',
-                  iconBtn: `${baseIcon} bg-[#E0E5EC] text-slate-600 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]`,
-                  payBtn: `${basePay} bg-[#E0E5EC] text-green-600 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]`
+                  container: 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] dark:shadow-[6px_6px_12px_#1f2330,-6px_-6px_12px_#33374a] border border-white/40 dark:border-white/5',
+                  label: 'text-slate-500 dark:text-gray-400 font-bold',
+                  value: 'text-slate-700 dark:text-blue-400',
+                  iconBtn: `${baseIcon} bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-600 dark:text-gray-300 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] dark:shadow-[4px_4px_8px_#1f2330,-4px_-4px_8px_#33374a] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] dark:active:shadow-[inset_2px_2px_4px_#1f2330,inset_-2px_-2px_4px_#33374a]`,
+                  payBtn: `${basePay} bg-[#E0E5EC] dark:bg-[#292d3e] text-green-600 dark:text-green-400 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] dark:shadow-[4px_4px_8px_#1f2330,-4px_-4px_8px_#33374a] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] dark:active:shadow-[inset_2px_2px_4px_#1f2330,inset_-2px_-2px_4px_#33374a]`
               };
           case 'fluent':
              return {
@@ -235,11 +236,11 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
              }
           default: // Material / Default
               return {
-                  container: 'bg-[#EADDFF] text-[#21005D] shadow-lg dark:bg-gray-800 dark:text-white',
-                  label: 'text-[#21005D]/70 dark:text-white/70',
-                  value: 'text-[#21005D] dark:text-white',
-                  iconBtn: `${baseIcon} bg-white/50 dark:bg-white/10 text-[#21005D] dark:text-white hover:bg-white/80`,
-                  payBtn: `${basePay} bg-[#6750A4] text-white hover:bg-[#5f4998]`
+                  container: 'bg-[#EADDFF] text-[#21005D] shadow-lg dark:bg-[#2B2930] dark:text-[#E6E1E5]',
+                  label: 'text-[#21005D]/70 dark:text-[#E6E1E5]/70',
+                  value: 'text-[#21005D] dark:text-[#E6E1E5]',
+                  iconBtn: `${baseIcon} bg-white/50 dark:bg-[#4A4458] text-[#21005D] dark:text-[#E6E1E5] hover:bg-white/80 dark:hover:bg-[#4A4458]/80`,
+                  payBtn: `${basePay} bg-[#6750A4] dark:bg-[#D0BCFF] text-white dark:text-[#381E72] hover:bg-[#5f4998]`
               };
       }
   })();

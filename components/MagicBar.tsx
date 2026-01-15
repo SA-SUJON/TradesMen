@@ -64,14 +64,14 @@ const MagicBar: React.FC<MagicBarProps> = ({ onActivate }) => {
     const containerClass = theme === 'glass' 
         ? 'bg-white/10 backdrop-blur-md border border-white/20' 
         : theme === 'neumorphism' 
-            ? 'bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]'
+            ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a]'
             : theme === 'material'
-                ? 'bg-[#F3EDF7]'
+                ? 'bg-[#F3EDF7] dark:bg-[#2B2930] text-[#1D192B] dark:text-[#E6E1E5]'
                 : 'bg-white border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700';
 
     const inputClass = theme === 'glass'
         ? 'text-white placeholder-white/60'
-        : 'text-slate-800 placeholder-slate-400 dark:text-white';
+        : 'text-slate-800 placeholder-slate-400 dark:text-white dark:placeholder-gray-500';
 
     return (
         <form onSubmit={handleSubmit} className={`w-full relative flex items-center rounded-full px-2 py-1 transition-all group ${containerClass}`}>
@@ -97,7 +97,7 @@ const MagicBar: React.FC<MagicBarProps> = ({ onActivate }) => {
                 {input.trim() && (
                     <button 
                         type="submit"
-                        className={`p-2 rounded-full ${theme === 'material' ? 'bg-[#6750A4] text-white' : 'bg-blue-600 text-white'}`}
+                        className={`p-2 rounded-full ${theme === 'material' ? 'bg-[#6750A4] text-white dark:bg-[#D0BCFF] dark:text-[#381E72]' : 'bg-blue-600 text-white'}`}
                     >
                         <ArrowRight className="w-4 h-4" />
                     </button>

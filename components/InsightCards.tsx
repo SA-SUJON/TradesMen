@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Product } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
@@ -44,7 +45,7 @@ const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
             if (variant === 'info') classes += "bg-blue-500/20 border-blue-500/30 ";
             if (variant === 'success') classes += "bg-green-500/20 border-green-500/30 ";
         } else if (theme === 'neumorphism') {
-            classes += "bg-[#E0E5EC] text-slate-700 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] border-transparent ";
+            classes += "bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-700 dark:text-gray-200 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a] border-transparent ";
              if (variant === 'alert') classes += "border-l-4 border-l-red-500 ";
              if (variant === 'warning') classes += "border-l-4 border-l-orange-500 ";
              if (variant === 'success') classes += "border-l-4 border-l-green-500 ";
@@ -55,10 +56,10 @@ const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
             if (variant === 'success') classes += "border-l-[4px] border-l-green-600 ";
         } else {
             // Material / Default
-            if (variant === 'alert') classes += "bg-red-50 text-red-900 border border-red-100 ";
-            if (variant === 'warning') classes += "bg-orange-50 text-orange-900 border border-orange-100 ";
-            if (variant === 'info') classes += "bg-blue-50 text-blue-900 border border-blue-100 ";
-            if (variant === 'success') classes += "bg-green-50 text-green-900 border border-green-100 ";
+            if (variant === 'alert') classes += "bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-200 border border-red-100 dark:border-red-900/30 ";
+            if (variant === 'warning') classes += "bg-orange-50 dark:bg-orange-900/20 text-orange-900 dark:text-orange-200 border border-orange-100 dark:border-orange-900/30 ";
+            if (variant === 'info') classes += "bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-200 border border-blue-100 dark:border-blue-900/30 ";
+            if (variant === 'success') classes += "bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-200 border border-green-100 dark:border-green-900/30 ";
         }
         return classes;
     };
@@ -82,7 +83,7 @@ const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
                     </div>
                     {lowStockItems.length > 0 && (
                         <span className={`px-2 py-0.5 text-xs rounded-full font-bold ${
-                            theme === 'glass' ? 'bg-red-500/40 text-white' : 'bg-red-100 text-red-700'
+                            theme === 'glass' ? 'bg-red-500/40 text-white' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
                         }`}>
                             Action Needed
                         </span>
@@ -103,7 +104,7 @@ const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
                                             <span>{item.name}</span>
                                             <span className="font-bold text-xs">{item.stock} {item.unit}</span>
                                         </div>
-                                        <div className={`h-1.5 rounded-full w-full ${theme === 'glass' ? 'bg-black/20' : 'bg-gray-200'}`}>
+                                        <div className={`h-1.5 rounded-full w-full ${theme === 'glass' ? 'bg-black/20' : 'bg-gray-200 dark:bg-white/10'}`}>
                                             <div style={{ width: `${fillPercent}%` }} className="h-full rounded-full bg-red-500"></div>
                                         </div>
                                     </div>
@@ -160,7 +161,7 @@ const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
                  initial={{ opacity: 0, y: 10 }}
                  animate={{ opacity: 1, y: 0 }}
                  transition={{ delay: 0.2 }}
-                 className={`${getCardStyle('info')} ${theme === 'material' ? 'bg-m3-container text-m3-onContainer' : ''}`}
+                 className={`${getCardStyle('info')} ${theme === 'material' ? 'bg-m3-container text-m3-onContainer dark:bg-[#4A4458] dark:text-[#E6E1E5]' : ''}`}
             >
                 <div className="flex items-center gap-2 font-bold mb-2">
                     <Zap className="w-5 h-5" />

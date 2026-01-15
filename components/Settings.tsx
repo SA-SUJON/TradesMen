@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeType, BusinessProfile } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus, Smartphone, Key } from 'lucide-react';
+import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus, Smartphone, Key, Moon } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAI } from '../contexts/AIContext';
@@ -14,7 +14,8 @@ const Settings: React.FC = () => {
       showNavLabels, setShowNavLabels, 
       showQuickScan, setShowQuickScan,
       voiceEnabled, setVoiceEnabled,
-      unitSystem, setUnitSystem
+      unitSystem, setUnitSystem,
+      darkMode, setDarkMode
   } = useTheme();
   
   const { 
@@ -246,7 +247,7 @@ const Settings: React.FC = () => {
       </Card>
       
       {/* Manager AI Configuration (New Card) */}
-      <Card className={`${theme === 'material' ? 'bg-indigo-50 border-indigo-100' : ''}`}>
+      <Card className={`${theme === 'material' ? 'bg-indigo-50 border-indigo-100 dark:bg-[#2B2930] dark:border-gray-700' : ''}`}>
           <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
              <Sparkles className="w-5 h-5" /> Manager AI Configuration
           </h2>
@@ -267,11 +268,11 @@ const Settings: React.FC = () => {
                             placeholder={apiKey ? "••••••••••••••••" : "Paste API Key Here"}
                             value={apiKey}
                             onChange={(e) => setApiKey(e.target.value)}
-                            className={apiKey ? "opacity-50 pointer-events-none bg-gray-100" : ""}
+                            className={apiKey ? "opacity-50 pointer-events-none bg-gray-100 dark:bg-gray-800" : ""}
                           />
                       </div>
                       {apiKey && (
-                          <Button variant="secondary" onClick={() => setApiKey('')} className="bg-red-50 text-red-500 border-red-100">
+                          <Button variant="secondary" onClick={() => setApiKey('')} className="bg-red-50 text-red-500 border-red-100 dark:bg-red-900/20 dark:border-red-800">
                               Reset
                           </Button>
                       )}
@@ -410,6 +411,23 @@ const Settings: React.FC = () => {
            <Monitor className="w-5 h-5" /> Interface
         </h2>
         <div className="space-y-6">
+
+           <div className="flex items-center justify-between">
+              <div>
+                  <div className="font-bold flex items-center gap-2"><Moon className="w-4 h-4" /> Dark Mode</div>
+                  <div className="text-sm opacity-60">Enable dark color scheme.</div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                      type="checkbox" 
+                      className="sr-only peer"
+                      checked={darkMode}
+                      onChange={(e) => setDarkMode(e.target.checked)}
+                  />
+                  <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
+              </label>
+           </div>
+
            <div className="flex items-center justify-between">
               <div>
                   <div className="font-bold flex items-center gap-2"><Scale className="w-4 h-4" /> Unit System</div>
@@ -463,7 +481,7 @@ const Settings: React.FC = () => {
             } else {
                containerClass += "border-transparent hover:bg-black/5 dark:hover:bg-white/5 ";
                if (theme === 'glass') containerClass += "bg-white/5 border-white/10 ";
-               else if (theme === 'neumorphism') containerClass += "shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff] ";
+               else if (theme === 'neumorphism') containerClass += "shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff] dark:shadow-[inset_2px_2px_5px_#1f2330,inset_-2px_-2px_5px_#33374a] ";
                else containerClass += "bg-gray-50 dark:bg-gray-800/50 ";
             }
             return (

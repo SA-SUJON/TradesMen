@@ -68,6 +68,7 @@ const QuickScan: React.FC<QuickScanProps> = ({ onScanStart, isVisible = true, is
                         className={`fixed z-50 p-4 rounded-full shadow-lg flex items-center justify-center transition-colors group ${
                              theme === 'material' ? 'bg-[#E8DEF8] text-[#1D192B]' : 
                              theme === 'glass' ? 'bg-white/20 backdrop-blur-md border border-white/30 text-white' :
+                             theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-700 dark:text-blue-400 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a]' :
                              'bg-white text-blue-600 border border-blue-100 dark:bg-gray-800 dark:text-blue-400 dark:border-gray-700'
                         }`}
                         whileHover={{ scale: 1.1 }}
