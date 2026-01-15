@@ -2,19 +2,18 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Project Details
 
-This contains everything you need to run your app locally.
+TThis Is A Simple Business Management Tool. For Now It is Web Based Only. But We Developed Android Version Soon.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1mQzRbzJR_nOTcU68Eq2OYobC7qemCYad
+## Special Thanks
 
-## Run Locally
-
-**Prerequisites:**  Node.js
+**Google AI Studio**, **Google Gemini** & **Google AntiGravity**
 
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+©️All Rights Reserved By TradesMen.
+
+
+I Am SA SUJON. Signing Out...
+
+Good Bye
