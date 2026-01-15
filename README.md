@@ -4,7 +4,7 @@
 
 # Project Details
 
-TThis Is A Simple Business Management Tool. For Now It is Web Based Only. But We Developed Android Version Soon.
+This Is A Simple Business Management Tool. For Now It is Web Based Only. But We Developed Android Version Soon.
 
 ## Special Thanks
 
