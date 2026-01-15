@@ -395,11 +395,11 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className={`${styles.card} p-4 !rounded-2xl`}
+                            className={`${styles.card} p-4 !rounded-2xl relative`}
                             onClick={() => setExpandedRow(expandedRow === item.id ? null : item.id)}
                         >
                             <div className="flex justify-between items-start">
-                                <div className="flex-1">
+                                <div className="flex-1 pr-10">
                                     <div className="font-bold text-lg leading-tight">{item.name}</div>
                                     <div className="text-xs opacity-60 mt-1 flex flex-wrap gap-2">
                                         {item.category && <span className="bg-gray-100 dark:bg-white/10 px-1.5 rounded">{item.category}</span>}
@@ -414,20 +414,20 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                 </div>
                             </div>
                             
-                            {/* Actions Bar */}
-                            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10 flex justify-between items-center">
+                            {/* Actions Bar - Increased touch targets and improved Z-index */}
+                            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10 flex justify-between items-center relative z-20">
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); setExpandedRow(expandedRow === item.id ? null : item.id); }}
-                                    className="text-xs flex items-center gap-1 opacity-50"
+                                    className="text-xs flex items-center gap-1 opacity-50 p-2 -ml-2"
                                 >
                                     {expandedRow === item.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                                     Details
                                 </button>
-                                <div className="flex gap-3">
-                                    <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="text-blue-600 p-1">
+                                <div className="flex gap-2">
+                                    <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="text-blue-600 p-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors">
                                         <Edit2 className="w-5 h-5" />
                                     </button>
-                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="text-red-600 p-1">
+                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="text-red-600 p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors">
                                         <Trash2 className="w-5 h-5" />
                                     </button>
                                 </div>

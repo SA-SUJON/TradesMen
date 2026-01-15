@@ -20,8 +20,11 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useLocalStorage<ThemeType>('tradesmen-theme', 'material');
   const [showNavLabels, setShowNavLabels] = useLocalStorage<boolean>('tradesmen-nav-labels', true);
-  const [showQuickScan, setShowQuickScan] = useLocalStorage<boolean>('tradesmen-quick-scan', true);
-  const [voiceEnabled, setVoiceEnabled] = useLocalStorage<boolean>('tradesmen-voice-enabled', true);
+  
+  // Defaulted to false for Android Native readiness
+  const [showQuickScan, setShowQuickScan] = useLocalStorage<boolean>('tradesmen-quick-scan', false);
+  const [voiceEnabled, setVoiceEnabled] = useLocalStorage<boolean>('tradesmen-voice-enabled', false);
+  
   const [unitSystem, setUnitSystem] = useLocalStorage<UnitSystem>('tradesmen-unit-system', 'metric');
 
   return (

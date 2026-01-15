@@ -12,6 +12,11 @@ interface AIContextType {
   setIsOpen: (open: boolean) => void;
   showAssistant: boolean;
   setShowAssistant: (show: boolean) => void;
+  // New Settings Config
+  apiKey: string;
+  setApiKey: (key: string) => void;
+  aiModel: string;
+  setAiModel: (model: string) => void;
 }
 
 const AIContext = createContext<AIContextType | undefined>(undefined);
@@ -83,10 +88,16 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
   }]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [showAssistant, setShowAssistant] = useLocalStorage<boolean>('tradesmen-ai-visible', true);
+  
+  // Settings with Local Storage
+  const [showAssistant, setShowAssistant] = useLocalStorage<boolean>('tradesmen-ai-visible', false);
+  const [apiKey, setApiKey] = useLocalStorage<string>('tradesmen-api-key', '');
+  const [aiModel, setAiModel] = useLocalStorage<string>('tradesmen-ai-model', 'gemini-3-flash-preview');
 
-  // Initialize Gemini Client
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Initialize Gemini Client with Dynamic Key
+  // Note: process.env.API_KEY is the fallback if no user key is provided
+  const clientKey = apiKey || process.env.API_KEY || '';
+  const ai = new GoogleGenAI({ apiKey: clientKey });
 
   const sendMessage = async (text: string, image?: string) => {
     // 1. Add User Message to UI
@@ -100,6 +111,8 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
     setIsProcessing(true);
 
     try {
+      if (!clientKey) throw new Error("API Key Missing. Please set your API Key in Settings > Manager.");
+
       // 2. Prepare Context (Simplified Inventory for Grounding)
       const inventoryList = inventory.map(p => `${p.name} ($${p.sellingPrice}/${p.unit}) @ ${p.shelfId || 'NoShelf'}`).join(', ');
       const systemInstruction = `You are "Manager", an AI assistant for a shopkeeper app called "TradesMen". 
@@ -133,9 +146,9 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
       }
       if (text) parts.push({ text });
 
-      // 4. Call Gemini 3 Flash Preview (Valid Model)
+      // 4. Call Gemini Model (Dynamic)
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: aiModel,
         contents: { parts },
         config: {
           systemInstruction,
@@ -205,7 +218,8 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
     } catch (error: any) {
       console.error("AI Error:", error);
       let errorMsg = "I'm having trouble connecting right now. Please try again.";
-      if (error?.message?.includes("404")) errorMsg = "Model not found. Please contact developer.";
+      if (error?.message?.includes("404")) errorMsg = "Model not found. Please verify your API Key and Model selection in Settings.";
+      if (error?.message?.includes("API Key")) errorMsg = "API Key Missing or Invalid.";
       
       setMessages(prev => [...prev, {
         id: Date.now().toString() + 'err',
@@ -220,6 +234,8 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
 
   const filterInventory = async (query: string, currentInventory: Product[]): Promise<string[]> => {
     try {
+      if (!clientKey) return [];
+      
       // Simplify inventory for token efficiency
       const simplifiedInv = currentInventory.map(p => ({
         id: p.id,
@@ -232,7 +248,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
       }));
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: aiModel,
         contents: `Inventory: ${JSON.stringify(simplifiedInv)}\n\nQuery: "${query}"\n\nTask: Find items in the inventory that match the user's query (e.g., price conditions, stock levels, name keywords, supplier, category, shelf location). Return ONLY a JSON array of string IDs. Example: ["1", "5"]`,
         config: {
           responseMimeType: "application/json",
@@ -254,7 +270,13 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
   };
 
   return (
-    <AIContext.Provider value={{ messages, sendMessage, filterInventory, isProcessing, isOpen, setIsOpen, showAssistant, setShowAssistant }}>
+    <AIContext.Provider value={{ 
+        messages, sendMessage, filterInventory, isProcessing, 
+        isOpen, setIsOpen, 
+        showAssistant, setShowAssistant,
+        apiKey, setApiKey,
+        aiModel, setAiModel
+    }}>
       {children}
     </AIContext.Provider>
   );

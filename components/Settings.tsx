@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeType, BusinessProfile } from '../types';
-import { Card, Input, Button } from './ui/BaseComponents';
-import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus } from 'lucide-react';
+import { Card, Input, Button, Select } from './ui/BaseComponents';
+import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus, Smartphone, Key } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAI } from '../contexts/AIContext';
@@ -17,7 +17,12 @@ const Settings: React.FC = () => {
       unitSystem, setUnitSystem
   } = useTheme();
   
-  const { showAssistant, setShowAssistant } = useAI();
+  const { 
+      showAssistant, setShowAssistant, 
+      apiKey, setApiKey,
+      aiModel, setAiModel
+  } = useAI();
+  
   const styles = getThemeClasses(theme);
 
   // Business Profile State
@@ -41,7 +46,6 @@ const Settings: React.FC = () => {
       if (typeof window !== 'undefined') {
           // Check if user provided keys
           if (getClientIdStatus()) {
-              // Delay init slightly to ensure scripts loaded
               setTimeout(() => {
                 try {
                     initGapi(() => {
@@ -102,7 +106,6 @@ const Settings: React.FC = () => {
         try {
             const content = e.target?.result as string;
             const parsed = JSON.parse(content);
-            
             performRestore(parsed);
         } catch (err) {
             alert("Failed to restore data. Invalid file format.");
@@ -116,7 +119,7 @@ const Settings: React.FC = () => {
   const performRestore = (parsed: any) => {
       if (!parsed.appData) throw new Error("Invalid backup file format");
 
-      if (window.confirm("WARNING: This will overwrite ALL current data (Inventory, Sales, Customers, etc.) with the backup. Are you sure?")) {
+      if (window.confirm("WARNING: This will overwrite ALL current data with the backup. Are you sure?")) {
           // Clear current tradesmen data
           const keysToRemove = [];
           for(let i=0; i<localStorage.length; i++) {
@@ -136,7 +139,6 @@ const Settings: React.FC = () => {
   };
 
   // --- Cloud Sync Handlers ---
-
   const connectDrive = () => {
       handleAuth((token) => {
           setIsConnected(true);
@@ -148,7 +150,6 @@ const Settings: React.FC = () => {
       if (!isConnected) return;
       setSyncStatus('syncing');
       setStatusMsg("Uploading data...");
-      
       try {
           const data = {
             version: "1.0",
@@ -156,7 +157,6 @@ const Settings: React.FC = () => {
             appData: getAllData()
           };
           await uploadBackup(data);
-          
           setSyncStatus('success');
           const time = new Date().toLocaleString();
           setLastSync(time);
@@ -174,18 +174,16 @@ const Settings: React.FC = () => {
       if (!isConnected) return;
       setSyncStatus('restoring');
       setStatusMsg("Searching for backup...");
-
       try {
           const data = await downloadBackup();
           performRestore(data);
-          setSyncStatus('idle'); // usually page reloads before this
+          setSyncStatus('idle'); 
       } catch (e: any) {
           console.error(e);
           setSyncStatus('error');
           setStatusMsg("Restore failed: " + (e.message || "File not found"));
       }
   };
-
 
   const themeOptions: { id: ThemeType; label: string; desc: string; icon: React.ReactNode }[] = [
     { 
@@ -214,136 +212,196 @@ const Settings: React.FC = () => {
     },
   ];
 
+  const modelOptions = [
+      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Fast & Free)' },
+      { value: 'gemini-3-flash-preview', label: 'Gemini 3 Flash (Latest Fast)' },
+      { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (Most Intelligent)' },
+  ];
+
   return (
     <div className="space-y-6 pb-24">
 
-      {/* Business Profile (Vyapar Style) */}
+      {/* Business Profile (Fixed Alignment) */}
       <Card>
           <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
-             <Building2 className="w-5 h-5" /> Business Profile & Invoice Settings
+             <Building2 className="w-5 h-5" /> Business Profile & Invoice
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2">
+              <div className="md:col-span-1">
                   <Input label="Business Name" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} placeholder="e.g. Gupta Traders" />
               </div>
-              <Input label="GSTIN (Tax ID)" value={profile.gstin || ''} onChange={e => setProfile({...profile, gstin: e.target.value})} placeholder="29ABCDE1234F1Z5" />
-              <Input label="Phone Number" value={profile.phone} onChange={e => setProfile({...profile, phone: e.target.value})} />
-              <div className="col-span-2">
+              <div className="md:col-span-1">
+                  <Input label="Phone Number" value={profile.phone} onChange={e => setProfile({...profile, phone: e.target.value})} />
+              </div>
+              <div className="md:col-span-1">
+                  <Input label="GSTIN (Tax ID)" value={profile.gstin || ''} onChange={e => setProfile({...profile, gstin: e.target.value})} placeholder="29ABCDE1234F1Z5" />
+              </div>
+              <div className="md:col-span-2">
                   <Input label="Address" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} placeholder="Shop No, Street, City" />
               </div>
-              <div className="col-span-2">
-                  <Input label="Invoice Terms & Conditions" value={profile.terms || ''} onChange={e => setProfile({...profile, terms: e.target.value})} placeholder="Terms printed at bottom of invoice" />
+              <div className="md:col-span-2">
+                  <Input label="Invoice Terms" value={profile.terms || ''} onChange={e => setProfile({...profile, terms: e.target.value})} placeholder="Terms printed at bottom of invoice" />
               </div>
           </div>
       </Card>
       
-      {/* Cloud Sync Section */}
-      <Card className={`${theme === 'glass' ? 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40' : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:bg-blue-900/10'}`}>
+      {/* Manager AI Configuration (New Card) */}
+      <Card className={`${theme === 'material' ? 'bg-indigo-50 border-indigo-100' : ''}`}>
+          <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
+             <Sparkles className="w-5 h-5" /> Manager AI Configuration
+          </h2>
+          
+          <div className="space-y-6">
+              {/* API Key Section */}
+              <div className="p-4 bg-white dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/10">
+                  <div className="flex items-center gap-2 font-bold mb-2">
+                      <Key className="w-4 h-4 text-orange-500" /> Google Gemini API Key
+                  </div>
+                  <div className="text-sm opacity-60 mb-3">
+                      Required for Manager features on Android. Get one from aistudio.google.com
+                  </div>
+                  <div className="flex gap-2">
+                      <div className="flex-grow">
+                          <Input 
+                            type="password" 
+                            placeholder={apiKey ? "••••••••••••••••" : "Paste API Key Here"}
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            className={apiKey ? "opacity-50 pointer-events-none bg-gray-100" : ""}
+                          />
+                      </div>
+                      {apiKey && (
+                          <Button variant="secondary" onClick={() => setApiKey('')} className="bg-red-50 text-red-500 border-red-100">
+                              Reset
+                          </Button>
+                      )}
+                  </div>
+              </div>
+
+              {/* Model Selection */}
+              <div>
+                  <Select label="AI Model Version" value={aiModel} onChange={(e) => setAiModel(e.target.value)}>
+                      {modelOptions.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                  </Select>
+                  <p className="text-xs opacity-50 mt-1 ml-1">
+                      Gemini 3 Pro requires a paid plan or higher tier API key.
+                  </p>
+              </div>
+
+              <div className="h-px bg-gray-200 dark:bg-white/10" />
+
+              {/* Toggles moved here */}
+              <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                        <div className="font-bold flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-blue-500" /> Enable Manager Button
+                        </div>
+                        <div className="text-sm opacity-60">Show floating AI Assistant.</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" checked={showAssistant} onChange={(e) => setShowAssistant(e.target.checked)} />
+                        <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
+                    </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <div>
+                        <div className="font-bold flex items-center gap-2">
+                            <Plus className="w-4 h-4 text-green-500" /> Quick Scan Button
+                        </div>
+                        <div className="text-sm opacity-60">Floating button for invoice scanning.</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" checked={showQuickScan} onChange={(e) => setShowQuickScan(e.target.checked)} />
+                        <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
+                    </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <div>
+                        <div className="font-bold flex items-center gap-2"><Volume2 className="w-4 h-4" /> Voice Feedback</div>
+                        <div className="text-sm opacity-60">Speak out totals (good for Android).</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" checked={voiceEnabled} onChange={(e) => setVoiceEnabled(e.target.checked)} />
+                        <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
+                    </label>
+                </div>
+              </div>
+          </div>
+      </Card>
+
+      {/* Manual Data (Emphasized for Android) */}
+      <Card className="border-2 border-blue-500/20 shadow-lg">
+        <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
+           <Smartphone className="w-5 h-5" /> Device Backup & Restore
+        </h2>
+        <div className="space-y-4">
+            <p className="text-sm opacity-70 mb-2">
+                Use this method to move data between devices or back up your data on Android. This creates a file on your device.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button 
+                    onClick={handleExport}
+                    className="flex items-center justify-center gap-2 p-4 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all font-bold shadow-md"
+                >
+                    <Download className="w-5 h-5" /> Save Backup File
+                </button>
+                
+                <label className="flex items-center justify-center gap-2 p-4 rounded-xl bg-white text-blue-600 border-2 border-blue-200 hover:bg-blue-50 dark:bg-gray-800 dark:border-blue-900 transition-all font-bold cursor-pointer">
+                    <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+                    <Upload className="w-5 h-5" /> Restore from File
+                </label>
+            </div>
+        </div>
+      </Card>
+
+      {/* Cloud Sync (De-emphasized if not configured) */}
+      <Card className={`${theme === 'glass' ? 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40' : 'bg-gray-50 dark:bg-white/5 opacity-80 hover:opacity-100 transition-opacity'}`}>
          <div className="flex justify-between items-start mb-4">
-             <h2 className={`text-xl font-bold flex items-center gap-2 ${styles.accentText}`}>
-                <Cloud className="w-5 h-5" /> Global Data Sync
+             <h2 className={`text-lg font-bold flex items-center gap-2 opacity-80`}>
+                <Cloud className="w-5 h-5" /> Google Drive Sync (Web Only)
             </h2>
             {lastSync && (
                 <div className="text-xs opacity-60 flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Last synced: {lastSync}
+                    <Check className="w-3 h-3" /> {lastSync}
                 </div>
             )}
          </div>
 
          {!getClientIdStatus() ? (
-             <div className="p-4 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 rounded-lg text-sm border border-yellow-200 dark:border-yellow-700/50">
-                 <div className="font-bold flex items-center gap-2 mb-1"><Lock className="w-4 h-4" /> Configuration Required</div>
-                 <p>To use Google Drive Sync, you must add your <code>CLIENT_ID</code> and <code>API_KEY</code> in the code. This is a security requirement for personal cloud access.</p>
+             <div className="p-3 text-xs opacity-60">
+                 Requires Client ID configuration in code. Use Device Backup for Android App.
              </div>
          ) : !isConnected ? (
-             <div className="flex flex-col items-center justify-center p-6 gap-4">
-                 <p className="text-center opacity-70 text-sm max-w-md">Connect your Google Drive to automatically backup your inventory, sales, and customer data.</p>
-                 <button 
-                    onClick={connectDrive}
-                    disabled={!isDriveReady}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold shadow-lg transition-transform hover:scale-105 active:scale-95 ${
-                        !isDriveReady ? 'opacity-50 cursor-not-allowed bg-gray-400 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                 >
-                    {isDriveReady ? <><Cloud className="w-5 h-5" /> Connect Google Drive</> : <><Loader2 className="w-5 h-5 animate-spin" /> Loading API...</>}
-                 </button>
-             </div>
+             <button 
+                onClick={connectDrive}
+                disabled={!isDriveReady}
+                className="text-sm font-bold text-blue-600 underline"
+             >
+                Connect Drive
+             </button>
          ) : (
-             <div className="space-y-4">
-                 <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-bold bg-green-100 dark:bg-green-900/20 p-2 rounded-lg w-fit">
-                     <Check className="w-4 h-4" /> Drive Connected
-                 </div>
-                 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button 
-                        onClick={syncToCloud}
-                        disabled={syncStatus === 'syncing' || syncStatus === 'restoring'}
-                        className="flex items-center justify-center gap-2 p-4 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md font-bold disabled:opacity-50"
-                    >
-                        {syncStatus === 'syncing' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
-                        {syncStatus === 'syncing' ? 'Backing up...' : 'Backup Now'}
-                    </button>
-
-                    <button 
-                        onClick={restoreFromCloud}
-                        disabled={syncStatus === 'syncing' || syncStatus === 'restoring'}
-                        className="flex items-center justify-center gap-2 p-4 rounded-xl bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 dark:bg-gray-800 dark:border-blue-900 dark:text-blue-400 transition-colors font-bold disabled:opacity-50"
-                    >
-                         {syncStatus === 'restoring' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                         {syncStatus === 'restoring' ? 'Restoring...' : 'Restore from Drive'}
-                    </button>
-                 </div>
-                 {statusMsg && (
-                     <div className={`text-sm text-center font-medium ${syncStatus === 'error' ? 'text-red-500' : 'opacity-60'}`}>
-                         {statusMsg}
-                     </div>
-                 )}
+             <div className="grid grid-cols-2 gap-4">
+                <button 
+                    onClick={syncToCloud}
+                    disabled={syncStatus === 'syncing'}
+                    className="p-2 bg-white rounded border text-sm font-bold"
+                >
+                    {syncStatus === 'syncing' ? 'Syncing...' : 'Sync Now'}
+                </button>
+                <button 
+                    onClick={restoreFromCloud}
+                    disabled={syncStatus === 'restoring'}
+                    className="p-2 bg-white rounded border text-sm"
+                >
+                     Restore
+                </button>
              </div>
          )}
-      </Card>
-
-      {/* AI & Quick Scan Settings Section */}
-      <Card>
-        <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
-           <Sparkles className="w-5 h-5" /> Smart Features
-        </h2>
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <div className="font-bold flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-blue-500" /> Manager Button
-                    </div>
-                    <div className="text-sm opacity-60">Show the floating AI Assistant button.</div>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        className="sr-only peer"
-                        checked={showAssistant}
-                        onChange={(e) => setShowAssistant(e.target.checked)}
-                    />
-                    <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
-                </label>
-            </div>
-
-            <div className="flex items-center justify-between">
-                <div>
-                    <div className="font-bold flex items-center gap-2">
-                        <Plus className="w-4 h-4 text-green-500" /> Quick Scan Button
-                    </div>
-                    <div className="text-sm opacity-60">Show the floating (+) button for memos.</div>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        className="sr-only peer"
-                        checked={showQuickScan}
-                        onChange={(e) => setShowQuickScan(e.target.checked)}
-                    />
-                    <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
-                </label>
-            </div>
-        </div>
       </Card>
 
       {/* Interface Settings */}
@@ -352,24 +410,6 @@ const Settings: React.FC = () => {
            <Monitor className="w-5 h-5" /> Interface
         </h2>
         <div className="space-y-6">
-           {/* Voice Toggle */}
-           <div className="flex items-center justify-between">
-              <div>
-                  <div className="font-bold flex items-center gap-2"><Volume2 className="w-4 h-4" /> Voice Feedback</div>
-                  <div className="text-sm opacity-60">Speak out results, alerts, and totals.</div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                      type="checkbox" 
-                      className="sr-only peer"
-                      checked={voiceEnabled}
-                      onChange={(e) => setVoiceEnabled(e.target.checked)}
-                  />
-                  <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
-              </label>
-          </div>
-
-           {/* Unit Toggle */}
            <div className="flex items-center justify-between">
               <div>
                   <div className="font-bold flex items-center gap-2"><Scale className="w-4 h-4" /> Unit System</div>
@@ -409,45 +449,15 @@ const Settings: React.FC = () => {
         </div>
       </Card>
 
-      {/* Manual Data Management Section */}
-      <Card>
-        <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
-           <Database className="w-5 h-5" /> Manual Backup
-        </h2>
-        <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button 
-                    onClick={handleExport}
-                    className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all font-bold ${
-                        theme === 'glass' ? 'bg-white/10 border-white/20 hover:bg-white/20 text-white' : 
-                        'bg-white border-gray-200 hover:border-blue-500 hover:text-blue-600 dark:bg-gray-800 dark:border-gray-700'
-                    }`}
-                >
-                    <Download className="w-5 h-5" /> Export File
-                </button>
-                
-                <label className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all font-bold cursor-pointer ${
-                        theme === 'glass' ? 'bg-white/10 border-white/20 hover:bg-white/20 text-white' : 
-                        'bg-white border-gray-200 hover:border-green-500 hover:text-green-600 dark:bg-gray-800 dark:border-gray-700'
-                    }`}>
-                    <input type="file" accept=".json" onChange={handleImport} className="hidden" />
-                    <Upload className="w-5 h-5" /> Restore File
-                </label>
-            </div>
-        </div>
-      </Card>
-
       {/* Theme Settings */}
       <Card>
         <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
            <Palette className="w-5 h-5" /> Appearance
         </h2>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {themeOptions.map((option) => {
             const isSelected = theme === option.id;
             let containerClass = "relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-start gap-4 ";
-            
             if (isSelected) {
                containerClass += "border-blue-500 bg-blue-500/5 ";
             } else {
@@ -456,7 +466,6 @@ const Settings: React.FC = () => {
                else if (theme === 'neumorphism') containerClass += "shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff] ";
                else containerClass += "bg-gray-50 dark:bg-gray-800/50 ";
             }
-
             return (
               <button 
                 key={option.id}
