@@ -273,7 +273,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                         `}
                     >
                         <div className={`transition-transform duration-200 ${isActive ? 'scale-110 mb-1' : 'mb-0.5'}`}>
-                            {React.cloneElement(tab.icon as React.ReactElement, { className: "w-6 h-6" })}
+                            {React.cloneElement(tab.icon as React.ReactElement<any>, { className: "w-6 h-6" })}
                         </div>
                         {showNavLabels && (
                           <span className={`text-[10px] font-medium truncate w-full text-center leading-none ${isActive ? 'font-bold' : ''}`}>

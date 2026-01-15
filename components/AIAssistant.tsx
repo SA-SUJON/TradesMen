@@ -1,9 +1,10 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useAI } from '../contexts/AIContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff } from 'lucide-react';
+import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff, History, MessageSquarePlus, Trash2, ChevronRight, ArrowLeft } from 'lucide-react';
 import { Button, Card } from './ui/BaseComponents';
 
 interface ChatInterfaceProps {
@@ -13,12 +14,16 @@ interface ChatInterfaceProps {
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal', onClose, className = '' }) => {
-    const { messages, sendMessage, isProcessing } = useAI();
+    const { 
+        messages, sendMessage, isProcessing,
+        sessions, currentSessionId, startNewChat, loadSession, deleteSession
+    } = useAI();
     const { theme } = useTheme();
     const styles = getThemeClasses(theme);
     
     const [input, setInput] = useState('');
     const [isListening, setIsListening] = useState(false);
+    const [showHistory, setShowHistory] = useState(false); // Toggle for history view
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<any>(null);
@@ -28,8 +33,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     };
 
     useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
+        if (!showHistory) scrollToBottom();
+    }, [messages, showHistory]);
 
     // Initialize Speech Recognition
     useEffect(() => {
@@ -96,7 +101,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
         }
     };
 
-    // Adjusted container classes for better mobile fit and responsiveness
+    const handleNewChat = () => {
+        startNewChat();
+        setShowHistory(false);
+    };
+
+    const handleSelectSession = (id: string) => {
+        loadSession(id);
+        setShowHistory(false);
+    };
+
+    // Layout Logic
     let containerClasses = "";
     if (variant === 'modal') {
          containerClasses = `w-[90vw] md:w-[400px] h-[500px] flex flex-col overflow-hidden shadow-2xl ${
@@ -105,117 +120,193 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
             'bg-white rounded-2xl border border-gray-200'
           }`;
     } else {
-        // Page Variant
+        // Page Variant (Full Height)
         containerClasses = `w-full flex flex-col overflow-hidden shadow-sm ${styles.card} p-0 ${className}`;
-        // Remove padding if it's the card style itself adding it, as we want edge-to-edge chat
     }
 
-    // Determine input styling based on theme
     const inputStyles = theme === 'glass' 
         ? 'bg-white/10 border border-white/10 focus:bg-white/20 text-white placeholder-white/50' 
         : theme === 'neumorphism'
             ? 'bg-[#E0E5EC] shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff] text-slate-700 placeholder-slate-400'
             : theme === 'material'
                 ? 'bg-[#E7E0EC] focus:bg-[#EADDFF] text-slate-900 placeholder-slate-500'
-                : 'bg-gray-50 border border-gray-200 focus:bg-white focus:border-blue-500 text-gray-800 placeholder-gray-400'; // Fluent/Default
+                : 'bg-gray-50 border border-gray-200 focus:bg-white focus:border-blue-500 text-gray-800 placeholder-gray-400';
+
+    // Page Variant Sidebar Layout (Desktop)
+    const isPageDesktop = variant === 'page' && typeof window !== 'undefined' && window.innerWidth >= 768;
 
     return (
         <div className={containerClasses}>
-            {/* Header - Only show for Modal or if specifically needed. For 'page' variant, keep it minimal. */}
-            {variant === 'modal' && (
-                <div className={`p-4 border-b ${theme === 'glass' ? 'border-white/10' : 'border-gray-100 dark:border-white/10'} flex items-center gap-2`}>
-                <Sparkles className={`w-5 h-5 ${styles.accentText}`} />
-                <h3 className={`font-bold ${theme === 'glass' ? 'text-white' : ''}`}>Manager</h3>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold ml-auto">Gemini 3 Flash</span>
-                <button onClick={onClose} className="ml-2 opacity-50 hover:opacity-100">
-                    <X className="w-5 h-5" />
-                </button>
-                </div>
-            )}
-            
-            {/* Messages Area */}
-            <div className={`flex-grow overflow-y-auto p-4 space-y-4 scrollbar-hide ${variant === 'page' ? 'pt-6' : ''}`}>
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[85%] p-3 rounded-2xl text-sm ${
-                      msg.role === 'user'
-                        ? `${theme === 'material' ? 'bg-[#6750A4]' : 'bg-blue-600'} text-white rounded-br-none`
-                        : `${theme === 'glass' ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-bl-none`
-                    } ${msg.isError ? 'bg-red-100 text-red-600' : ''}`}
-                  >
-                    {msg.image && (
-                        <img src={msg.image} alt="Upload" className="w-full h-32 object-cover rounded-lg mb-2" />
+            {/* Header */}
+            <div className={`p-4 border-b ${theme === 'glass' ? 'border-white/10' : 'border-gray-100 dark:border-white/10'} flex items-center justify-between`}>
+                <div className="flex items-center gap-2">
+                    {showHistory && !isPageDesktop ? (
+                        <button onClick={() => setShowHistory(false)} className="mr-1">
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                    ) : (
+                         <Sparkles className={`w-5 h-5 ${styles.accentText}`} />
                     )}
-                    <p className="whitespace-pre-wrap">{msg.text}</p>
-                  </div>
+                   
+                    <h3 className={`font-bold ${theme === 'glass' ? 'text-white' : ''}`}>
+                        {showHistory ? 'History' : 'Manager'}
+                    </h3>
                 </div>
-              ))}
-              {isProcessing && (
-                <div className="flex justify-start">
-                  <div className={`p-3 rounded-2xl rounded-bl-none ${theme === 'glass' ? 'bg-white/10' : 'bg-gray-50 dark:bg-gray-800'}`}>
-                    <Loader2 className="w-5 h-5 animate-spin opacity-50" />
-                  </div>
+                
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={handleNewChat}
+                        className={`p-1.5 rounded-full ${theme === 'glass' ? 'hover:bg-white/20' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        title="New Chat"
+                    >
+                        <MessageSquarePlus className="w-5 h-5" />
+                    </button>
+                    {!isPageDesktop && (
+                        <button 
+                            onClick={() => setShowHistory(!showHistory)}
+                            className={`p-1.5 rounded-full ${showHistory ? 'bg-blue-100 text-blue-600' : ''} ${theme === 'glass' ? 'hover:bg-white/20' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                            title="History"
+                        >
+                            <History className="w-5 h-5" />
+                        </button>
+                    )}
+                    {variant === 'modal' && (
+                        <button onClick={onClose} className="opacity-50 hover:opacity-100 ml-2">
+                            <X className="w-5 h-5" />
+                        </button>
+                    )}
                 </div>
-              )}
-              <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
-            <div className={`p-3 md:p-4 border-t ${theme === 'glass' ? 'border-white/10' : 'border-gray-100 dark:border-white/10'}`}>
-              <div className="flex gap-2 items-center">
-                 <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    ref={fileInputRef} 
-                    onChange={handleFileUpload}
-                />
+            <div className="flex-grow flex overflow-hidden relative">
                 
-                {/* Tools */}
-                <div className="flex items-center gap-1">
-                    <button 
-                        onClick={() => fileInputRef.current?.click()}
-                        className={`p-2 rounded-full transition-colors ${theme === 'glass' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
-                        title="Scan Memo"
-                    >
-                        <Camera className="w-5 h-5 opacity-70" />
-                    </button>
-                    <button 
-                        onClick={handleMicClick}
-                        className={`p-2 rounded-full transition-colors ${
-                            isListening 
-                                ? 'bg-red-500 text-white animate-pulse' 
-                                : theme === 'glass' 
-                                    ? 'hover:bg-white/20 text-white' 
-                                    : 'hover:bg-gray-100 dark:hover:bg-white/10'
-                        }`}
-                        title="Voice Command"
-                    >
-                        {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5 opacity-70" />}
-                    </button>
+                {/* History Sidebar / Overlay */}
+                {(showHistory || isPageDesktop) && (
+                    <div className={`${
+                        isPageDesktop 
+                            ? 'w-1/3 border-r border-gray-100 dark:border-white/10 flex flex-col' 
+                            : 'absolute inset-0 z-20 bg-white dark:bg-gray-900 flex flex-col'
+                    } ${!showHistory && !isPageDesktop ? 'hidden' : ''}`}>
+                         <div className="flex-grow overflow-y-auto p-2 space-y-2">
+                            {sessions.length > 0 ? (
+                                sessions.map(session => (
+                                    <div 
+                                        key={session.id}
+                                        onClick={() => handleSelectSession(session.id)}
+                                        className={`p-3 rounded-xl cursor-pointer transition-all group relative ${
+                                            currentSessionId === session.id 
+                                                ? (theme === 'glass' ? 'bg-white/20' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-900') 
+                                                : (theme === 'glass' ? 'hover:bg-white/10' : 'hover:bg-gray-50 dark:hover:bg-white/5')
+                                        }`}
+                                    >
+                                        <div className="font-bold text-sm truncate pr-6">{session.title || 'New Chat'}</div>
+                                        <div className="text-xs opacity-60 truncate">{session.lastMessage}</div>
+                                        <div className="text-[10px] opacity-40 mt-1">{new Date(session.date).toLocaleDateString()}</div>
+                                        
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); deleteSession(session.id); }}
+                                            className="absolute right-2 top-3 opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-opacity"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center opacity-50 py-10 text-sm">
+                                    <History className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                    No chat history.
+                                </div>
+                            )}
+                         </div>
+                    </div>
+                )}
+
+                {/* Main Chat Area */}
+                <div className={`flex flex-col flex-grow h-full ${showHistory && !isPageDesktop ? 'hidden' : 'block'}`}>
+                    <div className={`flex-grow overflow-y-auto p-4 space-y-4 scrollbar-hide ${variant === 'page' ? 'pt-6' : ''}`}>
+                    {messages.map((msg) => (
+                        <div
+                        key={msg.id}
+                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                        <div
+                            className={`max-w-[85%] p-3 rounded-2xl text-sm ${
+                            msg.role === 'user'
+                                ? `${theme === 'material' ? 'bg-[#6750A4]' : 'bg-blue-600'} text-white rounded-br-none`
+                                : `${theme === 'glass' ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-bl-none`
+                            } ${msg.isError ? 'bg-red-100 text-red-600' : ''}`}
+                        >
+                            {msg.image && (
+                                <img src={msg.image} alt="Upload" className="w-full h-32 object-cover rounded-lg mb-2" />
+                            )}
+                            <p className="whitespace-pre-wrap">{msg.text}</p>
+                        </div>
+                        </div>
+                    ))}
+                    {isProcessing && (
+                        <div className="flex justify-start">
+                        <div className={`p-3 rounded-2xl rounded-bl-none ${theme === 'glass' ? 'bg-white/10' : 'bg-gray-50 dark:bg-gray-800'}`}>
+                            <Loader2 className="w-5 h-5 animate-spin opacity-50" />
+                        </div>
+                        </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Input Area */}
+                    <div className={`p-3 md:p-4 border-t ${theme === 'glass' ? 'border-white/10' : 'border-gray-100 dark:border-white/10'}`}>
+                    <div className="flex gap-2 items-center">
+                        <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            ref={fileInputRef} 
+                            onChange={handleFileUpload}
+                        />
+                        
+                        {/* Tools */}
+                        <div className="flex items-center gap-1">
+                            <button 
+                                onClick={() => fileInputRef.current?.click()}
+                                className={`p-2 rounded-full transition-colors ${theme === 'glass' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                                title="Scan Memo"
+                            >
+                                <Camera className="w-5 h-5 opacity-70" />
+                            </button>
+                            <button 
+                                onClick={handleMicClick}
+                                className={`p-2 rounded-full transition-colors ${
+                                    isListening 
+                                        ? 'bg-red-500 text-white animate-pulse' 
+                                        : theme === 'glass' 
+                                            ? 'hover:bg-white/20 text-white' 
+                                            : 'hover:bg-gray-100 dark:hover:bg-white/10'
+                                }`}
+                                title="Voice Command"
+                            >
+                                {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5 opacity-70" />}
+                            </button>
+                        </div>
+                        
+                        <input
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder={isListening ? "Listening..." : "Type/Speak..."}
+                        className={`flex-grow px-3 py-2 md:px-4 rounded-xl outline-none transition-all mx-1 ${inputStyles} text-sm md:text-base`}
+                        />
+                        
+                        <Button 
+                            variant="primary" 
+                            onClick={handleSend}
+                            disabled={isProcessing || !input.trim()}
+                            className="p-2 h-auto rounded-full px-2"
+                        >
+                        <Send className="w-4 h-4" />
+                        </Button>
+                    </div>
+                    </div>
                 </div>
-                
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={isListening ? "Listening..." : "Type/Speak..."}
-                  className={`flex-grow px-3 py-2 md:px-4 rounded-xl outline-none transition-all mx-1 ${inputStyles} text-sm md:text-base`}
-                />
-                
-                <Button 
-                    variant="primary" 
-                    onClick={handleSend}
-                    disabled={isProcessing || !input.trim()}
-                    className="p-2 h-auto rounded-full px-2"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
             </div>
         </div>
     );

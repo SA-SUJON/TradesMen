@@ -29,7 +29,9 @@ export const Button: React.FC<ButtonProps> = ({ variant = 'primary', className =
   );
 };
 
-interface CardProps extends HTMLMotionProps<"div">, BaseProps {}
+interface CardProps extends HTMLMotionProps<"div">, BaseProps {
+    onClick?: React.MouseEventHandler<HTMLDivElement>;
+}
 
 export const Card: React.FC<CardProps> = ({ className = '', children, ...props }) => {
   const { theme } = useTheme();

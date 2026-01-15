@@ -99,3 +99,11 @@ export interface ChatMessage {
   image?: string; 
   isError?: boolean;
 }
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  lastMessage: string;
+  date: string; // ISO string
+  messages: ChatMessage[];
+}

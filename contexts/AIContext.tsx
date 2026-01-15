@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
-import { Product, CartItem, ChatMessage } from '../types';
+import { Product, CartItem, ChatMessage, ChatSession } from '../types';
 import useLocalStorage from '../hooks/useLocalStorage';
 
 interface AIContextType {
@@ -17,6 +18,12 @@ interface AIContextType {
   setApiKey: (key: string) => void;
   aiModel: string;
   setAiModel: (model: string) => void;
+  // History Management
+  sessions: ChatSession[];
+  currentSessionId: string | null;
+  startNewChat: () => void;
+  loadSession: (id: string) => void;
+  deleteSession: (id: string) => void;
 }
 
 const AIContext = createContext<AIContextType | undefined>(undefined);
@@ -80,12 +87,17 @@ const checkExpiryTool: FunctionDeclaration = {
   }
 };
 
-export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, setInventory, cart, setCart }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([{
+const INTRO_MESSAGE: ChatMessage = {
     id: 'intro',
     role: 'model',
     text: 'Hello! I am your Shop Manager. I can help you manage inventory, bill items, or scan memos. How can I help?'
-  }]);
+};
+
+export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, setInventory, cart, setCart }) => {
+  // Session Persistence
+  const [sessions, setSessions] = useLocalStorage<ChatSession[]>('tradesmen-chat-sessions', []);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   
@@ -95,33 +107,92 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
   const [aiModel, setAiModel] = useLocalStorage<string>('tradesmen-ai-model', 'gemini-3-flash-preview');
 
   // Initialize Gemini Client with Dynamic Key
-  // Note: process.env.API_KEY is the fallback if no user key is provided
   const clientKey = apiKey || process.env.API_KEY || '';
   const ai = new GoogleGenAI({ apiKey: clientKey });
 
+  // Computed Messages for Current Session
+  const currentSession = sessions.find(s => s.id === currentSessionId);
+  const messages = currentSession ? currentSession.messages : [INTRO_MESSAGE];
+
+  const startNewChat = () => {
+      setCurrentSessionId(null);
+  };
+
+  const loadSession = (id: string) => {
+      if (sessions.some(s => s.id === id)) {
+          setCurrentSessionId(id);
+      }
+  };
+
+  const deleteSession = (id: string) => {
+      setSessions(prev => prev.filter(s => s.id !== id));
+      if (currentSessionId === id) setCurrentSessionId(null);
+  };
+
   const sendMessage = async (text: string, image?: string) => {
-    // 1. Add User Message to UI
+    // 1. Prepare User Message
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
       text,
       image
     };
-    setMessages(prev => [...prev, userMsg]);
+
     setIsProcessing(true);
+
+    // 2. Handle Session State (Create or Update)
+    let activeSessionId = currentSessionId;
+    let sessionHistory: ChatMessage[] = [];
+
+    if (!activeSessionId) {
+        // Create new session
+        const newId = Date.now().toString();
+        const newSession: ChatSession = {
+            id: newId,
+            title: text.slice(0, 40) + (text.length > 40 ? '...' : ''),
+            lastMessage: text,
+            date: new Date().toISOString(),
+            messages: [INTRO_MESSAGE, userMsg]
+        };
+        setSessions(prev => [newSession, ...prev]);
+        setCurrentSessionId(newId);
+        activeSessionId = newId;
+        sessionHistory = newSession.messages;
+    } else {
+        // Update existing session
+        setSessions(prev => prev.map(s => {
+            if (s.id === activeSessionId) {
+                const updatedMessages = [...s.messages, userMsg];
+                sessionHistory = updatedMessages;
+                return {
+                    ...s,
+                    lastMessage: text,
+                    date: new Date().toISOString(), // Bump to top
+                    messages: updatedMessages
+                };
+            }
+            return s;
+        }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())); // Sort by recent
+    }
 
     try {
       if (!clientKey) throw new Error("API Key Missing. Please set your API Key in Settings > Manager.");
 
-      // 2. Prepare Context (Simplified Inventory for Grounding)
+      // 3. Prepare Context (Simplified Inventory for Grounding)
       const inventoryList = inventory.map(p => `${p.name} ($${p.sellingPrice}/${p.unit}) @ ${p.shelfId || 'NoShelf'}`).join(', ');
+      
       const systemInstruction = `You are "Manager", an AI assistant for a shopkeeper app called "TradesMen". 
       Current Inventory: [${inventoryList}].
       If the user sends an image, analyze it as a supplier invoice/memo and extract items to add to inventory using the "addInventoryItem" tool.
       If shelf/rack locations are mentioned (e.g., "A1", "Top Shelf"), include them in shelfId.
+      Previous messages in this chat are provided to maintain context.
       Be concise.`;
 
-      // 3. Construct Parts
+      // 4. Construct Parts & History
+      // We need to feed some history to the model for context, but not too much to save tokens.
+      // Let's take the last 6 messages from sessionHistory
+      const historyText = sessionHistory.slice(-6, -1).map(m => `${m.role === 'user' ? 'User' : 'Manager'}: ${m.text}`).join('\n');
+      
       const parts: any[] = [];
       if (image) {
         // Extract mime type and data
@@ -144,9 +215,12 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
           }
         });
       }
-      if (text) parts.push({ text });
+      
+      // Combine history with current text
+      const fullPrompt = historyText ? `Previous Context:\n${historyText}\n\nCurrent Request: ${text}` : text;
+      parts.push({ text: fullPrompt });
 
-      // 4. Call Gemini Model (Dynamic)
+      // 5. Call Gemini Model
       const response = await ai.models.generateContent({
         model: aiModel,
         contents: { parts },
@@ -156,7 +230,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
         }
       });
 
-      // 5. Handle Function Calls
+      // 6. Handle Function Calls
       const toolCalls = response.functionCalls;
       let toolResponseText = "";
 
@@ -205,15 +279,26 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
         }
       }
 
-      // 6. Get Model Text Response
+      // 7. Get Model Text Response
       const modelText = response.text || "";
       const finalResponse = toolResponseText ? `${toolResponseText} ${modelText}` : modelText;
-
-      setMessages(prev => [...prev, {
+      
+      const modelMsg: ChatMessage = {
         id: Date.now().toString() + 'bot',
         role: 'model',
         text: finalResponse || "Done."
-      }]);
+      };
+
+      // 8. Update Session with Response
+      setSessions(prev => prev.map(s => {
+          if (s.id === activeSessionId) {
+              return {
+                  ...s,
+                  messages: [...s.messages, modelMsg]
+              };
+          }
+          return s;
+      }));
 
     } catch (error: any) {
       console.error("AI Error:", error);
@@ -221,12 +306,22 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
       if (error?.message?.includes("404")) errorMsg = "Model not found. Please verify your API Key and Model selection in Settings.";
       if (error?.message?.includes("API Key")) errorMsg = "API Key Missing or Invalid.";
       
-      setMessages(prev => [...prev, {
+      const errorMsgObj: ChatMessage = {
         id: Date.now().toString() + 'err',
         role: 'system',
         text: errorMsg,
         isError: true
-      }]);
+      };
+
+      setSessions(prev => prev.map(s => {
+          if (s.id === activeSessionId) {
+              return {
+                  ...s,
+                  messages: [...s.messages, errorMsgObj]
+              };
+          }
+          return s;
+      }));
     } finally {
       setIsProcessing(false);
     }
@@ -275,7 +370,8 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
         isOpen, setIsOpen, 
         showAssistant, setShowAssistant,
         apiKey, setApiKey,
-        aiModel, setAiModel
+        aiModel, setAiModel,
+        sessions, currentSessionId, startNewChat, loadSession, deleteSession
     }}>
       {children}
     </AIContext.Provider>
