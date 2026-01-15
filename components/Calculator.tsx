@@ -120,7 +120,7 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

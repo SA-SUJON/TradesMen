@@ -69,7 +69,7 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
         {/* Customer List Column */}
         <div className="md:col-span-1 space-y-4">
@@ -90,7 +90,8 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
                     </div>
                 </div>
 
-                <div className="overflow-y-auto max-h-[60vh] space-y-2 pr-1">
+                {/* Removed fixed max-height on mobile to allow page scroll with padding */}
+                <div className="md:overflow-y-auto md:max-h-[60vh] space-y-2 pr-1">
                     {filteredCustomers.length > 0 ? (
                         filteredCustomers.map(customer => (
                             <motion.div
@@ -98,7 +99,7 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
                                 onClick={() => setSelectedCustomer(customer)}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className={`p-3 rounded-xl cursor-pointer border transition-all ${
+                                className={`p-3 rounded-xl cursor-pointer border transition-all relative ${
                                     selectedCustomer?.id === customer.id 
                                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
                                         : theme === 'glass' ? 'bg-white/5 border-white/10' : 'border-gray-100 bg-white dark:bg-gray-800 dark:border-gray-700'
@@ -116,16 +117,19 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex gap-1">
+                                    <div 
+                                        className="flex gap-1 relative z-20"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
                                          <button 
                                             onClick={(e) => { e.stopPropagation(); handleEdit(customer); }}
-                                            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full"
+                                            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer"
                                          >
                                             <Edit2 className="w-3 h-3 text-blue-500" />
                                          </button>
                                           <button 
                                             onClick={(e) => { e.stopPropagation(); handleDelete(customer.id); }}
-                                            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full"
+                                            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer"
                                          >
                                             <Trash2 className="w-3 h-3 text-red-500" />
                                          </button>

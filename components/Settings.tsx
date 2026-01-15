@@ -227,7 +227,7 @@ const Settings: React.FC = () => {
              <Building2 className="w-5 h-5" /> Business Profile & Invoice
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-1">
+              <div className="md:col-span-2">
                   <Input label="Business Name" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} placeholder="e.g. Gupta Traders" />
               </div>
               <div className="md:col-span-1">

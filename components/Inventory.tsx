@@ -113,7 +113,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
   };
 
   const handleDelete = (id: string) => {
-    if(window.confirm("Are you sure?")) {
+    if(window.confirm("Are you sure you want to delete this item?")) {
         setInventory(inventory.filter(i => i.id !== id));
     }
   };
@@ -239,7 +239,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
   );
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6 pb-24">
       {showScanner && (
           <BarcodeScanner 
             onScan={handleScan} 
@@ -386,7 +386,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
         </div>
 
         {/* Mobile Card List View */}
-        <div className="md:hidden space-y-3 pb-24">
+        <div className="md:hidden space-y-3">
              <AnimatePresence>
                 {filteredInventory.length > 0 ? (
                     filteredInventory.map(item => (
@@ -414,20 +414,29 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                 </div>
                             </div>
                             
-                            {/* Actions Bar - Increased touch targets and improved Z-index */}
-                            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10 flex justify-between items-center relative z-20">
+                            {/* Actions Bar - Wrapper div stops propagation to prevent expanding the card */}
+                            <div 
+                                className="mt-3 pt-3 border-t border-gray-100 dark:border-white/10 flex justify-between items-center relative z-30"
+                                onClick={(e) => e.stopPropagation()}
+                            >
                                 <button 
-                                    onClick={(e) => { e.stopPropagation(); setExpandedRow(expandedRow === item.id ? null : item.id); }}
+                                    onClick={() => setExpandedRow(expandedRow === item.id ? null : item.id)}
                                     className="text-xs flex items-center gap-1 opacity-50 p-2 -ml-2"
                                 >
                                     {expandedRow === item.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                                     Details
                                 </button>
                                 <div className="flex gap-2">
-                                    <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="text-blue-600 p-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors">
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                        className="text-blue-600 p-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors cursor-pointer"
+                                    >
                                         <Edit2 className="w-5 h-5" />
                                     </button>
-                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="text-red-600 p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors">
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                                        className="text-red-600 p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors cursor-pointer"
+                                    >
                                         <Trash2 className="w-5 h-5" />
                                     </button>
                                 </div>
@@ -440,7 +449,8 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                         initial={{ height: 0, opacity: 0 }}
                                         animate={{ height: 'auto', opacity: 1 }}
                                         exit={{ height: 0, opacity: 0 }}
-                                        className="overflow-hidden mt-2"
+                                        className="overflow-hidden mt-2 relative z-10"
+                                        onClick={(e) => e.stopPropagation()}
                                     >
                                         <ProductDetailView item={item} />
                                     </motion.div>

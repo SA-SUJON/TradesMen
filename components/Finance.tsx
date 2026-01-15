@@ -4,7 +4,7 @@ import { Card, Input, Button, Select } from './ui/BaseComponents';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PieChart, TrendingUp, DollarSign, Wallet, ArrowUpRight, ArrowDownLeft, AlertCircle, Calendar, Trash2, Plus, Bell, MessageCircle } from 'lucide-react';
+import { PieChart, TrendingUp, DollarSign, Wallet, ArrowUpRight, ArrowDownLeft, AlertCircle, Calendar, Trash2, Plus, Bell, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { openWhatsApp } from '../utils/appUtils';
 
 interface FinanceProps {
@@ -100,7 +100,7 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-24">
             {/* Navigation Tabs for Finance Section */}
             <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-xl overflow-x-auto">
                 {[
@@ -264,7 +264,12 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <span className="font-bold text-red-500">- {exp.amount.toFixed(2)}</span>
-                                        <button onClick={() => deleteExpense(exp.id)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); deleteExpense(exp.id); }}
+                                            className="text-gray-400 hover:text-red-500 cursor-pointer p-2"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </motion.div>
                             )) : (
@@ -342,8 +347,5 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
         </div>
     );
 };
-
-// Helper icon for empty state
-import { CheckCircle2 } from 'lucide-react';
 
 export default Finance;

@@ -196,8 +196,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             </div>
           </header>
 
-          {/* Increased bottom padding on mobile to pb-[160px] to ensure content clears Floating Buttons & Nav */}
-          <main className={`flex-grow relative ${isManagerTab ? 'overflow-hidden' : 'overflow-y-auto no-scrollbar'} pb-[160px] md:pb-0`}>
+          {/* Adjusted padding: pb-32 to clear nav bar, ensuring content is visible */}
+          <main className={`flex-grow relative ${isManagerTab ? 'overflow-hidden' : 'overflow-y-auto no-scrollbar'} pb-32 md:pb-0`}>
               <AnimatePresence mode="wait">
                   <motion.div
                       key={activeTab}

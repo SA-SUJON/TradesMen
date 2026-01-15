@@ -95,7 +95,7 @@ const Conversions: React.FC = () => {
   }, [bulkWeight, bulkUnit, bulkCost, packetWeight, packetUnit, wastage, margin]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       {/* Tool Toggle */}
       <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-xl">
         <button 
