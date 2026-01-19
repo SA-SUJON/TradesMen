@@ -43,7 +43,7 @@ interface AIProviderProps {
 
 const addInventoryTool: FunctionDeclaration = {
   name: 'addInventoryItem',
-  description: 'Add a new product to the shop inventory with details. Use this when the user wants to stock new items or scans a memo.',
+  description: 'Add a new product to the shop inventory. Use this when the user wants to stock new items or scans a memo.',
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -60,6 +60,20 @@ const addInventoryTool: FunctionDeclaration = {
       purchaseDate: { type: Type.STRING, description: 'Date of purchase YYYY-MM-DD (optional)' }
     },
     required: ['name', 'sellingPrice']
+  }
+};
+
+const updateProductTool: FunctionDeclaration = {
+  name: 'updateProduct',
+  description: 'Update details of an existing product (e.g. change price, update stock). Find the product by name.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      productName: { type: Type.STRING, description: 'Name of the product to update' },
+      newSellingPrice: { type: Type.NUMBER, description: 'New selling price (optional)' },
+      stockAdjustment: { type: Type.NUMBER, description: 'Amount to add (positive) or remove (negative) from stock (optional)' }
+    },
+    required: ['productName']
   }
 };
 
@@ -93,7 +107,7 @@ const checkExpiryTool: FunctionDeclaration = {
 const INTRO_MESSAGE: ChatMessage = {
     id: 'intro',
     role: 'model',
-    text: "Hi! I'm your Shop Manager. I can help with inventory, billing, or analyzing your sales. What's on your mind?"
+    text: "Hi! I'm your Shop Manager. I've analyzed your inventory and sales. Would you like a daily briefing?"
 };
 
 export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, setInventory, cart, setCart, sales, expenses, customers }) => {
@@ -181,71 +195,75 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
     try {
       if (!clientKey) throw new Error("API Key Missing. Please set your API Key in Settings > Manager.");
 
-      // 3. Prepare Context (Inventory + Financials)
+      // --- INTELLIGENCE LAYER ---
       
-      // Calculate Financial Snapshot (Today)
+      // 1. Time Context
       const today = new Date();
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(today.getDate() - 7);
+
+      // 2. Daily Stats
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-      
       const salesToday = sales.filter(s => new Date(s.date).getTime() >= startOfDay);
       const revenueToday = salesToday.reduce((acc, s) => acc + s.totalAmount, 0);
       const profitToday = salesToday.reduce((acc, s) => acc + s.totalProfit, 0);
+      const expensesToday = expenses.filter(e => new Date(e.date).getTime() >= startOfDay).reduce((acc, e) => acc + e.amount, 0);
       
-      const expensesToday = expenses.filter(e => new Date(e.date).getTime() >= startOfDay);
-      const expenseTotalToday = expensesToday.reduce((acc, e) => acc + e.amount, 0);
+      // 3. Weekly Trends
+      const salesWeek = sales.filter(s => new Date(s.date) >= oneWeekAgo);
+      const revenueWeek = salesWeek.reduce((acc, s) => acc + s.totalAmount, 0);
       
-      const totalDebt = customers.reduce((acc, c) => acc + c.debt, 0);
-      const debtCustomers = customers.filter(c => c.debt > 0).map(c => `${c.name}: ${c.debt}`).join(', ');
+      // 4. Inventory Health (Low Margin & Stock)
+      const lowMarginItems = inventory.filter(p => {
+          if(!p.buyingPrice || p.buyingPrice === 0) return false;
+          const margin = ((p.sellingPrice - p.buyingPrice) / p.buyingPrice) * 100;
+          return margin < 15; // Flag items with < 15% margin
+      }).map(p => `${p.name} (Margin: ${((p.sellingPrice - p.buyingPrice)/p.buyingPrice*100).toFixed(1)}%)`).slice(0, 5);
 
-      const inventoryList = inventory.map(p => `${p.name} ($${p.sellingPrice}/${p.unit}) Stock:${p.stock}`).join(', ');
+      const totalDebt = customers.reduce((acc, c) => acc + c.debt, 0);
       
-      const systemInstruction = `You are "Manager", an AI assistant for a shopkeeper app called "TradesMen". 
+      // Simplify inventory list for token efficiency
+      const inventoryList = inventory.map(p => `${p.name} ($${p.sellingPrice}, Stock:${p.stock})`).join(', ');
+
+      const systemInstruction = `You are "Manager", an intelligent business partner for a shopkeeper using the "TradesMen" app.
       
-      **BUSINESS SNAPSHOT (TODAY):**
-      - Sales: ${revenueToday.toFixed(2)} (Profit: ${profitToday.toFixed(2)})
-      - Expenses: ${expenseTotalToday.toFixed(2)}
-      - Pending Credit (Receivables): ${totalDebt.toFixed(2)}
-      - Debtors: [${debtCustomers}]
+      **BUSINESS INTELLIGENCE:**
+      - **Today:** Sales: ${revenueToday.toFixed(0)} | Profit: ${profitToday.toFixed(0)} | Expense: ${expensesToday.toFixed(0)}
+      - **Weekly Revenue:** ${revenueWeek.toFixed(0)}
+      - **Receivables (Debt):** ${totalDebt.toFixed(0)}
       
-      **INVENTORY:**
+      **OPPORTUNITIES (Proactive Insights):**
+      - **Low Margin Items (Consider Price Increase):** ${lowMarginItems.length > 0 ? lowMarginItems.join(', ') : 'None'}
+      
+      **INVENTORY CONTEXT:**
       [${inventoryList}]
 
-      **RULES:**
-      1. If the user sends an image, analyze it as a supplier invoice/memo and extract items to add to inventory using the "addInventoryItem" tool.
-      2. If asked about profit or sales, use the Business Snapshot data provided above.
-      3. Use Markdown for formatting (bold numbers, lists).
-      4. Be concise and professional.`;
+      **YOUR ROLE:**
+      1. **Be Proactive:** If the user asks for a briefing, summarize today's performance, warn about low margins, and suggest actions.
+      2. **Manage Shop:** Use tools to add items, update prices (use 'updateProduct'), or bill items.
+      3. **Analyze:** If asked about trends, compare today vs weekly average.
+      4. **Format:** Use Markdown (bolding key numbers). Keep it conversational but professional.
+      `;
 
-      // 4. Construct Parts & History
-      // We need to feed some history to the model for context, but not too much to save tokens.
-      // Let's take the last 6 messages from sessionHistory
-      const historyText = sessionHistory.slice(-6, -1).map(m => `${m.role === 'user' ? 'User' : 'Manager'}: ${m.text}`).join('\n');
+      // 4. Construct Prompt History
+      // Take the last 8 messages for context
+      const historyText = sessionHistory.slice(-8, -1).map(m => `${m.role === 'user' ? 'User' : 'Manager'}: ${m.text}`).join('\n');
       
       const parts: any[] = [];
       if (image) {
-        // Extract mime type and data
         let mimeType = 'image/jpeg';
         let base64Data = image;
-
-        if (image.includes(',')) {
-            const [header, data] = image.split(',');
-            base64Data = data;
-            const match = header.match(/:(.*?);/);
-            if (match) {
-                mimeType = match[1];
+        if (image.includes('data:')) {
+            const matches = image.match(/^data:(.+);base64,(.+)$/);
+            if (matches && matches.length === 3) {
+                mimeType = matches[1];
+                base64Data = matches[2];
             }
         }
-
-        parts.push({
-          inlineData: {
-            mimeType: mimeType,
-            data: base64Data
-          }
-        });
+        parts.push({ inlineData: { mimeType, data: base64Data } });
       }
       
-      // Combine history with current text
-      const fullPrompt = historyText ? `Previous Context:\n${historyText}\n\nCurrent Request: ${text}` : text;
+      const fullPrompt = historyText ? `History:\n${historyText}\n\nUser Input: ${text}` : text;
       parts.push({ text: fullPrompt });
 
       // 5. Call Gemini Model
@@ -254,7 +272,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
         contents: { parts },
         config: {
           systemInstruction,
-          tools: [{ functionDeclarations: [addInventoryTool, addToCartTool, checkExpiryTool] }],
+          tools: [{ functionDeclarations: [addInventoryTool, updateProductTool, addToCartTool, checkExpiryTool] }],
         }
       });
 
@@ -284,8 +302,22 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
             setInventory((prev) => [...prev, newItem]);
             toolResponseText += `Added ${args.name} to inventory${args.shelfId ? ` (Shelf ${args.shelfId})` : ''}. `;
           } 
+          else if (call.name === 'updateProduct') {
+            const prodIndex = inventory.findIndex(p => p.name.toLowerCase().includes(args.productName.toLowerCase()));
+            if (prodIndex > -1) {
+                setInventory(prev => {
+                    const newList = [...prev];
+                    const item = newList[prodIndex];
+                    if (args.newSellingPrice) item.sellingPrice = args.newSellingPrice;
+                    if (args.stockAdjustment) item.stock += args.stockAdjustment;
+                    return newList;
+                });
+                toolResponseText += `Updated ${args.productName}. `;
+            } else {
+                toolResponseText += `Could not find product "${args.productName}" to update. `;
+            }
+          }
           else if (call.name === 'addToCart') {
-            // Fuzzy search for product
             const product = inventory.find(p => p.name.toLowerCase().includes(args.productName.toLowerCase()));
             if (product) {
               const newItem: CartItem = {
@@ -301,7 +333,6 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
             }
           }
           else if (call.name === 'setExpiryReminder') {
-             // Mock reminder
              toolResponseText += `Reminder set: ${args.productName} expires in ${args.daysUntilExpiry} days. `;
           }
         }
@@ -309,7 +340,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
 
       // 7. Get Model Text Response
       const modelText = response.text || "";
-      const finalResponse = toolResponseText ? `${toolResponseText} ${modelText}` : modelText;
+      const finalResponse = toolResponseText ? `${toolResponseText} \n\n ${modelText}` : modelText;
       
       const modelMsg: ChatMessage = {
         id: Date.now().toString() + 'bot',
@@ -317,7 +348,6 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
         text: finalResponse || "Done."
       };
 
-      // 8. Update Session with Response
       setSessions(prev => prev.map(s => {
           if (s.id === activeSessionId) {
               return {
@@ -343,10 +373,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
 
       setSessions(prev => prev.map(s => {
           if (s.id === activeSessionId) {
-              return {
-                  ...s,
-                  messages: [...s.messages, errorMsgObj]
-              };
+              return { ...s, messages: [...s.messages, errorMsgObj] };
           }
           return s;
       }));
@@ -358,8 +385,6 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
   const filterInventory = async (query: string, currentInventory: Product[]): Promise<string[]> => {
     try {
       if (!clientKey) return [];
-      
-      // Simplify inventory for token efficiency
       const simplifiedInv = currentInventory.map(p => ({
         id: p.id,
         name: p.name,
@@ -372,20 +397,13 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
 
       const response = await ai.models.generateContent({
         model: aiModel,
-        contents: `Inventory: ${JSON.stringify(simplifiedInv)}\n\nQuery: "${query}"\n\nTask: Find items in the inventory that match the user's query (e.g., price conditions, stock levels, name keywords, supplier, category, shelf location). Return ONLY a JSON array of string IDs. Example: ["1", "5"]`,
+        contents: `Inventory: ${JSON.stringify(simplifiedInv)}\n\nQuery: "${query}"\n\nTask: Find items matching the query. Return ONLY JSON array of IDs.`,
         config: {
           responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING }
-          }
+          responseSchema: { type: Type.ARRAY, items: { type: Type.STRING } }
         }
       });
-      
-      const text = response.text;
-      if (!text) return [];
-      return JSON.parse(text);
-
+      return JSON.parse(response.text || "[]");
     } catch (error) {
       console.error("Filter Error:", error);
       return [];

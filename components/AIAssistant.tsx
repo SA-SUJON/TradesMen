@@ -4,7 +4,7 @@ import { useAI } from '../contexts/AIContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff, History, MessageSquarePlus, Trash2, ArrowLeft, Wand2 } from 'lucide-react';
+import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff, History, MessageSquarePlus, Trash2, ArrowLeft, Wand2, Lightbulb } from 'lucide-react';
 import { Button, Card } from './ui/BaseComponents';
 
 // --- Helper: Simple Markdown Renderer ---
@@ -103,6 +103,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     useEffect(() => {
         if (!showHistory) scrollToBottom();
     }, [messages, showHistory]);
+
+    // --- PROACTIVE BRIEFING ---
+    // If the chat session is new (only has the system intro) and hasn't been engaged,
+    // trigger a "Morning Briefing" automatically.
+    useEffect(() => {
+        const hasUserMessages = messages.some(m => m.role === 'user');
+        if (!hasUserMessages && messages.length <= 1 && !isProcessing) {
+             // We use a timeout to let the UI mount properly
+             const timer = setTimeout(() => {
+                 sendMessage("Generate a daily briefing summarizing sales trends, low stock warnings, and opportunities for profit.");
+             }, 800);
+             return () => clearTimeout(timer);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Initialize Speech Recognition
     useEffect(() => {
@@ -315,18 +330,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                         key={msg.id}
                         className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
-                        <div
-                            className={`max-w-[85%] p-3 rounded-2xl text-sm ${
-                            msg.role === 'user'
-                                ? `${theme === 'material' ? 'bg-[#6750A4]' : 'bg-blue-600'} text-white rounded-br-none shadow-md`
-                                : `${theme === 'glass' ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-bl-none`
-                            } ${msg.isError ? 'bg-red-100 text-red-600' : ''}`}
-                        >
-                            {msg.image && (
-                                <img src={msg.image} alt="Upload" className="w-full h-32 object-cover rounded-lg mb-2" />
+                            {/* Hidden User Prompt for Briefing */}
+                            {msg.role === 'user' && msg.text.startsWith("Generate a daily briefing") ? null : (
+                                <div
+                                    className={`max-w-[85%] p-3 rounded-2xl text-sm ${
+                                    msg.role === 'user'
+                                        ? `${theme === 'material' ? 'bg-[#6750A4]' : 'bg-blue-600'} text-white rounded-br-none shadow-md`
+                                        : `${theme === 'glass' ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-bl-none`
+                                    } ${msg.isError ? 'bg-red-100 text-red-600' : ''}`}
+                                >
+                                    {msg.image && (
+                                        <img src={msg.image} alt="Upload" className="w-full h-32 object-cover rounded-lg mb-2" />
+                                    )}
+                                    <SimpleMarkdown text={msg.text} />
+                                </div>
                             )}
-                            <SimpleMarkdown text={msg.text} />
-                        </div>
                         </div>
                     ))}
                     {isProcessing && (
