@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { ArrowRightLeft, Package, Box, Scale, TrendingUp, AlertTriangle, DollarSign, Calculator } from 'lucide-react';
+import { ArrowRightLeft, Package, Box, Scale, TrendingUp, AlertTriangle, DollarSign, Calculator, Table2 } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -267,27 +268,45 @@ const Conversions: React.FC = () => {
                     </div>
                 </Card>
                 
-                <Card className="opacity-70">
+                <Card className="opacity-90">
                     <h2 className={`text-lg font-bold flex items-center gap-2 mb-4 ${styles.accentText}`}>
-                        Common Retail Units
+                        <Table2 className="w-5 h-5" /> Common Retail Conversions
                     </h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className={`p-3 rounded-lg ${theme === 'material' ? 'bg-indigo-50' : 'bg-black/5 dark:bg-white/5'}`}>
-                            <div className="font-bold">1 Dozen</div>
-                            <div>12 Pcs</div>
-                        </div>
-                        <div className={`p-3 rounded-lg ${theme === 'material' ? 'bg-indigo-50' : 'bg-black/5 dark:bg-white/5'}`}>
-                            <div className="font-bold">1 Gross</div>
-                            <div>144 Pcs</div>
-                        </div>
-                        <div className={`p-3 rounded-lg ${theme === 'material' ? 'bg-indigo-50' : 'bg-black/5 dark:bg-white/5'}`}>
-                            <div className="font-bold">1 Metric Ton</div>
-                            <div>1000 KG</div>
-                        </div>
-                        <div className={`p-3 rounded-lg ${theme === 'material' ? 'bg-indigo-50' : 'bg-black/5 dark:bg-white/5'}`}>
-                            <div className="font-bold">1 Quintal</div>
-                            <div>100 KG</div>
-                        </div>
+                    <div className="overflow-hidden rounded-lg border border-gray-100 dark:border-white/10">
+                        <table className="w-full text-sm text-left">
+                            <thead className="text-xs uppercase opacity-60 bg-gray-50 dark:bg-white/5 border-b border-gray-100 dark:border-white/10">
+                                <tr>
+                                    <th className="px-4 py-3 font-semibold">Retail Unit</th>
+                                    <th className="px-4 py-3 font-semibold text-right">Standard Value</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                                <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                    <td className="px-4 py-3 font-medium">1 Dozen</td>
+                                    <td className="px-4 py-3 text-right">12 Pieces</td>
+                                </tr>
+                                <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                    <td className="px-4 py-3 font-medium">1 Score (Kodi)</td>
+                                    <td className="px-4 py-3 text-right">20 Pieces</td>
+                                </tr>
+                                <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                    <td className="px-4 py-3 font-medium">1 Gross</td>
+                                    <td className="px-4 py-3 text-right">144 Pieces</td>
+                                </tr>
+                                <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                    <td className="px-4 py-3 font-medium">1 Maund (Man)</td>
+                                    <td className="px-4 py-3 text-right">40 KG</td>
+                                </tr>
+                                <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                    <td className="px-4 py-3 font-medium">1 Quintal</td>
+                                    <td className="px-4 py-3 text-right">100 KG</td>
+                                </tr>
+                                <tr className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                    <td className="px-4 py-3 font-medium">1 Metric Ton</td>
+                                    <td className="px-4 py-3 text-right">1000 KG</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </Card>
             </motion.div>
