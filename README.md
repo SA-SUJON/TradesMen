@@ -1,7 +1,7 @@
 # <p align="center">🚀 Business Management Tool</p>
 
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&height=300&color=gradient&text=TradesMen&fontColor=833AB4&animation=blinking&desc=Utility%20For%20Your%20Business&descSize=30&descAlign=50&descAlignY=65" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&height=300&color=gradient&text=TradesMen&animation=blinking&desc=Utility%20For%20Your%20Business&descSize=30&descAlign=50&descAlignY=65" />
 </p>
 
 ## 📊 Overview
@@ -31,7 +31,7 @@ A huge shoutout to the engines powering this development:
 ---
 
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=venom&height=300&color=gradient&text=SA%20SUJON&fontColor=2472FC&animation=twinkling" />
+  <img src="https://capsule-render.vercel.app/api?type=venom&height=500&color=gradient&text=SA%20SUJON&animation=twinkling" />
 </p>
 
 <p align="center">
