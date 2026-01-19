@@ -53,7 +53,6 @@ const AnimatedLogo: React.FC<{ size?: 'sm' | 'md' }> = ({ size = 'md' }) => {
     const getLogoStyle = () => {
         switch(theme) {
             case 'material': return 'bg-m3-primary text-white shadow-lg shadow-purple-500/30';
-            // FIXED: Adapted for Light/Dark mode in Glass theme
             case 'glass': return 'bg-white/20 text-blue-600 dark:text-white backdrop-blur-md border border-blue-100 dark:border-white/30';
             case 'neumorphism': return 'bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-700 dark:text-gray-200 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a]';
             case 'fluent': default: return 'bg-blue-600 text-white shadow-lg shadow-blue-500/30';
@@ -90,8 +89,6 @@ const AnimatedLogo: React.FC<{ size?: 'sm' | 'md' }> = ({ size = 'md' }) => {
 const AnimatedTitle: React.FC<{ subtitle?: boolean }> = ({ subtitle = true }) => {
     const { theme } = useTheme();
     
-    // Gradient text styles based on theme
-    // FIXED: Adapted for Light/Dark mode in Glass theme
     const gradientClass = theme === 'glass' 
         ? 'from-blue-700 via-indigo-600 to-blue-700 dark:from-white dark:via-blue-100 dark:to-white' 
         : theme === 'material' 
@@ -115,6 +112,54 @@ const AnimatedTitle: React.FC<{ subtitle?: boolean }> = ({ subtitle = true }) =>
             )}
         </div>
     );
+};
+
+// Helper for Icon Animations
+const getIconVariant = (id: string) => {
+    switch (id) {
+        case 'inventory': 
+            return {
+                active: { rotate: [0, -10, 10, -10, 10, 0], transition: { duration: 0.6, repeat: Infinity, repeatDelay: 3 } },
+                initial: { rotate: 0 },
+                hover: { rotate: [0, -10, 10, 0], transition: { duration: 0.3 } }
+            };
+        case 'billing':
+            return {
+                active: { x: [0, 3, -3, 3, -3, 0], transition: { duration: 0.6, repeat: Infinity, repeatDelay: 3 } },
+                initial: { x: 0 },
+                hover: { scale: 1.1 }
+            };
+        case 'customers':
+             return {
+                active: { scale: [1, 1.15, 1], transition: { duration: 1, repeat: Infinity, repeatDelay: 2 } },
+                initial: { scale: 1 },
+                hover: { scale: 1.1 }
+            };
+        case 'manager':
+             return {
+                active: { rotate: 360, scale: [1, 1.1, 1], transition: { rotate: { duration: 4, repeat: Infinity, ease: "linear" }, scale: { duration: 2, repeat: Infinity } } },
+                initial: { rotate: 0, scale: 1 },
+                hover: { rotate: 90 }
+            };
+        case 'menu':
+             return {
+                active: { rotate: 90 },
+                initial: { rotate: 0 },
+                hover: { rotate: 45 }
+            };
+        case 'settings':
+             return {
+                active: { rotate: 180 },
+                initial: { rotate: 0 },
+                hover: { rotate: 90 }
+             };
+        // Menu Tools
+        case 'finance': return { active: { scale: [1, 0.9, 1.1, 1], transition: { repeat: Infinity, repeatDelay: 2 } }, initial: { scale: 1 }, hover: { scale: 1.1 } };
+        case 'reports': return { active: { y: [0, -3, 0], transition: { repeat: Infinity, repeatDelay: 1 } }, initial: { y: 0 }, hover: { y: -3 } };
+        case 'calculator': return { active: { rotate: [0, 10, -10, 0], transition: { repeat: Infinity, repeatDelay: 2 } }, initial: { rotate: 0 }, hover: { rotate: 10 } };
+        case 'conversions': return { active: { rotate: 180 }, initial: { rotate: 0 }, hover: { rotate: 180 } };
+        default: return { active: { scale: 1.1 }, initial: { scale: 1 }, hover: { scale: 1.1 } };
+    }
 };
 
 const MainLayout: React.FC<MainLayoutProps> = ({ 
@@ -179,9 +224,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                     className="!p-4 cursor-pointer active:scale-95 transition-transform flex flex-col items-center justify-center text-center gap-3 min-h-[120px] hover:shadow-lg group"
                     onClick={() => setActiveTab(tool.id)}
                   >
-                      <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-full mb-1 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300">
+                      <motion.div 
+                        variants={getIconVariant(tool.id)}
+                        initial="initial"
+                        whileHover="active"
+                        className="p-3 bg-gray-50 dark:bg-white/5 rounded-full mb-1 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300"
+                      >
                           {tool.icon}
-                      </div>
+                      </motion.div>
                       <div>
                           <div className="font-bold text-base">{tool.label}</div>
                           <div className="text-xs opacity-60 mt-1 line-clamp-1">{tool.desc}</div>
@@ -239,9 +289,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                 />
             )}
 
-            <span className={`relative z-10 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:translate-x-1'}`}>
+            <motion.div
+                variants={getIconVariant(id)}
+                initial="initial"
+                animate={isActive ? "active" : "initial"}
+                whileHover={isActive ? "active" : "hover"}
+                className="relative z-10"
+            >
                 {icon}
-            </span>
+            </motion.div>
             <span className="relative z-10">{label}</span>
             
             {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-50 relative z-10" />}
@@ -292,7 +348,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
                   {/* Sidebar Footer */}
                   <div className="p-4 mt-2 flex-shrink-0">
-                      <SidebarItem id="settings" label="Settings" icon={<SettingsIcon className={`w-5 h-5 ${activeTab === 'settings' ? 'animate-spin-slow' : ''}`} />} />
+                      <SidebarItem id="settings" label="Settings" icon={<SettingsIcon className={`w-5 h-5`} />} />
                   </div>
               </aside>
 
@@ -362,13 +418,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                     <Cloud className="w-3 h-3" />
                                 </div>
                             )}
-                            <button 
+                            <motion.button 
                                 onClick={() => setActiveTab('settings')}
                                 className={`md:hidden p-3 rounded-full transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/10`}
                                 title="Settings"
+                                variants={getIconVariant('settings')}
+                                initial="initial"
+                                animate={activeTab === 'settings' ? 'active' : 'initial'}
                             >
-                                <SettingsIcon className={`w-6 h-6 ${activeTab === 'settings' ? 'animate-spin-slow' : ''}`} />
-                            </button>
+                                <SettingsIcon className={`w-6 h-6`} />
+                            </motion.button>
                         </div>
                     </div>
 
@@ -441,6 +500,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               <div className={`pointer-events-auto ${styles.bottomNavContainer} flex justify-around items-center p-2 relative`}>
                   {[...MAIN_TABS, MOBILE_MENU_TAB].map((tab) => {
                       const isActive = activeTab === tab.id || (tab.id === 'menu' && isMenuContext);
+                      const animId = tab.id === 'menu' && isMenuContext ? 'menu' : tab.id;
+
                       return (
                           <button
                               key={tab.id}
@@ -460,9 +521,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                   />
                               )}
 
-                              <div className={`relative z-10 transition-transform duration-200 ${isActive ? 'scale-110' : 'opacity-50 group-active:scale-95'}`}>
+                              <motion.div
+                                  variants={getIconVariant(animId)}
+                                  initial="initial"
+                                  animate={isActive ? "active" : "initial"}
+                                  className={`relative z-10 ${isActive ? '' : 'opacity-50'}`}
+                              >
                                   {React.cloneElement(tab.icon as React.ReactElement<any>, { className: "w-6 h-6" })}
-                              </div>
+                              </motion.div>
                               
                               {showNavLabels && (
                                 <span className={`relative z-10 text-[10px] font-medium leading-none mt-1 transition-all ${isActive ? 'opacity-100 font-bold' : 'opacity-0 h-0'}`}>
