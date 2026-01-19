@@ -45,10 +45,13 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
   };
 
   const handleDelete = (id: string) => {
-    if(window.confirm("Are you sure? This will delete the customer and their history.")) {
-        setCustomers(prev => prev.filter(c => c.id !== id));
-        if (selectedCustomer?.id === id) setSelectedCustomer(null);
-    }
+    // Timeout ensuring click release before confirm
+    setTimeout(() => {
+        if(window.confirm("Are you sure? This will delete the customer and their history.")) {
+            setCustomers(prev => prev.filter(c => c.id !== id));
+            if (selectedCustomer?.id === id) setSelectedCustomer(null);
+        }
+    }, 50);
   };
 
   const handleEdit = (customer: Customer) => {
@@ -118,22 +121,22 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
                                         )}
                                     </div>
                                     <div 
-                                        className="flex gap-1 relative z-20"
+                                        className="flex gap-2 relative z-20 bg-gray-50/50 dark:bg-black/20 p-1 rounded-lg"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                          <button 
                                             type="button"
                                             onClick={(e) => { e.stopPropagation(); handleEdit(customer); }}
-                                            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer"
+                                            className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer"
                                          >
-                                            <Edit2 className="w-3 h-3 text-blue-500" />
+                                            <Edit2 className="w-4 h-4 text-blue-500" />
                                          </button>
                                           <button 
                                             type="button"
                                             onClick={(e) => { e.stopPropagation(); handleDelete(customer.id); }}
-                                            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer"
+                                            className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer"
                                          >
-                                            <Trash2 className="w-3 h-3 text-red-500" />
+                                            <Trash2 className="w-4 h-4 text-red-500" />
                                          </button>
                                     </div>
                                 </div>

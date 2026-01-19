@@ -118,9 +118,12 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
   };
 
   const handleDelete = (id: string) => {
-    if(window.confirm("Are you sure you want to delete this item?")) {
-        setInventory(prev => prev.filter(i => i.id !== id));
-    }
+    // We use a small timeout to ensure the UI event clears before confirm blocking
+    setTimeout(() => {
+        if(window.confirm("Are you sure you want to delete this item?")) {
+            setInventory(prev => prev.filter(i => i.id !== id));
+        }
+    }, 50);
   };
 
   const handleEdit = (product: Product) => {
@@ -340,7 +343,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
                                         onClick={() => setExpandedRow(expandedRow === item.id ? null : item.id)}
-                                        className="border-b border-gray-100 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer group"
+                                        className="border-b border-gray-100 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer group relative"
                                     >
                                         <td className="p-4">
                                             <div className="font-bold text-gray-800 dark:text-white">{item.name}</div>
@@ -356,18 +359,20 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                             </div>
                                         </td>
                                         <td className="p-4 text-right font-bold text-lg">{item.sellingPrice}</td>
-                                        <td className="p-4 flex justify-center gap-2">
+                                        <td className="p-4 flex justify-center gap-2 relative z-20" onClick={(e) => e.stopPropagation()}>
                                             <button 
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); handleEdit(item); }} 
-                                                className="p-2 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 transition-colors z-10"
+                                                className="p-2 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 transition-colors"
+                                                title="Edit Item"
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
                                             <button 
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} 
-                                                className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 transition-colors z-10"
+                                                className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 transition-colors"
+                                                title="Delete Item"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>

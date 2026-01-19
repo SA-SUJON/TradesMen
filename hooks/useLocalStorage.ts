@@ -23,7 +23,10 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
       // Use functional update to ensure we refer to the latest state (prevValue)
       setStoredValue((prevValue) => {
         // Resolve the value: if it's a function, call it with the previous value
-        const valueToStore = value instanceof Function ? value(prevValue) : value;
+        // We use typeof === 'function' which is safer and more standard for hooks than instanceof
+        const valueToStore = typeof value === 'function' 
+          ? (value as (val: T) => T)(prevValue) 
+          : value;
         
         // Save to local storage
         if (typeof window !== 'undefined') {
