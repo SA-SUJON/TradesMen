@@ -505,7 +505,15 @@ const AppDataWrapper: React.FC = () => {
                         : 'idle';
 
   return (
-    <AIProvider inventory={inventory} setInventory={setInventory} cart={cart} setCart={setCart}>
+    <AIProvider 
+        inventory={inventory} 
+        setInventory={setInventory} 
+        cart={cart} 
+        setCart={setCart}
+        sales={sales}
+        expenses={expenses}
+        customers={customers}
+    >
       <MainLayout 
         inventory={inventory} 
         setInventory={setInventory}

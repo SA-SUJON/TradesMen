@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
-import { Product, CartItem, ChatMessage, ChatSession } from '../types';
+import { Product, CartItem, ChatMessage, ChatSession, Sale, Expense, Customer } from '../types';
 import useLocalStorage from '../hooks/useLocalStorage';
 
 interface AIContextType {
@@ -34,6 +34,9 @@ interface AIProviderProps {
   setInventory: (inv: Product[] | ((val: Product[]) => Product[])) => void;
   cart: CartItem[];
   setCart: (cart: CartItem[] | ((val: CartItem[]) => CartItem[])) => void;
+  sales: Sale[];
+  expenses: Expense[];
+  customers: Customer[];
 }
 
 // --- Tool Definitions ---
@@ -90,10 +93,10 @@ const checkExpiryTool: FunctionDeclaration = {
 const INTRO_MESSAGE: ChatMessage = {
     id: 'intro',
     role: 'model',
-    text: "Hi! It's Your Manager. What Can I Do For You?"
+    text: "Hi! I'm your Shop Manager. I can help with inventory, billing, or analyzing your sales. What's on your mind?"
 };
 
-export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, setInventory, cart, setCart }) => {
+export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, setInventory, cart, setCart, sales, expenses, customers }) => {
   // Session Persistence
   const [sessions, setSessions] = useLocalStorage<ChatSession[]>('tradesmen-chat-sessions', []);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -178,15 +181,40 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
     try {
       if (!clientKey) throw new Error("API Key Missing. Please set your API Key in Settings > Manager.");
 
-      // 3. Prepare Context (Simplified Inventory for Grounding)
-      const inventoryList = inventory.map(p => `${p.name} ($${p.sellingPrice}/${p.unit}) @ ${p.shelfId || 'NoShelf'}`).join(', ');
+      // 3. Prepare Context (Inventory + Financials)
+      
+      // Calculate Financial Snapshot (Today)
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+      
+      const salesToday = sales.filter(s => new Date(s.date).getTime() >= startOfDay);
+      const revenueToday = salesToday.reduce((acc, s) => acc + s.totalAmount, 0);
+      const profitToday = salesToday.reduce((acc, s) => acc + s.totalProfit, 0);
+      
+      const expensesToday = expenses.filter(e => new Date(e.date).getTime() >= startOfDay);
+      const expenseTotalToday = expensesToday.reduce((acc, e) => acc + e.amount, 0);
+      
+      const totalDebt = customers.reduce((acc, c) => acc + c.debt, 0);
+      const debtCustomers = customers.filter(c => c.debt > 0).map(c => `${c.name}: ${c.debt}`).join(', ');
+
+      const inventoryList = inventory.map(p => `${p.name} ($${p.sellingPrice}/${p.unit}) Stock:${p.stock}`).join(', ');
       
       const systemInstruction = `You are "Manager", an AI assistant for a shopkeeper app called "TradesMen". 
-      Current Inventory: [${inventoryList}].
-      If the user sends an image, analyze it as a supplier invoice/memo and extract items to add to inventory using the "addInventoryItem" tool.
-      If shelf/rack locations are mentioned (e.g., "A1", "Top Shelf"), include them in shelfId.
-      Previous messages in this chat are provided to maintain context.
-      Be concise.`;
+      
+      **BUSINESS SNAPSHOT (TODAY):**
+      - Sales: ${revenueToday.toFixed(2)} (Profit: ${profitToday.toFixed(2)})
+      - Expenses: ${expenseTotalToday.toFixed(2)}
+      - Pending Credit (Receivables): ${totalDebt.toFixed(2)}
+      - Debtors: [${debtCustomers}]
+      
+      **INVENTORY:**
+      [${inventoryList}]
+
+      **RULES:**
+      1. If the user sends an image, analyze it as a supplier invoice/memo and extract items to add to inventory using the "addInventoryItem" tool.
+      2. If asked about profit or sales, use the Business Snapshot data provided above.
+      3. Use Markdown for formatting (bold numbers, lists).
+      4. Be concise and professional.`;
 
       // 4. Construct Parts & History
       // We need to feed some history to the model for context, but not too much to save tokens.

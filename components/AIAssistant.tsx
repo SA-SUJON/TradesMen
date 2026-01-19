@@ -4,8 +4,75 @@ import { useAI } from '../contexts/AIContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff, History, MessageSquarePlus, Trash2, ArrowLeft } from 'lucide-react';
+import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff, History, MessageSquarePlus, Trash2, ArrowLeft, Wand2 } from 'lucide-react';
 import { Button, Card } from './ui/BaseComponents';
+
+// --- Helper: Simple Markdown Renderer ---
+const SimpleMarkdown: React.FC<{ text: string }> = ({ text }) => {
+    // Basic parser for Bold (**text**) and Bullet points
+    const lines = text.split('\n');
+    return (
+        <div className="space-y-1">
+            {lines.map((line, i) => {
+                // Bullet Points
+                if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+                    const content = line.trim().substring(2);
+                    // Bold Parsing inside bullet
+                    const parts = content.split(/(\*\*.*?\*\*)/g);
+                    return (
+                        <div key={i} className="flex gap-2 ml-1">
+                            <span className="opacity-60">•</span>
+                            <span>
+                                {parts.map((part, j) => 
+                                    part.startsWith('**') && part.endsWith('**') 
+                                    ? <strong key={j}>{part.slice(2, -2)}</strong> 
+                                    : part
+                                )}
+                            </span>
+                        </div>
+                    );
+                }
+                
+                // Normal Lines (with Bold support)
+                const parts = line.split(/(\*\*.*?\*\*)/g);
+                return (
+                    <div key={i} className={`min-h-[1.2em] ${line.trim() === '' ? 'h-2' : ''}`}>
+                        {parts.map((part, j) => 
+                            part.startsWith('**') && part.endsWith('**') 
+                            ? <strong key={j}>{part.slice(2, -2)}</strong> 
+                            : part
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+// --- Helper: Suggestion Chips ---
+const SuggestionChips: React.FC<{ onSelect: (text: string) => void }> = ({ onSelect }) => {
+    const suggestions = [
+        "Analyze today's profit",
+        "Who owes me money?",
+        "Identify low stock items",
+        "Draft a WhatsApp sale message",
+        "Add a new item to inventory",
+    ];
+
+    return (
+        <div className="flex gap-2 overflow-x-auto pb-2 px-4 scrollbar-hide snap-x">
+            {suggestions.map((s, i) => (
+                <button 
+                    key={i}
+                    onClick={() => onSelect(s)}
+                    className="flex-shrink-0 snap-start bg-gray-100 dark:bg-white/10 hover:bg-blue-100 dark:hover:bg-blue-900/40 hover:text-blue-600 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 rounded-full px-3 py-1.5 text-xs font-medium transition-all"
+                >
+                    {s}
+                </button>
+            ))}
+        </div>
+    );
+}
 
 interface ChatInterfaceProps {
     variant?: 'modal' | 'page';
@@ -153,12 +220,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                     ) : (
-                         <Sparkles className={`w-5 h-5 ${styles.accentText}`} />
+                         <div className={`p-2 rounded-lg bg-gradient-to-tr from-blue-500 to-purple-500 text-white shadow-lg`}>
+                            <Wand2 className={`w-4 h-4`} />
+                         </div>
                     )}
                    
                     <div className="flex flex-col justify-center">
                         <h3 className={`font-bold leading-none ${theme === 'glass' ? 'text-white' : ''}`}>
-                            {showHistory ? 'History' : 'Manager'}
+                            {showHistory ? 'History' : 'Manager AI'}
                         </h3>
                         {!showHistory && (
                              <div className="mt-1">
@@ -249,26 +318,37 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                         <div
                             className={`max-w-[85%] p-3 rounded-2xl text-sm ${
                             msg.role === 'user'
-                                ? `${theme === 'material' ? 'bg-[#6750A4]' : 'bg-blue-600'} text-white rounded-br-none`
+                                ? `${theme === 'material' ? 'bg-[#6750A4]' : 'bg-blue-600'} text-white rounded-br-none shadow-md`
                                 : `${theme === 'glass' ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-bl-none`
                             } ${msg.isError ? 'bg-red-100 text-red-600' : ''}`}
                         >
                             {msg.image && (
                                 <img src={msg.image} alt="Upload" className="w-full h-32 object-cover rounded-lg mb-2" />
                             )}
-                            <p className="whitespace-pre-wrap">{msg.text}</p>
+                            <SimpleMarkdown text={msg.text} />
                         </div>
                         </div>
                     ))}
                     {isProcessing && (
                         <div className="flex justify-start">
                         <div className={`p-3 rounded-2xl rounded-bl-none ${theme === 'glass' ? 'bg-white/10' : 'bg-gray-50 dark:bg-gray-800'}`}>
-                            <Loader2 className="w-5 h-5 animate-spin opacity-50" />
+                            <div className="flex gap-1">
+                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                            </div>
                         </div>
                         </div>
                     )}
                     <div ref={messagesEndRef} />
                     </div>
+
+                    {/* Quick Suggestions */}
+                    {!isProcessing && messages.length < 3 && (
+                        <div className="mb-2">
+                             <SuggestionChips onSelect={(text) => { sendMessage(text); }} />
+                        </div>
+                    )}
 
                     {/* Input Area */}
                     <div className={`p-3 md:p-4 border-t ${theme === 'glass' ? 'border-white/10' : 'border-gray-100 dark:border-white/10'}`}>
@@ -317,7 +397,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                             variant="primary" 
                             onClick={handleSend}
                             disabled={isProcessing || !input.trim()}
-                            className="p-2 h-auto rounded-full px-2"
+                            className="p-2 h-auto rounded-full px-2 shadow-lg"
                         >
                         <Send className="w-4 h-4" />
                         </Button>
