@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, HTMLMotionProps } from 'framer-motion';
 import { getThemeClasses } from '../../utils/themeUtils';
@@ -127,7 +128,7 @@ export const Select: React.FC<SelectProps> = ({ label, icon, className = '', chi
     }
 
     return (
-        <div className={`w-full relative ${className}`} ref={containerRef}>
+        <div className={`w-full relative group ${className}`} ref={containerRef}>
              {label && <label className={styles.label}>{label}</label>}
              
              {/* Trigger */}
@@ -139,17 +140,17 @@ export const Select: React.FC<SelectProps> = ({ label, icon, className = '', chi
                 <span className={`block w-full truncate ${styles.inputField} flex items-center ${!selectedOption?.value ? 'opacity-50' : ''}`}>
                     {selectedOption ? selectedOption.label : "Select..."}
                 </span>
-                <ChevronDown className={`w-4 h-4 transition-transform opacity-50 absolute right-3 ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 transition-transform opacity-50 absolute right-4 ${isOpen ? 'rotate-180' : ''}`} />
              </div>
 
              {/* Dropdown Menu */}
              <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        initial={{ opacity: 0, y: -10, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.15 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
                         className={`absolute left-0 right-0 max-h-60 overflow-y-auto custom-scrollbar ${styles.dropdownMenu} z-[100]`}
                     >
                         {options.map((opt, idx) => (
