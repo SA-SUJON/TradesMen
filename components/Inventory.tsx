@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Product, ProductHistoryEvent } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin, History, ShoppingBag, Clock, PlusCircle, Receipt, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin, History, ShoppingBag, Clock, PlusCircle, Receipt, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -26,6 +26,12 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [scanningFor, setScanningFor] = useState<'search' | 'add'>('search');
+  
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState<{ key: 'name' | 'stock' | 'sellingPrice'; direction: 'asc' | 'desc' }>({ 
+      key: 'name', 
+      direction: 'asc' 
+  });
   
   // AI Search State
   const [isSearchingAI, setIsSearchingAI] = useState(false);
@@ -169,6 +175,14 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
       setShowScanner(false);
   };
 
+  // Sorting Handler
+  const handleSort = (key: 'name' | 'stock' | 'sellingPrice') => {
+      setSortConfig(current => ({
+          key,
+          direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+      }));
+  };
+
   const getEventIcon = (type: string) => {
       switch(type) {
           case 'create': return <PlusCircle className="w-3 h-3 text-green-500" />;
@@ -179,20 +193,41 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
       }
   };
 
-  // Determine which items to show
-  let filteredInventory = inventory;
-  if (aiFilteredIds) {
-      filteredInventory = inventory.filter(p => aiFilteredIds.includes(p.id));
-  } else if (search) {
-      const q = search.toLowerCase();
-      filteredInventory = inventory.filter(p => 
-        p.name.toLowerCase().includes(q) || 
-        p.category?.toLowerCase().includes(q) ||
-        p.supplierName?.toLowerCase().includes(q) ||
-        p.barcode?.includes(q) ||
-        p.shelfId?.toLowerCase().includes(q)
-      );
-  }
+  // Determine which items to show and sort them
+  const processedInventory = useMemo(() => {
+      let data = inventory;
+
+      // 1. Filter
+      if (aiFilteredIds) {
+          data = inventory.filter(p => aiFilteredIds.includes(p.id));
+      } else if (search) {
+          const q = search.toLowerCase();
+          data = inventory.filter(p => 
+            p.name.toLowerCase().includes(q) || 
+            p.category?.toLowerCase().includes(q) ||
+            p.supplierName?.toLowerCase().includes(q) ||
+            p.barcode?.includes(q) ||
+            p.shelfId?.toLowerCase().includes(q)
+          );
+      }
+
+      // 2. Sort
+      return [...data].sort((a, b) => {
+          const aValue = a[sortConfig.key];
+          const bValue = b[sortConfig.key];
+          
+          if (typeof aValue === 'string' && typeof bValue === 'string') {
+              return sortConfig.direction === 'asc' 
+                ? aValue.localeCompare(bValue) 
+                : bValue.localeCompare(aValue);
+          }
+          
+          // Numeric sort
+          if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+          if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+          return 0;
+      });
+  }, [inventory, aiFilteredIds, search, sortConfig]);
 
   const ProductDetailView = ({ item }: { item: Product }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 bg-gray-50 dark:bg-gray-900/50">
@@ -309,6 +344,43 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                     </button>
                 </div>
             </div>
+
+            {/* Sort Controls (Visible on all sizes, but optimized for Mobile/Tablet) */}
+            <div className="flex items-center justify-between mt-0 pt-2 border-t border-gray-100 dark:border-white/5">
+                <div className="text-xs font-bold opacity-50 uppercase tracking-wide">
+                    {processedInventory.length} Items Found
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs opacity-50 hidden md:inline">Sort By:</span>
+                    <div className="flex gap-1 bg-gray-100 dark:bg-white/5 rounded-lg p-1">
+                        <button 
+                            onClick={() => handleSort('name')}
+                            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${sortConfig.key === 'name' ? 'bg-white shadow text-black dark:bg-gray-800 dark:text-white' : 'opacity-60 hover:opacity-100'}`}
+                        >
+                            Name
+                        </button>
+                         <button 
+                            onClick={() => handleSort('stock')}
+                            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${sortConfig.key === 'stock' ? 'bg-white shadow text-black dark:bg-gray-800 dark:text-white' : 'opacity-60 hover:opacity-100'}`}
+                        >
+                            Stock
+                        </button>
+                         <button 
+                            onClick={() => handleSort('sellingPrice')}
+                            className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${sortConfig.key === 'sellingPrice' ? 'bg-white shadow text-black dark:bg-gray-800 dark:text-white' : 'opacity-60 hover:opacity-100'}`}
+                        >
+                            Price
+                        </button>
+                    </div>
+                    <button 
+                        onClick={() => setSortConfig(c => ({...c, direction: c.direction === 'asc' ? 'desc' : 'asc'}))}
+                        className="p-1.5 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                        title="Toggle Sort Order"
+                    >
+                        {sortConfig.direction === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                    </button>
+                </div>
+            </div>
         </div>
 
         {/* AI Filter Status Banner */}
@@ -329,16 +401,49 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                 <table className="w-full text-left border-collapse min-w-[600px]">
                     <thead>
                         <tr className="opacity-60 text-sm border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-                            <th className="p-4">Name</th>
-                            <th className="p-4 text-right">Stock</th>
-                            <th className="p-4 text-right">Sell Price</th>
+                            <th 
+                                className="p-4 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors group select-none"
+                                onClick={() => handleSort('name')}
+                            >
+                                <div className="flex items-center gap-1">
+                                    Name 
+                                    {sortConfig.key === 'name' && (
+                                        sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                    )}
+                                    {sortConfig.key !== 'name' && <ArrowUpDown className="w-3 h-3 opacity-0 group-hover:opacity-50" />}
+                                </div>
+                            </th>
+                            <th 
+                                className="p-4 text-right cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors group select-none"
+                                onClick={() => handleSort('stock')}
+                            >
+                                <div className="flex items-center justify-end gap-1">
+                                    Stock
+                                    {sortConfig.key === 'stock' && (
+                                        sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                    )}
+                                    {sortConfig.key !== 'stock' && <ArrowUpDown className="w-3 h-3 opacity-0 group-hover:opacity-50" />}
+                                </div>
+                            </th>
+                            <th 
+                                className="p-4 text-right cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors group select-none"
+                                onClick={() => handleSort('sellingPrice')}
+                            >
+                                <div className="flex items-center justify-end gap-1">
+                                    Sell Price
+                                    {sortConfig.key === 'sellingPrice' && (
+                                        sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                                    )}
+                                    {sortConfig.key !== 'sellingPrice' && <ArrowUpDown className="w-3 h-3 opacity-0 group-hover:opacity-50" />}
+                                </div>
+                            </th>
                             <th className="p-4 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <AnimatePresence>
-                            {filteredInventory.length > 0 ? (
-                                filteredInventory.map(item => (
+                            {processedInventory.length > 0 ? (
+                                processedInventory.map(item => (
                                     <React.Fragment key={item.id}>
                                         <motion.tr 
                                             initial={{ opacity: 0 }}
@@ -409,8 +514,8 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
         {/* Mobile Card List View */}
         <div className="md:hidden space-y-3">
              <AnimatePresence>
-                {filteredInventory.length > 0 ? (
-                    filteredInventory.map(item => (
+                {processedInventory.length > 0 ? (
+                    processedInventory.map(item => (
                         <motion.div
                             key={item.id}
                             initial={{ opacity: 0, y: 10 }}

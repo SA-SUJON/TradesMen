@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Product, CartItem, Customer, Sale, Expense, Supplier } from './types';
 import { getThemeClasses } from './utils/themeUtils';
 import useLocalStorage from './hooks/useLocalStorage';
-import { useSupabaseSync } from './hooks/useSupabaseSync'; // NEW IMPORT
+import { useSupabaseSync } from './hooks/useSupabaseSync';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { AIProvider, useAI } from './contexts/AIContext';
@@ -144,6 +144,14 @@ const MainLayout: React.FC<MainLayoutProps & { syncStatus?: string }> = ({
   const handleMagicActivate = () => {
     setActiveTab('manager');
   };
+  
+  const handleNavClick = (id: string) => {
+      // Haptic feedback for mobile
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(10);
+      }
+      setActiveTab(id);
+  };
 
   const isMenuContext = ['menu', 'finance', 'calculator', 'conversions', 'reports', 'settings'].includes(activeTab);
   const isSettings = activeTab === 'settings';
@@ -202,6 +210,41 @@ const MainLayout: React.FC<MainLayoutProps & { syncStatus?: string }> = ({
           </div>
       </div>
   );
+  
+  // Render Sidebar Item
+  const SidebarItem = ({ id, label, icon }: { id: string, label: string, icon: React.ReactNode }) => {
+      const isActive = activeTab === id;
+      return (
+        <button
+            onClick={() => handleNavClick(id)}
+            className={`${styles.navItemBase} w-full group overflow-hidden ${isActive ? styles.navItemActive : styles.navItemInactive}`}
+        >
+            {isActive && theme !== 'neumorphism' && (
+                <motion.div 
+                    layoutId="sidebarActive"
+                    className={styles.navActiveIndicator}
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                />
+            )}
+            
+            {/* Special handling for Fluent vertical bar */}
+            {isActive && theme === 'fluent' && (
+                <motion.div 
+                    layoutId="fluentActive"
+                    className={styles.navActiveIndicator}
+                />
+            )}
+
+            <span className={`relative z-10 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:translate-x-1'}`}>
+                {icon}
+            </span>
+            <span className="relative z-10">{label}</span>
+            
+            {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-50 relative z-10" />}
+        </button>
+      );
+  };
 
   return (
       <div className={`flex h-[100dvh] w-full overflow-hidden transition-colors duration-500 ${styles.appBg} font-sans bg-dot-pattern`}>
@@ -210,7 +253,7 @@ const MainLayout: React.FC<MainLayoutProps & { syncStatus?: string }> = ({
           <div className="flex w-full h-full flex-col md:flex-row md:p-4 md:gap-4 overflow-hidden relative">
 
               {/* --- DESKTOP FLOATING SIDEBAR --- */}
-              <aside className={`hidden md:flex flex-col w-72 flex-shrink-0 z-30 rounded-3xl shadow-2xl transition-all duration-300 h-full ${styles.surface}`}>
+              <aside className={`hidden md:flex flex-col w-72 flex-shrink-0 z-30 rounded-3xl shadow-xl transition-all duration-300 h-full ${styles.sidebarContainer}`}>
                   {/* Sidebar Header */}
                   <div className="p-6 flex items-center gap-3 mb-2 flex-shrink-0">
                       <AnimatedLogo size="md" />
@@ -220,67 +263,33 @@ const MainLayout: React.FC<MainLayoutProps & { syncStatus?: string }> = ({
                   {/* Navigation Items */}
                   <div className="flex-grow overflow-y-auto px-4 py-2 space-y-1 custom-scrollbar">
                       <div className="text-xs font-bold opacity-40 uppercase tracking-widest px-4 mb-3 mt-2">Operations</div>
-                      {MAIN_TABS.map(tab => {
-                          const isActive = activeTab === tab.id;
-                          return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium transition-all group relative overflow-hidden ${
-                                    isActive 
-                                        ? styles.sidebarActive
-                                        : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
-                                }`}
-                            >
-                                {isActive && theme !== 'neumorphism' && theme !== 'glass' && (
-                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-current rounded-r-full opacity-50" />
-                                )}
-
-                                <span className={`relative z-10 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
-                                    {tab.icon}
-                                </span>
-                                <span className="relative z-10">{tab.label}</span>
-                                
-                                {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-50" />}
-                            </button>
-                          );
-                      })}
+                      {MAIN_TABS.map((tab, idx) => (
+                          <motion.div 
+                            key={tab.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                          >
+                             <SidebarItem {...tab} />
+                          </motion.div>
+                      ))}
 
                       <div className="text-xs font-bold opacity-40 uppercase tracking-widest px-4 mb-3 mt-8">Business Tools</div>
-                      {MENU_TOOLS.map(tool => {
-                          const isActive = activeTab === tool.id;
-                          return (
-                            <button
-                                key={tool.id}
-                                onClick={() => setActiveTab(tool.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium transition-all group ${
-                                    isActive 
-                                        ? styles.sidebarActive
-                                        : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
-                                }`}
-                            >
-                                <span className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
-                                    {tool.icon}
-                                </span>
-                                <span>{tool.label}</span>
-                            </button>
-                          );
-                      })}
+                      {MENU_TOOLS.map((tool, idx) => (
+                          <motion.div 
+                            key={tool.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 + (idx * 0.05) }}
+                          >
+                            <SidebarItem {...tool} />
+                          </motion.div>
+                      ))}
                   </div>
 
                   {/* Sidebar Footer */}
                   <div className="p-4 mt-2 flex-shrink-0">
-                      <button
-                          onClick={() => setActiveTab('settings')}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all ${
-                              activeTab === 'settings' 
-                                ? styles.sidebarActive
-                                : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
-                          }`}
-                      >
-                          <SettingsIcon className={`w-5 h-5 ${activeTab === 'settings' ? 'animate-spin-slow' : ''}`} />
-                          Settings
-                      </button>
+                      <SidebarItem id="settings" label="Settings" icon={<SettingsIcon className={`w-5 h-5 ${activeTab === 'settings' ? 'animate-spin-slow' : ''}`} />} />
                   </div>
               </aside>
 
@@ -421,43 +430,42 @@ const MainLayout: React.FC<MainLayoutProps & { syncStatus?: string }> = ({
               </div>
           </div>
 
-          {/* --- MOBILE BOTTOM NAV --- */}
-          <div className={`md:hidden fixed bottom-0 left-0 right-0 z-[50] pb-safe pt-2 px-2 transition-all duration-300 rounded-t-2xl ${
-              theme === 'glass' ? 'bg-black/40 backdrop-blur-xl border-t border-white/10' : 
-              theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[0_-5px_10px_#bebebe] dark:shadow-[0_-5px_10px_#1f2330]' :
-              'bg-white dark:bg-[#0f0f0f] border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]'
-          }`}>
-              <div className="grid grid-cols-5 gap-1 w-full">
-              {[...MAIN_TABS, MOBILE_MENU_TAB].map((tab) => {
-                  const isActive = activeTab === tab.id || (tab.id === 'menu' && isMenuContext);
-                  return (
-                      <button
-                          key={tab.id}
-                          onClick={() => {
-                              if (tab.id === 'menu' && isMenuContext) setActiveTab('menu');
-                              else setActiveTab(tab.id);
-                          }}
-                          className={`
-                              flex flex-col items-center justify-center py-2 rounded-xl transition-all
-                              ${isActive && theme === 'material' ? 'text-[#6750A4]' : ''}
-                              ${isActive && theme === 'glass' ? 'text-white bg-white/10' : ''}
-                              ${isActive && theme === 'fluent' ? 'text-blue-600' : ''}
-                              ${isActive && theme === 'neumorphism' ? 'text-blue-600 dark:text-blue-400 shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a] bg-[#E0E5EC] dark:bg-[#292d3e]' : ''}
-                              ${!isActive ? 'opacity-50 grayscale' : 'opacity-100'}
-                          `}
-                      >
-                          <div className={`transition-transform duration-200 ${isActive ? 'scale-110 mb-1' : 'mb-0.5'}`}>
-                              {React.cloneElement(tab.icon as React.ReactElement<any>, { className: "w-6 h-6" })}
-                          </div>
-                          {showNavLabels && (
-                          <span className={`text-[10px] font-medium truncate w-full text-center leading-none ${isActive ? 'font-bold' : ''}`}>
-                              {tab.label}
-                          </span>
-                          )}
-                          {isActive && theme !== 'neumorphism' && <div className="h-1 w-8 bg-current rounded-full mt-1 opacity-20" />}
-                      </button>
-                  );
-              })}
+          {/* --- MOBILE FLOATING BOTTOM NAV --- */}
+          <div className={`md:hidden fixed bottom-0 left-0 right-0 z-[50] pb-safe pointer-events-none`}>
+              <div className={`pointer-events-auto ${styles.bottomNavContainer} flex justify-around items-center p-2 relative`}>
+                  {[...MAIN_TABS, MOBILE_MENU_TAB].map((tab) => {
+                      const isActive = activeTab === tab.id || (tab.id === 'menu' && isMenuContext);
+                      return (
+                          <button
+                              key={tab.id}
+                              onClick={() => {
+                                  handleNavClick(tab.id === 'menu' && isMenuContext ? 'menu' : tab.id);
+                              }}
+                              className={`
+                                  relative flex flex-col items-center justify-center p-2 rounded-xl transition-all flex-1 h-14 group
+                                  ${isActive && theme === 'neumorphism' ? styles.navItemActive : ''}
+                              `}
+                          >
+                              {isActive && theme !== 'neumorphism' && (
+                                  <motion.div 
+                                    layoutId="bottomNavIndicator"
+                                    className={styles.navActiveIndicator}
+                                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                  />
+                              )}
+
+                              <div className={`relative z-10 transition-transform duration-200 ${isActive ? 'scale-110 -translate-y-1' : 'opacity-50 group-active:scale-95'}`}>
+                                  {React.cloneElement(tab.icon as React.ReactElement<any>, { className: "w-6 h-6" })}
+                              </div>
+                              
+                              {showNavLabels && (
+                                <span className={`relative z-10 text-[10px] font-medium leading-none mt-1 transition-all ${isActive ? 'opacity-100 font-bold' : 'opacity-0 h-0'}`}>
+                                    {tab.label}
+                                </span>
+                              )}
+                          </button>
+                      );
+                  })}
               </div>
           </div>
 
@@ -479,14 +487,14 @@ const AppDataWrapper: React.FC = () => {
   const [inventory, setInventory] = useLocalStorage<Product[]>('tradesmen-inventory', []);
   const [cart, setCart] = useLocalStorage<CartItem[]>('tradesmen-cart', []);
   const [customers, setCustomers] = useLocalStorage<Customer[]>('tradesmen-customers', []);
-  const [suppliers, setSuppliers] = useLocalStorage<Supplier[]>('tradesmen-suppliers', []); // NEW SUPPLIER STATE
+  const [suppliers, setSuppliers] = useLocalStorage<Supplier[]>('tradesmen-suppliers', []);
   const [sales, setSales] = useLocalStorage<Sale[]>('tradesmen-sales', []);
   const [expenses, setExpenses] = useLocalStorage<Expense[]>('tradesmen-expenses', []);
 
   // Sync Hooks for each major data category
   const invStatus = useSupabaseSync('inventory', inventory, setInventory);
   const custStatus = useSupabaseSync('customers', customers, setCustomers);
-  const suppStatus = useSupabaseSync('suppliers', suppliers, setSuppliers); // NEW SYNC
+  const suppStatus = useSupabaseSync('suppliers', suppliers, setSuppliers);
   const salesStatus = useSupabaseSync('sales', sales, setSales);
   const expStatus = useSupabaseSync('expenses', expenses, setExpenses);
 
