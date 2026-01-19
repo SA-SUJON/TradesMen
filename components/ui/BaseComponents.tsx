@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, HTMLMotionProps } from 'framer-motion';
 import { getThemeClasses } from '../../utils/themeUtils';
@@ -30,7 +29,7 @@ export const Button: React.FC<ButtonProps> = ({ variant = 'primary', className =
   );
 };
 
-interface CardProps extends HTMLMotionProps<"div">, BaseProps {
+interface CardProps extends HTMLMotionProps<"div"> {
     onClick?: React.MouseEventHandler<HTMLDivElement>;
 }
 
