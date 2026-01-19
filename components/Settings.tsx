@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { ThemeType, BusinessProfile } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus, Smartphone, Key, Moon } from 'lucide-react';
+import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus, Smartphone, Key, Moon, Code } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAI } from '../contexts/AIContext';
@@ -25,6 +26,11 @@ const Settings: React.FC = () => {
   } = useAI();
   
   const styles = getThemeClasses(theme);
+
+  // Supabase Config
+  const [supabaseUrl, setSupabaseUrl] = useLocalStorage<string>('tradesmen-supabase-url', '');
+  const [supabaseKey, setSupabaseKey] = useLocalStorage<string>('tradesmen-supabase-key', '');
+  const [showSqlHelp, setShowSqlHelp] = useState(false);
 
   // Business Profile State
   const [profile, setProfile] = useLocalStorage<BusinessProfile>('tradesmen-business-profile', {
@@ -222,7 +228,67 @@ const Settings: React.FC = () => {
   return (
     <div className="space-y-6 pb-24">
 
-      {/* Business Profile (Fixed Alignment) */}
+      {/* Database Connection (Supabase) - New */}
+      <Card className="border-2 border-green-500/20 shadow-lg">
+          <h2 className={`text-xl font-bold flex items-center gap-2 mb-4 ${styles.accentText}`}>
+             <Database className="w-5 h-5" /> Real Database (Supabase)
+          </h2>
+          <p className="text-sm opacity-70 mb-4">
+              Connect to a free Supabase database to sync your data across devices and prevent data loss.
+          </p>
+          
+          <div className="space-y-4">
+              <Input 
+                label="Supabase URL" 
+                placeholder="https://xyz.supabase.co"
+                value={supabaseUrl}
+                onChange={(e) => setSupabaseUrl(e.target.value)}
+              />
+              <Input 
+                label="Supabase Anon Key" 
+                type="password"
+                placeholder="eyJhbGciOiJIUzI1NiIsInR..."
+                value={supabaseKey}
+                onChange={(e) => setSupabaseKey(e.target.value)}
+              />
+
+              <div className="flex justify-between items-center mt-2">
+                 <button 
+                    onClick={() => setShowSqlHelp(!showSqlHelp)}
+                    className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                 >
+                     <Code className="w-4 h-4" /> 
+                     {showSqlHelp ? 'Hide SQL Setup' : 'How to set up table?'}
+                 </button>
+                 
+                 {supabaseUrl && supabaseKey && (
+                     <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                         <Check className="w-4 h-4" /> Credentials Saved
+                     </div>
+                 )}
+              </div>
+
+              {showSqlHelp && (
+                  <div className="p-3 bg-gray-900 text-gray-200 rounded-lg text-xs font-mono overflow-x-auto">
+                      <p className="text-gray-400 mb-2">// Run this in Supabase SQL Editor to create the storage table:</p>
+                      <pre>
+{`create table app_storage (
+  key text primary key,
+  value jsonb,
+  updated_at timestamptz default now()
+);
+
+-- Enable Row Level Security (RLS) is recommended for prod, 
+-- but for this demo, we allow access to anon key:
+alter table app_storage enable row level security;
+create policy "Public Access" on app_storage for all using (true);`}
+                      </pre>
+                  </div>
+              )}
+          </div>
+      </Card>
+
+      {/* Business Profile */}
       <Card>
           <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
              <Building2 className="w-5 h-5" /> Business Profile & Invoice
@@ -246,7 +312,7 @@ const Settings: React.FC = () => {
           </div>
       </Card>
       
-      {/* Manager AI Configuration (New Card) */}
+      {/* Manager AI Configuration */}
       <Card className={`${theme === 'material' ? 'bg-indigo-50 border-indigo-100 dark:bg-[#2B2930] dark:border-gray-700' : ''}`}>
           <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
              <Sparkles className="w-5 h-5" /> Manager AI Configuration
@@ -293,7 +359,7 @@ const Settings: React.FC = () => {
 
               <div className="h-px bg-gray-200 dark:bg-white/10" />
 
-              {/* Toggles moved here */}
+              {/* Toggles */}
               <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -335,15 +401,12 @@ const Settings: React.FC = () => {
           </div>
       </Card>
 
-      {/* Manual Data (Emphasized for Android) */}
-      <Card className="border-2 border-blue-500/20 shadow-lg">
+      {/* Manual Data Backup */}
+      <Card className="opacity-80">
         <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}>
-           <Smartphone className="w-5 h-5" /> Device Backup & Restore
+           <Smartphone className="w-5 h-5" /> Local Backup
         </h2>
         <div className="space-y-4">
-            <p className="text-sm opacity-70 mb-2">
-                Use this method to move data between devices or back up your data on Android. This creates a file on your device.
-            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button 
                     onClick={handleExport}
@@ -358,51 +421,6 @@ const Settings: React.FC = () => {
                 </label>
             </div>
         </div>
-      </Card>
-
-      {/* Cloud Sync (De-emphasized if not configured) */}
-      <Card className={`${theme === 'glass' ? 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40' : 'bg-gray-50 dark:bg-white/5 opacity-80 hover:opacity-100 transition-opacity'}`}>
-         <div className="flex justify-between items-start mb-4">
-             <h2 className={`text-lg font-bold flex items-center gap-2 opacity-80`}>
-                <Cloud className="w-5 h-5" /> Google Drive Sync (Web Only)
-            </h2>
-            {lastSync && (
-                <div className="text-xs opacity-60 flex items-center gap-1">
-                    <Check className="w-3 h-3" /> {lastSync}
-                </div>
-            )}
-         </div>
-
-         {!getClientIdStatus() ? (
-             <div className="p-3 text-xs opacity-60">
-                 Requires Client ID configuration in code. Use Device Backup for Android App.
-             </div>
-         ) : !isConnected ? (
-             <button 
-                onClick={connectDrive}
-                disabled={!isDriveReady}
-                className="text-sm font-bold text-blue-600 underline"
-             >
-                Connect Drive
-             </button>
-         ) : (
-             <div className="grid grid-cols-2 gap-4">
-                <button 
-                    onClick={syncToCloud}
-                    disabled={syncStatus === 'syncing'}
-                    className="p-2 bg-white rounded border text-sm font-bold"
-                >
-                    {syncStatus === 'syncing' ? 'Syncing...' : 'Sync Now'}
-                </button>
-                <button 
-                    onClick={restoreFromCloud}
-                    disabled={syncStatus === 'restoring'}
-                    className="p-2 bg-white rounded border text-sm"
-                >
-                     Restore
-                </button>
-             </div>
-         )}
       </Card>
 
       {/* Interface Settings */}

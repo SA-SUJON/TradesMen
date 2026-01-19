@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Product, CartItem, Customer, Sale, Expense } from './types';
 import { getThemeClasses } from './utils/themeUtils';
 import useLocalStorage from './hooks/useLocalStorage';
+import { useSupabaseSync } from './hooks/useSupabaseSync'; // NEW IMPORT
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { AIProvider, useAI } from './contexts/AIContext';
@@ -23,7 +24,7 @@ import Finance from './components/Finance';
 import Reports from './components/Reports';
 
 // Icons
-import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users, PieChart, FileBarChart, Grid, ChevronLeft, Store, Menu, LogOut, LayoutDashboard, ChevronRight } from 'lucide-react';
+import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users, PieChart, FileBarChart, Grid, ChevronLeft, Store, Menu, LogOut, LayoutDashboard, ChevronRight, Database, Cloud } from 'lucide-react';
 
 // Type for state setters to match useLocalStorage signature
 type SetValue<T> = (value: T | ((val: T) => T)) => void;
@@ -111,8 +112,8 @@ const AnimatedTitle: React.FC<{ subtitle?: boolean }> = ({ subtitle = true }) =>
     );
 };
 
-const MainLayout: React.FC<MainLayoutProps> = ({ 
-  inventory, setInventory, cart, setCart, customers, setCustomers, sales, setSales, expenses, setExpenses
+const MainLayout: React.FC<MainLayoutProps & { syncStatus?: string }> = ({ 
+  inventory, setInventory, cart, setCart, customers, setCustomers, sales, setSales, expenses, setExpenses, syncStatus
 }) => {
   const { theme, showNavLabels, showQuickScan } = useTheme();
   const { showAssistant } = useAI(); 
@@ -180,9 +181,21 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               <Store className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
                   <h3 className="font-bold text-blue-800 dark:text-blue-300 text-sm">TradesMen Pro</h3>
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 opacity-80">
-                      Version 1.2.0 • Local Storage Active
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs text-blue-600 dark:text-blue-400 opacity-80">
+                          Version 1.2.0
+                      </p>
+                      {syncStatus && syncStatus !== 'idle' && (
+                          <div className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 ${
+                              syncStatus === 'synced' ? 'bg-green-100 text-green-700' : 
+                              syncStatus === 'syncing' ? 'bg-yellow-100 text-yellow-700' : 
+                              'bg-red-100 text-red-700'
+                          }`}>
+                              <Cloud className="w-3 h-3" />
+                              {syncStatus === 'synced' ? 'Saved' : syncStatus === 'syncing' ? 'Syncing...' : 'Error'}
+                          </div>
+                      )}
+                  </div>
               </div>
           </div>
       </div>
@@ -192,7 +205,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       <div className={`flex h-[100dvh] w-full overflow-hidden transition-colors duration-500 ${styles.appBg} font-sans bg-dot-pattern`}>
           
           {/* LAYOUT CONTAINER */}
-          {/* md:p-4 and md:gap-4 creates the floating effect safely within viewport */}
           <div className="flex w-full h-full flex-col md:flex-row md:p-4 md:gap-4 overflow-hidden relative">
 
               {/* --- DESKTOP FLOATING SIDEBAR --- */}
@@ -218,7 +230,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                         : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
                                 }`}
                             >
-                                {/* Active Indicator Line */}
                                 {isActive && theme !== 'neumorphism' && theme !== 'glass' && (
                                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-current rounded-r-full opacity-50" />
                                 )}
@@ -273,7 +284,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
 
               {/* --- MAIN CONTENT AREA --- */}
-              {/* Desktop: Floats right with rounding. Mobile: Full width. */}
               <div className="flex-1 flex flex-col h-full overflow-hidden relative md:rounded-3xl transition-all duration-300 w-full">
                 
                 {/* Header (Adaptive) */}
@@ -307,7 +317,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                 )}
                             </div>
 
-                            {/* Desktop Page Title - Now integrated into the layout better */}
+                            {/* Desktop Page Title */}
                             <div className="hidden md:flex flex-col">
                                 <h2 className={`text-3xl font-display font-bold capitalize tracking-tight ${theme === 'glass' ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                                     {activeTab === 'menu' ? 'Dashboard' : 
@@ -319,29 +329,39 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                             </div>
                         </div>
 
-                        {/* Magic Bar: Centered on Desktop, Auto on Mobile */}
+                        {/* Magic Bar */}
                         <div className="hidden md:block flex-grow max-w-xl mx-8">
                             {isMagicBarVisible && <MagicBar onActivate={handleMagicActivate} />}
                         </div>
 
-                        {/* Mobile Settings Icon */}
-                        <button 
-                            onClick={() => setActiveTab('settings')}
-                            className={`md:hidden p-3 rounded-full transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/10`}
-                            title="Settings"
-                        >
-                            <SettingsIcon className={`w-6 h-6 ${activeTab === 'settings' ? 'animate-spin-slow' : ''}`} />
-                        </button>
+                        {/* Settings Icon / Cloud Status */}
+                        <div className="flex items-center gap-2">
+                            {syncStatus && syncStatus !== 'idle' && (
+                                <div className={`md:flex hidden items-center gap-1 text-xs px-2 py-1 rounded-full ${
+                                    syncStatus === 'synced' ? 'bg-green-100 text-green-700' : 
+                                    syncStatus === 'syncing' ? 'bg-yellow-100 text-yellow-700' : 
+                                    'bg-red-100 text-red-700'
+                                }`}>
+                                    <Cloud className="w-3 h-3" />
+                                </div>
+                            )}
+                            <button 
+                                onClick={() => setActiveTab('settings')}
+                                className={`md:hidden p-3 rounded-full transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/10`}
+                                title="Settings"
+                            >
+                                <SettingsIcon className={`w-6 h-6 ${activeTab === 'settings' ? 'animate-spin-slow' : ''}`} />
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Mobile Magic Bar (Second Row) */}
+                    {/* Mobile Magic Bar */}
                     <div className="md:hidden w-full">
                         {isMagicBarVisible && <MagicBar onActivate={handleMagicActivate} />}
                     </div>
                 </header>
 
-                {/* Scrollable Content Container */}
-                {/* Added max-w-screen-2xl for better Ultra-wide support */}
+                {/* Content Container */}
                 <main className={`flex-grow relative ${isManagerTab ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'} pb-32 md:pb-0 px-4 md:px-4 w-full`}>
                     <div className="w-full max-w-[1600px] h-full mx-auto">
                         <AnimatePresence mode="wait">
@@ -372,7 +392,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                 )}
                                 {activeTab === 'customers' && <Customers customers={customers} setCustomers={setCustomers} />}
                                 
-                                {/* Menu Context Views */}
                                 {activeTab === 'menu' && <MenuGrid />}
                                 {activeTab === 'reports' && <Reports sales={sales} inventory={inventory} expenses={expenses} />}
                                 {activeTab === 'calculator' && <Calculator inventory={inventory} />}
@@ -395,7 +414,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               </div>
           </div>
 
-          {/* --- MOBILE BOTTOM NAV (Hidden on Desktop) --- */}
+          {/* --- MOBILE BOTTOM NAV --- */}
           <div className={`md:hidden fixed bottom-0 left-0 right-0 z-[50] pb-safe pt-2 px-2 transition-all duration-300 rounded-t-2xl ${
               theme === 'glass' ? 'bg-black/40 backdrop-blur-xl border-t border-white/10' : 
               theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[0_-5px_10px_#bebebe] dark:shadow-[0_-5px_10px_#1f2330]' :
@@ -456,6 +475,19 @@ const AppDataWrapper: React.FC = () => {
   const [sales, setSales] = useLocalStorage<Sale[]>('tradesmen-sales', []);
   const [expenses, setExpenses] = useLocalStorage<Expense[]>('tradesmen-expenses', []);
 
+  // Sync Hooks for each major data category
+  // This automatically fetches on mount and pushes on change if Supabase is configured
+  const invStatus = useSupabaseSync('inventory', inventory, setInventory);
+  const custStatus = useSupabaseSync('customers', customers, setCustomers);
+  const salesStatus = useSupabaseSync('sales', sales, setSales);
+  const expStatus = useSupabaseSync('expenses', expenses, setExpenses);
+
+  // Aggregate Status
+  const aggregateStatus = [invStatus, custStatus, salesStatus, expStatus].includes('error') ? 'error' 
+                        : [invStatus, custStatus, salesStatus, expStatus].includes('syncing') ? 'syncing' 
+                        : [invStatus, custStatus, salesStatus, expStatus].every(s => s === 'synced' || s === 'idle') ? 'synced' 
+                        : 'idle';
+
   return (
     <AIProvider inventory={inventory} setInventory={setInventory} cart={cart} setCart={setCart}>
       <MainLayout 
@@ -469,6 +501,7 @@ const AppDataWrapper: React.FC = () => {
         setSales={setSales}
         expenses={expenses}
         setExpenses={setExpenses}
+        syncStatus={aggregateStatus}
       />
     </AIProvider>
   );
