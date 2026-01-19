@@ -232,7 +232,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
   }, [inventory, aiFilteredIds, search, sortConfig]);
 
   const ProductDetailView = ({ item }: { item: Product }) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 bg-gray-50 dark:bg-gray-900/50">
+    <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-4 ${theme === 'neumorphism' ? 'bg-black/5 dark:bg-white/5' : 'bg-gray-50 dark:bg-gray-900/50'}`}>
         {/* Left: Standard Details */}
         <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -348,7 +348,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
             </div>
 
             {/* Sort Controls (Visible on all sizes, but optimized for Mobile/Tablet) */}
-            <div className="flex items-center justify-between mt-0 pt-2 border-t border-gray-100 dark:border-white/5">
+            <div className={`flex items-center justify-between mt-0 pt-2 border-t ${theme === 'neumorphism' ? 'border-gray-300 dark:border-white/5' : 'border-gray-100 dark:border-white/5'}`}>
                 <div className="text-xs font-bold opacity-50 uppercase tracking-wide">
                     {processedInventory.length} Items Found
                 </div>
@@ -397,12 +397,12 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
         )}
       </Card>
 
-        {/* Desktop Table View (Hidden on Mobile) */}
-        <div className="hidden md:block bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 overflow-hidden">
+        {/* Desktop Table View (Replaced div with Card style for consistency) */}
+        <Card className="hidden md:block !p-0 overflow-hidden">
             <div className="overflow-x-auto w-full">
                 <table className="w-full text-left border-collapse min-w-[600px]">
                     <thead>
-                        <tr className="opacity-60 text-sm border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+                        <tr className={`opacity-60 text-sm border-b ${theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] border-gray-300 dark:border-gray-700' : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10'}`}>
                             <th 
                                 className="p-4 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors group select-none"
                                 onClick={() => handleSort('name')}
@@ -452,7 +452,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
                                             onClick={() => setExpandedRow(expandedRow === item.id ? null : item.id)}
-                                            className="border-b border-gray-100 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer group relative"
+                                            className={`border-b hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer group relative ${theme === 'neumorphism' ? 'border-gray-300 dark:border-gray-700' : 'border-gray-100 dark:border-white/5'}`}
                                         >
                                             <td className="p-4">
                                                 <div className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
@@ -460,7 +460,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                                     {item.name}
                                                 </div>
                                                 <div className="flex gap-1 mt-1">
-                                                    {item.category && <div className="text-xs opacity-60 bg-gray-100 dark:bg-gray-700 inline-block px-1.5 py-0.5 rounded">{item.category}</div>}
+                                                    {item.category && <div className="text-xs opacity-60 bg-gray-100 dark:bg-white/10 inline-block px-1.5 py-0.5 rounded">{item.category}</div>}
                                                     {item.shelfId && <div className="text-xs opacity-80 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 inline-block px-1.5 py-0.5 rounded flex items-center gap-0.5"><MapPin className="w-3 h-3" />{item.shelfId}</div>}
                                                     {item.gstRate ? <div className="text-xs opacity-80 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 inline-block px-1.5 py-0.5 rounded flex items-center gap-0.5"><Receipt className="w-3 h-3" /> GST {item.gstRate}%</div> : null}
                                                 </div>
@@ -514,7 +514,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </Card>
 
         {/* Mobile Card List View */}
         <div className="md:hidden space-y-3">

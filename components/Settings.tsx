@@ -320,7 +320,7 @@ create policy "Public Access" on app_storage for all using (true);`}
           
           <div className="space-y-6">
               {/* API Key Section */}
-              <div className="p-4 bg-white dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/10">
+              <div className={`p-4 rounded-xl border border-gray-200 dark:border-white/10 ${theme === 'neumorphism' ? 'shadow-[inset_2px_2px_5px_#a3b1c6,inset_-2px_-2px_5px_#ffffff] dark:shadow-[inset_2px_2px_5px_#1f2330,inset_-2px_-2px_5px_#33374a]' : 'bg-white dark:bg-black/20'}`}>
                   <div className="flex items-center gap-2 font-bold mb-2">
                       <Key className="w-4 h-4 text-orange-500" /> Google Gemini API Key
                   </div>
@@ -451,7 +451,7 @@ create policy "Public Access" on app_storage for all using (true);`}
                   <div className="font-bold flex items-center gap-2"><Scale className="w-4 h-4" /> Unit System</div>
                   <div className="text-sm opacity-60">Use Local Units (Maund/Seer) or Metric (KG).</div>
               </div>
-              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+              <div className={`flex rounded-lg p-1 ${theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[inset_2px_2px_5px_#a3b1c6,inset_-2px_-2px_5px_#ffffff] dark:shadow-[inset_2px_2px_5px_#1f2330,inset_-2px_-2px_5px_#33374a]' : 'bg-gray-100 dark:bg-gray-800'}`}>
                   <button 
                     onClick={() => setUnitSystem('metric')}
                     className={`px-3 py-1 text-xs rounded-md transition-all ${unitSystem === 'metric' ? 'bg-white shadow text-black' : 'opacity-60'}`}
@@ -499,7 +499,7 @@ create policy "Public Access" on app_storage for all using (true);`}
             } else {
                containerClass += "border-transparent hover:bg-black/5 dark:hover:bg-white/5 ";
                if (theme === 'glass') containerClass += "bg-white/5 border-white/10 ";
-               else if (theme === 'neumorphism') containerClass += "shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff] dark:shadow-[inset_2px_2px_5px_#1f2330,inset_-2px_-2px_5px_#33374a] ";
+               else if (theme === 'neumorphism') containerClass += "shadow-[inset_2px_2px_5px_#a3b1c6,inset_-2px_-2px_5px_#ffffff] dark:shadow-[inset_2px_2px_5px_#1f2330,inset_-2px_-2px_5px_#33374a] ";
                else containerClass += "bg-gray-50 dark:bg-gray-800/50 ";
             }
             return (

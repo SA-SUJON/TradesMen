@@ -78,25 +78,25 @@ export const getThemeClasses = (theme: ThemeType) => {
         // Neumorphism: Soft Shadows, No Borders, Slate Text
         appBg: 'bg-[#E0E5EC] dark:bg-[#292d3e] text-[#475569] dark:text-[#cbd5e1] transition-colors duration-300',
         surface: 'bg-[#E0E5EC] dark:bg-[#292d3e]', 
-        // Card: Removed border to fix white edge. Added robust shadows.
-        card: 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-[30px] shadow-[12px_12px_24px_#b8b9be,-12px_-12px_24px_#ffffff] dark:shadow-[12px_12px_24px_#1f2330,-12px_-12px_24px_#33374a] p-6', 
+        // Card: Removed border to fix white edge. Adjusted shadows for perfect 3D look without white halos.
+        // Standardized radius to 24px (rounded-3xl).
+        card: 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-3xl shadow-[9px_9px_16px_#a3b1c6,-9px_-9px_16px_#ffffff] dark:shadow-[8px_8px_16px_#1f2330,-8px_-8px_16px_#33374a] p-6 border-none', 
         
         // Navigation
         sidebarContainer: 'bg-[#E0E5EC] dark:bg-[#292d3e]',
-        bottomNavContainer: 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] dark:shadow-[8px_8px_16px_#1f2330,-8px_-8px_16px_#33374a] mb-4 mx-4 rounded-2xl',
+        bottomNavContainer: 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[6px_6px_12px_#a3b1c6,-6px_-6px_12px_#ffffff] dark:shadow-[6px_6px_12px_#1f2330,-6px_-6px_12px_#33374a] mb-4 mx-4 rounded-2xl border-none',
         navItemBase: 'relative flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-300',
-        navItemActive: 'text-[#3b82f6] dark:text-[#60a5fa] font-bold shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] dark:shadow-[inset_4px_4px_8px_#1f2330,inset_-4px_-4px_8px_#33374a]',
+        navItemActive: 'text-[#3b82f6] dark:text-[#60a5fa] font-bold shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff] dark:shadow-[inset_4px_4px_8px_#1f2330,inset_-4px_-4px_8px_#33374a] bg-[#E0E5EC] dark:bg-[#292d3e]',
         navItemInactive: 'text-[#64748b] dark:text-[#94a3b8] hover:text-[#334155] dark:hover:text-[#e2e8f0]',
         navActiveIndicator: 'hidden', 
 
         // Buttons
-        buttonPrimary: 'bg-[#E0E5EC] dark:bg-[#292d3e] text-[#2563eb] dark:text-[#60a5fa] font-bold rounded-2xl px-6 py-3 shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] dark:shadow-[6px_6px_12px_#1f2330,-6px_-6px_12px_#33374a] active:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] dark:active:shadow-[inset_4px_4px_8px_#1f2330,inset_-4px_-4px_8px_#33374a] transition-all active:translate-y-[1px]',
-        buttonSecondary: 'bg-[#E0E5EC] dark:bg-[#292d3e] text-[#64748b] dark:text-[#94a3b8] font-medium rounded-2xl px-6 py-3 shadow-[5px_5px_10px_#b8b9be,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a] active:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] dark:active:shadow-[inset_4px_4px_8px_#1f2330,inset_-4px_-4px_8px_#33374a] transition-all',
+        buttonPrimary: 'bg-[#E0E5EC] dark:bg-[#292d3e] text-[#2563eb] dark:text-[#60a5fa] font-bold rounded-2xl px-6 py-3 shadow-[6px_6px_12px_#a3b1c6,-6px_-6px_12px_#ffffff] dark:shadow-[6px_6px_12px_#1f2330,-6px_-6px_12px_#33374a] active:shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff] dark:active:shadow-[inset_4px_4px_8px_#1f2330,inset_-4px_-4px_8px_#33374a] transition-all active:translate-y-[1px]',
+        buttonSecondary: 'bg-[#E0E5EC] dark:bg-[#292d3e] text-[#64748b] dark:text-[#94a3b8] font-medium rounded-2xl px-6 py-3 shadow-[5px_5px_10px_#a3b1c6,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a] active:shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff] dark:active:shadow-[inset_4px_4px_8px_#1f2330,inset_-4px_-4px_8px_#33374a] transition-all',
         
         // Inputs
         label: 'text-[#64748b] dark:text-[#94a3b8] text-xs font-bold tracking-widest mb-2 block ml-3 uppercase',
-        inputWrapper: 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-2xl px-4 flex items-center min-h-[52px] shadow-[inset_5px_5px_10px_#b8b9be,inset_-5px_-5px_10px_#ffffff] dark:shadow-[inset_5px_5px_10px_#1f2330,inset_-5px_-5px_10px_#33374a] transition-all focus-within:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] dark:focus-within:shadow-[inset_2px_2px_5px_#1f2330,inset_-2px_-2px_5px_#33374a]',
-        // Explicitly colored text to avoid white-on-light
+        inputWrapper: 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-2xl px-4 flex items-center min-h-[52px] shadow-[inset_5px_5px_10px_#a3b1c6,inset_-5px_-5px_10px_#ffffff] dark:shadow-[inset_5px_5px_10px_#1f2330,inset_-5px_-5px_10px_#33374a] transition-all focus-within:shadow-[inset_2px_2px_5px_#a3b1c6,inset_-2px_-2px_5px_#ffffff] dark:focus-within:shadow-[inset_2px_2px_5px_#1f2330,inset_-2px_-2px_5px_#33374a] border-none',
         inputField: 'bg-transparent w-full h-full py-3 outline-none text-[#334155] dark:text-[#f1f5f9] placeholder-[#94a3b8] dark:placeholder-[#64748b] text-base font-medium',
         inputIcon: 'text-[#94a3b8] dark:text-[#64748b] mr-3',
         
@@ -104,9 +104,9 @@ export const getThemeClasses = (theme: ThemeType) => {
         accentText: 'text-[#2563eb] dark:text-[#60a5fa]',
         
         // Dropdown
-        dropdownMenu: 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-2xl shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] dark:shadow-[8px_8px_16px_#1f2330,-8px_-8px_16px_#33374a] mt-3 p-3 z-[60]',
-        dropdownItem: 'p-3 rounded-xl mb-2 last:mb-0 hover:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] dark:hover:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a] text-[#475569] dark:text-[#cbd5e1] font-medium cursor-pointer transition-all relative flex items-center gap-2',
-        dropdownItemActive: 'shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a] text-[#2563eb] dark:text-[#60a5fa] font-bold',
+        dropdownMenu: 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-2xl shadow-[8px_8px_16px_#a3b1c6,-8px_-8px_16px_#ffffff] dark:shadow-[8px_8px_16px_#1f2330,-8px_-8px_16px_#33374a] mt-3 p-3 z-[60] border-none',
+        dropdownItem: 'p-3 rounded-xl mb-2 last:mb-0 hover:shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff] dark:hover:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a] text-[#475569] dark:text-[#cbd5e1] font-medium cursor-pointer transition-all relative flex items-center gap-2',
+        dropdownItemActive: 'shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a] text-[#2563eb] dark:text-[#60a5fa] font-bold',
       };
     case 'fluent':
     default:
