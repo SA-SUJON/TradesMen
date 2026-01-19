@@ -62,6 +62,9 @@ export interface Customer {
   id: string;
   name: string;
   phone: string;
+  address?: string;   // CRM: Physical Address
+  gateCode?: string;  // CRM: Entry/Gate Code
+  notes?: string;     // CRM: Client Notes
   debt: number; 
   history: Transaction[];
 }
