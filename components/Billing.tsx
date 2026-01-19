@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Product, CartItem, Customer, Transaction, Sale, ProductHistoryEvent, BusinessProfile } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
@@ -7,6 +8,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { speak, formatUnit, openWhatsApp, formatBillMessage } from '../utils/appUtils';
 import BarcodeScanner from './BarcodeScanner';
 import useLocalStorage from '../hooks/useLocalStorage';
+import { motion } from 'framer-motion';
 
 interface BillingProps {
   inventory: Product[];
@@ -50,7 +52,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
 
   // New Features State
   const [parkedBills, setParkedBills] = useLocalStorage<ParkedBill[]>('tradesmen-parked-bills', []);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [showParkedList, setShowParkedList] = useState(false);
 
   // Quick Grid Items (Favorites)
@@ -413,19 +415,38 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                         </Button>
                     </div>
                 ) : (
-                    // Quick Grid View
+                    // Quick Grid View (Updated Visual POS)
                     <div className="space-y-4">
-                         <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto">
+                         <div className="grid grid-cols-3 gap-3 max-h-[300px] overflow-y-auto">
                              {quickItems.length > 0 ? quickItems.map(item => (
-                                 <button 
+                                 <motion.button 
+                                    whileTap={{ scale: 0.95 }}
                                     key={item.id}
                                     onClick={() => addItem(item.id, 1)}
-                                    className="flex flex-col items-center justify-center p-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-95 transition-all"
+                                    className={`flex flex-col items-center justify-between p-2 rounded-2xl h-24 shadow-sm transition-all relative overflow-hidden group ${item.color || (theme === 'glass' ? 'bg-white/10 border-white/20' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 border')}`}
                                  >
-                                     <div className="font-bold text-sm truncate w-full text-center">{item.name}</div>
-                                     <div className="text-xs opacity-60">{item.sellingPrice}</div>
-                                 </button>
-                             )) : <div className="col-span-3 text-center opacity-50 text-xs py-8">Mark items as "Favorites" in Inventory to see them here.</div>}
+                                     <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                                     
+                                     {/* Emoji / Icon */}
+                                     <div className="text-3xl mt-1 filter drop-shadow-sm group-hover:scale-110 transition-transform">
+                                         {item.emoji || '📦'}
+                                     </div>
+                                     
+                                     <div className="w-full text-center z-10">
+                                         <div className="font-bold text-xs truncate w-full opacity-90 leading-tight mb-0.5 text-black dark:text-white">
+                                             {item.name}
+                                         </div>
+                                         <div className="text-[10px] font-bold opacity-70 text-black dark:text-white">
+                                             {item.sellingPrice}
+                                         </div>
+                                     </div>
+                                 </motion.button>
+                             )) : (
+                                <div className="col-span-3 text-center opacity-50 text-xs py-10 flex flex-col items-center gap-2">
+                                    <Grid className="w-8 h-8 opacity-20" />
+                                    Mark items as "Favorites" in Inventory to enable Visual POS.
+                                </div>
+                             )}
                          </div>
                     </div>
                 )}
@@ -499,9 +520,12 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                                 
                                 return (
                                     <tr key={item.cartId} className="group text-sm">
-                                        <td className="py-3 font-medium pl-1">
-                                            {item.name}
-                                            <div className="md:hidden text-[10px] opacity-60">@{item.sellingPrice}</div>
+                                        <td className="py-3 font-medium pl-1 flex items-center gap-2">
+                                            {item.emoji && <span className="text-lg">{item.emoji}</span>}
+                                            <div>
+                                                {item.name}
+                                                <div className="md:hidden text-[10px] opacity-60">@{item.sellingPrice}</div>
+                                            </div>
                                         </td>
                                         <td className="py-3 text-right">
                                             {formatUnit(item.quantity, item.unit, unitSystem)}

@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Product, ProductHistoryEvent } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin, History, ShoppingBag, Clock, PlusCircle, Receipt, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowUpDown, Star } from 'lucide-react';
+import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin, History, ShoppingBag, Clock, PlusCircle, Receipt, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowUpDown, Star, Palette, Smile } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -14,6 +14,32 @@ interface InventoryProps {
   inventory: Product[];
   setInventory: (inv: Product[] | ((val: Product[]) => Product[])) => void;
 }
+
+// Visual POS Constants
+const POS_COLORS = [
+    { id: 'red', bg: 'bg-red-200', text: 'text-red-900', border: 'border-red-300' },
+    { id: 'orange', bg: 'bg-orange-200', text: 'text-orange-900', border: 'border-orange-300' },
+    { id: 'amber', bg: 'bg-amber-200', text: 'text-amber-900', border: 'border-amber-300' },
+    { id: 'yellow', bg: 'bg-yellow-200', text: 'text-yellow-900', border: 'border-yellow-300' },
+    { id: 'lime', bg: 'bg-lime-200', text: 'text-lime-900', border: 'border-lime-300' },
+    { id: 'green', bg: 'bg-green-200', text: 'text-green-900', border: 'border-green-300' },
+    { id: 'emerald', bg: 'bg-emerald-200', text: 'text-emerald-900', border: 'border-emerald-300' },
+    { id: 'teal', bg: 'bg-teal-200', text: 'text-teal-900', border: 'border-teal-300' },
+    { id: 'cyan', bg: 'bg-cyan-200', text: 'text-cyan-900', border: 'border-cyan-300' },
+    { id: 'sky', bg: 'bg-sky-200', text: 'text-sky-900', border: 'border-sky-300' },
+    { id: 'blue', bg: 'bg-blue-200', text: 'text-blue-900', border: 'border-blue-300' },
+    { id: 'indigo', bg: 'bg-indigo-200', text: 'text-indigo-900', border: 'border-indigo-300' },
+    { id: 'violet', bg: 'bg-violet-200', text: 'text-violet-900', border: 'border-violet-300' },
+    { id: 'purple', bg: 'bg-purple-200', text: 'text-purple-900', border: 'border-purple-300' },
+    { id: 'fuchsia', bg: 'bg-fuchsia-200', text: 'text-fuchsia-900', border: 'border-fuchsia-300' },
+    { id: 'pink', bg: 'bg-pink-200', text: 'text-pink-900', border: 'border-pink-300' },
+    { id: 'rose', bg: 'bg-rose-200', text: 'text-rose-900', border: 'border-rose-300' },
+    { id: 'slate', bg: 'bg-slate-200', text: 'text-slate-900', border: 'border-slate-300' },
+    { id: 'gray', bg: 'bg-gray-200', text: 'text-gray-900', border: 'border-gray-300' },
+    { id: 'stone', bg: 'bg-stone-200', text: 'text-stone-900', border: 'border-stone-300' },
+];
+
+const SUGGESTED_EMOJIS = ['🍎', '🍌', '🥛', '🍞', '🥚', '🧀', '🥩', '🍗', '🍟', '🍕', '🥤', '🍺', '🧼', '🧻', '💊', '🔋', '🎁', '🖊️'];
 
 const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
   const { theme, unitSystem, voiceEnabled } = useTheme();
@@ -54,7 +80,9 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
     shelfId: '',
     hsnCode: '',
     gstRate: 0,
-    isFavorite: false
+    isFavorite: false,
+    color: 'bg-gray-200',
+    emoji: ''
   });
 
   const handleSave = () => {
@@ -114,6 +142,8 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
             hsnCode: formData.hsnCode,
             gstRate: formData.gstRate,
             isFavorite: formData.isFavorite || false,
+            color: formData.color || 'bg-gray-200',
+            emoji: formData.emoji || '',
             history: [{
                 id: Date.now().toString(),
                 date: now,
@@ -144,7 +174,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
   const resetForm = () => {
       setFormData({ 
         name: '', buyingPrice: 0, sellingPrice: 0, stock: 0, unit: 'kg', 
-        category: '', supplierName: '', supplierContact: '', notes: '', lowStockThreshold: 10, purchaseDate: '', barcode: '', shelfId: '', hsnCode: '', gstRate: 0, isFavorite: false
+        category: '', supplierName: '', supplierContact: '', notes: '', lowStockThreshold: 10, purchaseDate: '', barcode: '', shelfId: '', hsnCode: '', gstRate: 0, isFavorite: false, color: 'bg-gray-200', emoji: ''
       });
       setIsAdding(false);
       setEditId(null);
@@ -347,7 +377,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                 </div>
             </div>
 
-            {/* Sort Controls (Visible on all sizes, but optimized for Mobile/Tablet) */}
+            {/* Sort Controls */}
             <div className={`flex items-center justify-between mt-0 pt-2 border-t ${theme === 'neumorphism' ? 'border-gray-300 dark:border-white/5' : 'border-gray-100 dark:border-white/5'}`}>
                 <div className="text-xs font-bold opacity-50 uppercase tracking-wide">
                     {processedInventory.length} Items Found
@@ -397,7 +427,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
         )}
       </Card>
 
-        {/* Desktop Table View (Replaced div with Card style for consistency) */}
+        {/* Desktop Table View */}
         <Card className="hidden md:block !p-0 overflow-hidden">
             <div className="overflow-x-auto w-full">
                 <table className="w-full text-left border-collapse min-w-[600px]">
@@ -457,6 +487,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                             <td className="p-4">
                                                 <div className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
                                                     {item.isFavorite && <Star className="w-3 h-3 text-orange-400 fill-orange-400" />}
+                                                    {item.emoji && <span className="text-xl">{item.emoji}</span>}
                                                     {item.name}
                                                 </div>
                                                 <div className="flex gap-1 mt-1">
@@ -526,13 +557,19 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className={`${styles.card} p-4 !rounded-2xl relative`}
+                            className={`${styles.card} p-4 !rounded-2xl relative overflow-hidden`}
                             onClick={() => setExpandedRow(expandedRow === item.id ? null : item.id)}
                         >
-                            <div className="flex justify-between items-start">
+                            {/* Color Strip Indicator */}
+                            {item.color && (
+                                <div className={`absolute top-0 bottom-0 left-0 w-1 ${item.color.replace('bg-', 'bg-').replace('200', '500')}`} />
+                            )}
+
+                            <div className="flex justify-between items-start pl-2">
                                 <div className="flex-1 pr-10">
                                     <div className="font-bold text-lg leading-tight flex items-center gap-2">
                                         {item.isFavorite && <Star className="w-3 h-3 text-orange-400 fill-orange-400" />}
+                                        {item.emoji && <span>{item.emoji}</span>}
                                         {item.name}
                                     </div>
                                     <div className="text-xs opacity-60 mt-1 flex flex-wrap gap-2">
@@ -603,7 +640,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
             </AnimatePresence>
         </div>
 
-      {/* Add/Edit Modal Overlay - Full Screen on Mobile */}
+      {/* Add/Edit Modal Overlay - Optimized for Scrolling and Mobile Heights */}
       <AnimatePresence>
         {isAdding && (
             <motion.div 
@@ -617,16 +654,75 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                     initial={{ scale: 0.9, opacity: 0, y: 100 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 100 }}
-                    className="w-full h-full sm:h-auto sm:max-w-lg sm:rounded-2xl overflow-hidden bg-white dark:bg-gray-900 flex flex-col"
+                    className="w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl overflow-hidden bg-white dark:bg-gray-900 flex flex-col shadow-2xl"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-gray-100 dark:border-white/10">
+                    <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-gray-100 dark:border-white/10 bg-white dark:bg-gray-900 z-10">
                         <h3 className={`text-lg font-bold ${styles.accentText}`}>{editId ? 'Edit Product' : 'Add New Product'}</h3>
                         <button onClick={resetForm} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10"><X className="w-6 h-6" /></button>
                     </div>
 
-                    <div className="flex-grow overflow-y-auto p-4 pb-24">
-                        <div className="space-y-4">
+                    <div className="flex-grow overflow-y-auto p-4 custom-scrollbar">
+                        <div className="space-y-4 pb-20 sm:pb-0">
+                            {/* Visual Identity Section */}
+                            <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-lg space-y-3">
+                                <h4 className="text-xs font-bold opacity-50 uppercase tracking-wide flex items-center gap-2"><Palette className="w-3 h-3" /> Visual Appearance (POS)</h4>
+                                
+                                <div className="grid grid-cols-2 gap-4 items-center">
+                                    {/* Preview */}
+                                    <div className={`col-span-2 p-4 rounded-xl flex items-center justify-center gap-3 ${formData.color || 'bg-gray-200'} transition-colors`}>
+                                        <span className="text-4xl filter drop-shadow-md">{formData.emoji || '📦'}</span>
+                                        <div className="bg-white/80 dark:bg-black/40 px-3 py-1 rounded-lg backdrop-blur-sm">
+                                            <div className="font-bold text-sm">{formData.name || 'Product Name'}</div>
+                                            <div className="text-xs opacity-70">Preview</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Emoji Input */}
+                                    <div className="col-span-2">
+                                        <label className={`${styles.label} flex items-center gap-1`}>
+                                            <Smile className="w-3 h-3" /> Icon / Emoji
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input 
+                                                className={`${styles.inputField} w-16 text-center text-2xl !p-1 border border-gray-200 dark:border-gray-700 rounded-xl`}
+                                                value={formData.emoji}
+                                                onChange={e => setFormData({...formData, emoji: e.target.value})}
+                                                placeholder="🍎"
+                                                maxLength={2}
+                                            />
+                                            <div className="flex-grow flex gap-2 overflow-x-auto pb-1 no-scrollbar items-center">
+                                                {SUGGESTED_EMOJIS.map(emo => (
+                                                    <button 
+                                                        key={emo}
+                                                        type="button"
+                                                        onClick={() => setFormData({...formData, emoji: emo})}
+                                                        className="text-xl p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg transition-colors"
+                                                    >
+                                                        {emo}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Color Picker */}
+                                    <div className="col-span-2">
+                                        <label className={styles.label}>Card Color</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {POS_COLORS.map(c => (
+                                                <button
+                                                    key={c.id}
+                                                    type="button"
+                                                    onClick={() => setFormData({...formData, color: c.bg})}
+                                                    className={`w-8 h-8 rounded-full ${c.bg} border-2 ${formData.color === c.bg ? 'border-black dark:border-white scale-110' : 'border-transparent hover:scale-105'} transition-all`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Basic Info */}
                             <div className="p-3 bg-gray-50 dark:bg-white/5 rounded-lg space-y-3">
                                 <h4 className="text-xs font-bold opacity-50 uppercase tracking-wide">Product Details</h4>
@@ -637,7 +733,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                     <Button onClick={() => { setScanningFor('add'); setShowScanner(true); }} className="mb-[1px] px-3"><ScanBarcode className="w-5 h-5" /></Button>
                                 </div>
                                 
-                                <Input label="Product Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} autoFocus />
+                                <Input label="Product Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                                 <div className="grid grid-cols-2 gap-4">
                                      <Input label="Category" placeholder="e.g. Grains" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
                                      <div className="flex-grow">
@@ -709,7 +805,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                     </div>
                     
                     {/* Fixed Bottom Action Bar for Mobile Modal */}
-                    <div className="p-4 border-t border-gray-100 dark:border-white/10 bg-white dark:bg-gray-900 pb-safe">
+                    <div className="flex-shrink-0 p-4 border-t border-gray-100 dark:border-white/10 bg-white dark:bg-gray-900 pb-safe z-10">
                         <Button className="w-full text-lg py-3" onClick={handleSave}>Save Item</Button>
                     </div>
                 </motion.div>

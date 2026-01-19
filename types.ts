@@ -37,6 +37,9 @@ export interface Product {
   notes?: string;
   purchaseDate?: string;
   lowStockThreshold?: number;
+  // Visual Identity (POS)
+  color?: string; // Tailwind class e.g. 'bg-red-200'
+  emoji?: string; // e.g. '🍎'
   // GST Fields
   hsnCode?: string;
   gstRate?: number; // 0, 5, 12, 18, 28

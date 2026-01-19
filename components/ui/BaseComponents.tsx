@@ -21,6 +21,7 @@ export const Button: React.FC<ButtonProps> = ({ variant = 'primary', className =
   
   return (
     <motion.button
+      whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.96 }}
       className={`${baseClass} min-h-[48px] flex items-center justify-center ${className}`} 
       {...props as any}

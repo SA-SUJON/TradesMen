@@ -437,31 +437,32 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
         </div>
       </div>
 
-       {/* Add/Edit Modal */}
+       {/* Add/Edit Modal - Fixed for Mobile Scrolling */}
        <AnimatePresence>
         {isAdding && (
             <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4"
                 onClick={resetForm}
             >
                 <motion.div 
                     initial={{ scale: 0.9, opacity: 0, y: 50 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 50 }}
-                    className="w-full max-w-md max-h-[90vh] overflow-y-auto"
+                    className="w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-md flex flex-col bg-white dark:bg-gray-900 sm:rounded-2xl shadow-2xl overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <Card>
-                        <div className="flex justify-between items-center mb-6 border-b border-gray-100 dark:border-white/10 pb-4">
-                            <h3 className={`text-lg font-bold ${styles.accentText}`}>
-                                {editId ? 'Edit Profile' : `New ${activeTab === 'clients' ? 'Client' : 'Supplier'}`}
-                            </h3>
-                            <button onClick={resetForm}><X className="w-6 h-6 opacity-60 hover:opacity-100" /></button>
-                        </div>
-                        <div className="space-y-4">
+                    <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-gray-100 dark:border-white/10 z-10 bg-white dark:bg-gray-900">
+                        <h3 className={`text-lg font-bold ${styles.accentText}`}>
+                            {editId ? 'Edit Profile' : `New ${activeTab === 'clients' ? 'Client' : 'Supplier'}`}
+                        </h3>
+                        <button onClick={resetForm} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10"><X className="w-6 h-6 opacity-60 hover:opacity-100" /></button>
+                    </div>
+
+                    <div className="flex-grow overflow-y-auto p-4 custom-scrollbar">
+                        <div className="space-y-4 pb-20 sm:pb-0">
                             {/* Common Fields */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2">
@@ -514,13 +515,13 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
                                     onChange={e => setFormData({...formData, notes: e.target.value})}
                                 />
                             </div>
-
-                            <div className="pt-4 flex gap-3">
-                                <Button className={`w-full ${activeTab === 'suppliers' ? 'bg-purple-600 hover:bg-purple-700' : ''}`} onClick={handleSave}>Save Profile</Button>
-                                <Button variant="secondary" onClick={resetForm}>Cancel</Button>
-                            </div>
                         </div>
-                    </Card>
+                    </div>
+
+                    <div className="flex-shrink-0 p-4 border-t border-gray-100 dark:border-white/10 bg-white dark:bg-gray-900 pb-safe z-10 flex gap-3">
+                        <Button className={`w-full ${activeTab === 'suppliers' ? 'bg-purple-600 hover:bg-purple-700' : ''}`} onClick={handleSave}>Save Profile</Button>
+                        <Button variant="secondary" onClick={resetForm}>Cancel</Button>
+                    </div>
                 </motion.div>
             </motion.div>
         )}
