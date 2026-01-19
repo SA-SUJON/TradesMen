@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Product, ProductHistoryEvent } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin, History, ShoppingBag, Clock, PlusCircle, Receipt, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin, History, ShoppingBag, Clock, PlusCircle, Receipt, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowUpDown, Star } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -53,7 +53,8 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
     barcode: '',
     shelfId: '',
     hsnCode: '',
-    gstRate: 0
+    gstRate: 0,
+    isFavorite: false
   });
 
   const handleSave = () => {
@@ -112,6 +113,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
             shelfId: formData.shelfId,
             hsnCode: formData.hsnCode,
             gstRate: formData.gstRate,
+            isFavorite: formData.isFavorite || false,
             history: [{
                 id: Date.now().toString(),
                 date: now,
@@ -142,7 +144,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
   const resetForm = () => {
       setFormData({ 
         name: '', buyingPrice: 0, sellingPrice: 0, stock: 0, unit: 'kg', 
-        category: '', supplierName: '', supplierContact: '', notes: '', lowStockThreshold: 10, purchaseDate: '', barcode: '', shelfId: '', hsnCode: '', gstRate: 0
+        category: '', supplierName: '', supplierContact: '', notes: '', lowStockThreshold: 10, purchaseDate: '', barcode: '', shelfId: '', hsnCode: '', gstRate: 0, isFavorite: false
       });
       setIsAdding(false);
       setEditId(null);
@@ -453,7 +455,10 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                             className="border-b border-gray-100 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer group relative"
                                         >
                                             <td className="p-4">
-                                                <div className="font-bold text-gray-800 dark:text-white">{item.name}</div>
+                                                <div className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                                    {item.isFavorite && <Star className="w-3 h-3 text-orange-400 fill-orange-400" />}
+                                                    {item.name}
+                                                </div>
                                                 <div className="flex gap-1 mt-1">
                                                     {item.category && <div className="text-xs opacity-60 bg-gray-100 dark:bg-gray-700 inline-block px-1.5 py-0.5 rounded">{item.category}</div>}
                                                     {item.shelfId && <div className="text-xs opacity-80 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 inline-block px-1.5 py-0.5 rounded flex items-center gap-0.5"><MapPin className="w-3 h-3" />{item.shelfId}</div>}
@@ -526,7 +531,10 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                         >
                             <div className="flex justify-between items-start">
                                 <div className="flex-1 pr-10">
-                                    <div className="font-bold text-lg leading-tight">{item.name}</div>
+                                    <div className="font-bold text-lg leading-tight flex items-center gap-2">
+                                        {item.isFavorite && <Star className="w-3 h-3 text-orange-400 fill-orange-400" />}
+                                        {item.name}
+                                    </div>
                                     <div className="text-xs opacity-60 mt-1 flex flex-wrap gap-2">
                                         {item.category && <span className="bg-gray-100 dark:bg-white/10 px-1.5 rounded">{item.category}</span>}
                                         {item.shelfId && <span className="flex items-center gap-0.5 text-blue-600"><MapPin className="w-3 h-3" /> {item.shelfId}</span>}
@@ -645,6 +653,16 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
                                      </div>
                                 </div>
                                 <Input label="Shelf / Rack ID" placeholder="e.g. A-1, B-5" value={formData.shelfId} onChange={e => setFormData({...formData, shelfId: e.target.value})} />
+                                
+                                <label className="flex items-center gap-2 cursor-pointer mt-2 p-2 rounded hover:bg-black/5 dark:hover:bg-white/5">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={formData.isFavorite || false} 
+                                        onChange={e => setFormData({...formData, isFavorite: e.target.checked})}
+                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm font-medium">Add to POS Quick Grid</span>
+                                </label>
                             </div>
 
                             {/* GST & Taxation */}

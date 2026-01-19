@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Customer, Supplier } from '../types';
 import { Card, Input, Button } from './ui/BaseComponents';
-import { Users, Search, Plus, Trash2, Edit2, X, Phone, History, Calendar, AlertCircle, MapPin, Key, StickyNote, ExternalLink, Truck, Factory, Building2, Contact } from 'lucide-react';
+import { Users, Search, Plus, Trash2, Edit2, X, Phone, History, Calendar, AlertCircle, MapPin, Key, StickyNote, ExternalLink, Truck, Factory, Building2, Contact, Wallet } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -37,7 +37,8 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
     contactPerson: '', // Supplier Only
     gstin: '', // Supplier Only
     category: '', // Supplier Only
-    notes: ''
+    notes: '',
+    creditLimit: 0, // Client Only
   });
 
   const handleSave = () => {
@@ -56,6 +57,7 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
                 gateCode: formData.gateCode || '',
                 notes: formData.notes || '',
                 debt: 0,
+                creditLimit: formData.creditLimit || 0,
                 history: []
             };
             setCustomers(prev => [...prev, newCustomer]);
@@ -104,14 +106,15 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
           contactPerson: item.contactPerson || '',
           gstin: item.gstin || '',
           category: item.category || '',
-          notes: item.notes || ''
+          notes: item.notes || '',
+          creditLimit: item.creditLimit || 0
       });
       setEditId(item.id);
       setIsAdding(true);
   };
 
   const resetForm = () => {
-      setFormData({ name: '', phone: '', address: '', gateCode: '', contactPerson: '', gstin: '', category: '', notes: '' });
+      setFormData({ name: '', phone: '', address: '', gateCode: '', contactPerson: '', gstin: '', category: '', notes: '', creditLimit: 0 });
       setIsAdding(false);
       setEditId(null);
   }
@@ -265,10 +268,20 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
                                         <span className="opacity-40 text-sm">ID: {selectedClient.id.slice(-4)}</span>
                                     </div>
                                 </div>
-                                <div className="text-left md:text-right p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 min-w-[140px]">
-                                    <div className="text-xs opacity-60 uppercase tracking-wide">Balance Due</div>
-                                    <div className={`text-2xl font-black ${selectedClient.debt > 0 ? 'text-orange-500' : 'text-green-500'}`}>
-                                        {selectedClient.debt.toFixed(2)}
+                                <div className="flex gap-4">
+                                    {selectedClient.creditLimit ? (
+                                        <div className="text-left md:text-right p-3 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 min-w-[120px]">
+                                            <div className="text-xs opacity-60 uppercase tracking-wide">Credit Limit</div>
+                                            <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                                                {selectedClient.creditLimit.toFixed(0)}
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                    <div className="text-left md:text-right p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 min-w-[140px]">
+                                        <div className="text-xs opacity-60 uppercase tracking-wide">Balance Due</div>
+                                        <div className={`text-2xl font-black ${selectedClient.debt > 0 ? 'text-orange-500' : 'text-green-500'}`}>
+                                            {selectedClient.debt.toFixed(2)}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -465,9 +478,14 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
                                 
                                 {/* Client Specific */}
                                 {activeTab === 'clients' && (
-                                    <div className="col-span-2 md:col-span-1">
-                                        <Input label="Gate Code" value={formData.gateCode} onChange={e => setFormData({...formData, gateCode: e.target.value})} placeholder="#1234" icon={<Key className="w-4 h-4" />} />
-                                    </div>
+                                    <>
+                                        <div className="col-span-2 md:col-span-1">
+                                            <Input label="Gate Code" value={formData.gateCode} onChange={e => setFormData({...formData, gateCode: e.target.value})} placeholder="#1234" icon={<Key className="w-4 h-4" />} />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <Input label="Credit Limit" type="number" value={formData.creditLimit} onChange={e => setFormData({...formData, creditLimit: e.target.valueAsNumber})} placeholder="0 for unlimited" icon={<Wallet className="w-4 h-4" />} />
+                                        </div>
+                                    </>
                                 )}
                                 
                                 {/* Supplier Specific */}

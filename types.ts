@@ -40,7 +40,9 @@ export interface Product {
   // GST Fields
   hsnCode?: string;
   gstRate?: number; // 0, 5, 12, 18, 28
-  history?: ProductHistoryEvent[]; 
+  history?: ProductHistoryEvent[];
+  // POS Features
+  isFavorite?: boolean; // For Quick Grid
 }
 
 export interface CartItem extends Product {
@@ -65,7 +67,8 @@ export interface Customer {
   address?: string;   // CRM: Physical Address
   gateCode?: string;  // CRM: Entry/Gate Code
   notes?: string;     // CRM: Client Notes
-  debt: number; 
+  debt: number;
+  creditLimit?: number; // Max debt allowed
   history: Transaction[];
 }
 

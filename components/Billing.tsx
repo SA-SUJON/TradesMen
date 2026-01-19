@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { Product, CartItem, Customer, Transaction, Sale, ProductHistoryEvent, BusinessProfile } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle, MapPin, Building2, Phone, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle, MapPin, Building2, Phone, ArrowRight, Grid, List, PauseCircle, PlayCircle, Clock, X } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { speak, formatUnit, openWhatsApp, formatBillMessage } from '../utils/appUtils';
@@ -18,6 +17,13 @@ interface BillingProps {
   setCustomers: (customers: Customer[] | ((val: Customer[]) => Customer[])) => void;
   sales: Sale[];
   setSales: (sales: Sale[] | ((val: Sale[]) => Sale[])) => void;
+}
+
+interface ParkedBill {
+    id: string;
+    timestamp: string;
+    cart: CartItem[];
+    customerName?: string;
 }
 
 const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCart, customers, setCustomers, sales, setSales }) => {
@@ -42,25 +48,33 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState(sales.length + 1001);
 
-  const addItem = () => {
-    if(!selectedId || !qty) return;
-    const product = inventory.find(p => p.id === selectedId);
+  // New Features State
+  const [parkedBills, setParkedBills] = useLocalStorage<ParkedBill[]>('tradesmen-parked-bills', []);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [showParkedList, setShowParkedList] = useState(false);
+
+  // Quick Grid Items (Favorites)
+  const quickItems = inventory.filter(i => i.isFavorite);
+
+  const addItem = (prodId = selectedId, quantity = qty) => {
+    if(!prodId || !quantity) return;
+    const product = inventory.find(p => p.id === prodId);
     if(!product) return;
 
-    const baseTotal = product.sellingPrice * Number(qty);
+    const baseTotal = product.sellingPrice * Number(quantity);
     const taxRate = product.gstRate || 0;
     const taxAmount = (baseTotal * taxRate) / 100;
 
     const newItem: CartItem = {
         ...product,
-        cartId: Date.now().toString(),
-        quantity: Number(qty),
+        cartId: Date.now().toString() + Math.random(),
+        quantity: Number(quantity),
         discount: Number(discount) || 0,
         taxAmount: taxAmount
     };
 
     setCart(prev => [...prev, newItem]);
-    speak(`Added ${qty} ${product.unit} of ${product.name}`, voiceEnabled);
+    speak(`Added ${quantity} ${product.unit} of ${product.name}`, voiceEnabled);
 
     // Reset inputs
     setQty(1);
@@ -71,8 +85,20 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
   const handleScan = (code: string) => {
       const product = inventory.find(p => p.barcode === code || p.id === code);
       if (product) {
-          setSelectedId(product.id);
-          speak(`${product.name} found`, voiceEnabled);
+          // Direct add if found
+          const baseTotal = product.sellingPrice * 1;
+          const taxRate = product.gstRate || 0;
+          const taxAmount = (baseTotal * taxRate) / 100;
+          
+          const newItem: CartItem = {
+              ...product,
+              cartId: Date.now().toString(),
+              quantity: 1,
+              discount: 0,
+              taxAmount: taxAmount
+          };
+          setCart(prev => [...prev, newItem]);
+          speak(`Added ${product.name}`, voiceEnabled);
       } else {
           speak("Item not found", voiceEnabled);
           alert("Item not found!");
@@ -127,6 +153,34 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
       openWhatsApp(phone, message);
   };
 
+  // --- Park Bill Feature ---
+  const handleParkBill = () => {
+      if (cart.length === 0) return;
+      
+      const custName = selectedCustomerId ? customers.find(c => c.id === selectedCustomerId)?.name : 'Walk-in';
+      const newParked: ParkedBill = {
+          id: Date.now().toString(),
+          timestamp: new Date().toISOString(),
+          cart: [...cart],
+          customerName: custName
+      };
+      
+      setParkedBills(prev => [newParked, ...prev]);
+      setCart([]);
+      setSelectedCustomerId('');
+      speak("Bill on hold", voiceEnabled);
+  };
+
+  const retrieveBill = (bill: ParkedBill) => {
+      if (cart.length > 0) {
+          if(!window.confirm("Current cart is not empty. Overwrite it?")) return;
+      }
+      setCart(bill.cart);
+      setParkedBills(prev => prev.filter(p => p.id !== bill.id));
+      setShowParkedList(false);
+      speak("Bill retrieved", voiceEnabled);
+  };
+
   const handleCompleteOrder = (method: 'cash' | 'credit') => {
     if (cart.length === 0) return;
 
@@ -137,6 +191,21 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
         const cost = (item.buyingPrice || 0) * item.quantity;
         return acc + (revenue - cost);
     }, 0);
+    
+    // Check Credit Limit
+    if (method === 'credit' && selectedCustomerId) {
+        const cust = customers.find(c => c.id === selectedCustomerId);
+        if (cust && cust.creditLimit && cust.creditLimit > 0) {
+            const newDebt = cust.debt + total;
+            if (newDebt > cust.creditLimit) {
+                alert(`CREDIT LIMIT EXCEEDED!\n\nLimit: ${cust.creditLimit}\nCurrent Debt: ${cust.debt}\nNew Total: ${newDebt}\n\nTransaction blocked.`);
+                return;
+            }
+        }
+    } else if (method === 'credit' && !selectedCustomerId) {
+        alert("Please select a customer to sell on credit.");
+        return;
+    }
     
     // 1. Create Sale Record
     const newSale: Sale = {
@@ -189,9 +258,6 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
              }
              return prev;
         });
-    } else if (method === 'credit') {
-        alert("Please select a customer to sell on credit.");
-        return;
     }
 
     setInvoiceNumber(prev => prev + 1);
@@ -246,7 +312,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
   })();
 
   return (
-    <div className="space-y-6 pb-64 md:pb-0">
+    <div className="space-y-6 pb-64 md:pb-0 relative">
       {/* HIDDEN INVOICE TEMPLATE (Visible only on Print) */}
       <div id="printable-invoice" className="hidden print:block p-8 bg-white text-black font-sans max-w-[210mm] mx-auto h-full">
            {/* ... Print Template Content ... */}
@@ -273,45 +339,96 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
       </div>
 
       {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
+      
+      {/* Retrieve Bill Modal */}
+      {showParkedList && (
+          <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl p-4 shadow-2xl">
+                  <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-bold text-lg">Held Bills</h3>
+                      <button onClick={() => setShowParkedList(false)}><X className="w-5 h-5" /></button>
+                  </div>
+                  <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                      {parkedBills.length === 0 ? <div className="text-center opacity-50 py-4">No held bills.</div> : (
+                          parkedBills.map(bill => (
+                              <div key={bill.id} className="p-3 border rounded-xl flex justify-between items-center hover:bg-gray-50 dark:hover:bg-white/5">
+                                  <div>
+                                      <div className="font-bold">{bill.customerName}</div>
+                                      <div className="text-xs opacity-60">{new Date(bill.timestamp).toLocaleTimeString()} - {bill.cart.length} items</div>
+                                  </div>
+                                  <Button onClick={() => retrieveBill(bill)} className="px-3 py-1 text-xs">Retrieve</Button>
+                              </div>
+                          ))
+                      )}
+                  </div>
+              </div>
+          </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Cart Input Section */}
         <div className="lg:col-span-1 space-y-4 md:space-y-6">
              <Card>
-                <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${styles.accentText}`}>
-                    <Plus className="w-5 h-5" /> Add to Bill
-                </h2>
-                <div className="space-y-4">
-                    <div className="flex gap-2 items-end">
-                         <div className="flex-grow">
-                             <Select label="Product" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
-                                <option value="">-- Select Item --</option>
-                                {inventory.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                            </Select>
-                         </div>
-                         <Button onClick={() => setShowScanner(true)} className="mb-[1px] px-3">
-                             <ScanBarcode className="w-5 h-5" />
-                         </Button>
-                    </div>
-
-                    {selectedProduct && (
-                        <div className="text-xs space-y-1 bg-gray-50 dark:bg-white/5 p-2 rounded flex justify-between">
-                             <span className="font-bold">{selectedProduct.sellingPrice} / {selectedProduct.unit}</span>
-                             {selectedProduct.gstRate ? <span className="text-green-600">GST {selectedProduct.gstRate}%</span> : null}
-                        </div>
-                    )}
+                <div className="flex justify-between items-center mb-4">
+                     <h2 className={`text-lg font-bold flex items-center gap-2 ${styles.accentText}`}>
+                        <Plus className="w-5 h-5" /> Add to Bill
+                    </h2>
                     
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input label="Quantity" type="number" value={qty} onChange={(e) => setQty(e.target.valueAsNumber)} />
-                        <Input label="Discount %" type="number" value={discount} onChange={(e) => setDiscount(e.target.valueAsNumber)} />
+                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 p-1 rounded-lg">
+                        <button onClick={() => setViewMode('list')} className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow' : 'opacity-50'}`}><List className="w-4 h-4" /></button>
+                        <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow' : 'opacity-50'}`}><Grid className="w-4 h-4" /></button>
                     </div>
-
-                    <Button onClick={addItem} className="w-full flex justify-center items-center gap-2 py-3">
-                        <ShoppingCart className="w-4 h-4" /> Add to Cart
-                    </Button>
                 </div>
+
+                {viewMode === 'list' ? (
+                    <div className="space-y-4">
+                        <div className="flex gap-2 items-end">
+                             <div className="flex-grow">
+                                 <Select label="Product" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+                                    <option value="">-- Select Item --</option>
+                                    {inventory.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </Select>
+                             </div>
+                             <Button onClick={() => setShowScanner(true)} className="mb-[1px] px-3">
+                                 <ScanBarcode className="w-5 h-5" />
+                             </Button>
+                        </div>
+
+                        {selectedProduct && (
+                            <div className="text-xs space-y-1 bg-gray-50 dark:bg-white/5 p-2 rounded flex justify-between">
+                                 <span className="font-bold">{selectedProduct.sellingPrice} / {selectedProduct.unit}</span>
+                                 {selectedProduct.gstRate ? <span className="text-green-600">GST {selectedProduct.gstRate}%</span> : null}
+                            </div>
+                        )}
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input label="Quantity" type="number" value={qty} onChange={(e) => setQty(e.target.valueAsNumber)} />
+                            <Input label="Discount %" type="number" value={discount} onChange={(e) => setDiscount(e.target.valueAsNumber)} />
+                        </div>
+
+                        <Button onClick={() => addItem()} className="w-full flex justify-center items-center gap-2 py-3">
+                            <ShoppingCart className="w-4 h-4" /> Add to Cart
+                        </Button>
+                    </div>
+                ) : (
+                    // Quick Grid View
+                    <div className="space-y-4">
+                         <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto">
+                             {quickItems.length > 0 ? quickItems.map(item => (
+                                 <button 
+                                    key={item.id}
+                                    onClick={() => addItem(item.id, 1)}
+                                    className="flex flex-col items-center justify-center p-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-95 transition-all"
+                                 >
+                                     <div className="font-bold text-sm truncate w-full text-center">{item.name}</div>
+                                     <div className="text-xs opacity-60">{item.sellingPrice}</div>
+                                 </button>
+                             )) : <div className="col-span-3 text-center opacity-50 text-xs py-8">Mark items as "Favorites" in Inventory to see them here.</div>}
+                         </div>
+                    </div>
+                )}
             </Card>
 
             <Card className="hidden md:block">
@@ -329,14 +446,26 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
 
         {/* Bill Preview Section */}
         <div className="lg:col-span-2">
-            <Card className="min-h-[300px] md:min-h-[600px] flex flex-col pb-20 md:pb-6">
+            <Card className="min-h-[300px] md:min-h-[600px] flex flex-col pb-20 md:pb-6 relative">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className={`text-xl font-bold flex items-center gap-2 ${styles.accentText}`}>
                         <Receipt className="w-5 h-5" /> Cart ({cart.length})
                     </h2>
-                    <Button variant="secondary" onClick={() => setCart([])} className="text-xs py-1 px-3 h-auto min-h-[32px]">
-                        Clear
-                    </Button>
+                    
+                    <div className="flex gap-2">
+                         <Button variant="secondary" onClick={() => setShowParkedList(true)} className="text-xs py-1 px-3 h-auto min-h-[32px] relative">
+                             <Clock className="w-4 h-4" /> 
+                             {parkedBills.length > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>}
+                        </Button>
+                        {cart.length > 0 && (
+                            <Button variant="secondary" onClick={handleParkBill} className="text-xs py-1 px-3 h-auto min-h-[32px]" title="Hold Bill">
+                                <PauseCircle className="w-4 h-4 text-orange-500" />
+                            </Button>
+                        )}
+                        <Button variant="secondary" onClick={() => setCart([])} className="text-xs py-1 px-3 h-auto min-h-[32px]">
+                            Clear
+                        </Button>
+                    </div>
                 </div>
                 
                 {/* Mobile Customer Select (Visible only on small screens) */}
