@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Product, ProductHistoryEvent } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
@@ -324,83 +325,85 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory }) => {
 
         {/* Desktop Table View (Hidden on Mobile) */}
         <div className="hidden md:block bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 overflow-hidden">
-            <table className="w-full text-left border-collapse">
-                <thead>
-                    <tr className="opacity-60 text-sm border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-                        <th className="p-4">Name</th>
-                        <th className="p-4 text-right">Stock</th>
-                        <th className="p-4 text-right">Sell Price</th>
-                        <th className="p-4 text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <AnimatePresence>
-                        {filteredInventory.length > 0 ? (
-                            filteredInventory.map(item => (
-                                <React.Fragment key={item.id}>
-                                    <motion.tr 
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        onClick={() => setExpandedRow(expandedRow === item.id ? null : item.id)}
-                                        className="border-b border-gray-100 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer group relative"
-                                    >
-                                        <td className="p-4">
-                                            <div className="font-bold text-gray-800 dark:text-white">{item.name}</div>
-                                            <div className="flex gap-1 mt-1">
-                                                {item.category && <div className="text-xs opacity-60 bg-gray-100 dark:bg-gray-700 inline-block px-1.5 py-0.5 rounded">{item.category}</div>}
-                                                {item.shelfId && <div className="text-xs opacity-80 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 inline-block px-1.5 py-0.5 rounded flex items-center gap-0.5"><MapPin className="w-3 h-3" />{item.shelfId}</div>}
-                                                {item.gstRate ? <div className="text-xs opacity-80 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 inline-block px-1.5 py-0.5 rounded flex items-center gap-0.5"><Receipt className="w-3 h-3" /> GST {item.gstRate}%</div> : null}
-                                            </div>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <div className={`font-mono ${item.stock < (item.lowStockThreshold || 10) ? 'text-orange-600 bg-orange-50 px-2 py-1 rounded inline-block font-bold' : ''}`}>
-                                                {formatUnit(item.stock, item.unit, unitSystem)}
-                                            </div>
-                                        </td>
-                                        <td className="p-4 text-right font-bold text-lg">{item.sellingPrice}</td>
-                                        <td className="p-4 flex justify-center gap-2 relative z-20" onClick={(e) => e.stopPropagation()}>
-                                            <button 
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); handleEdit(item); }} 
-                                                className="p-2 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 transition-colors"
-                                                title="Edit Item"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button 
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} 
-                                                className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 transition-colors"
-                                                title="Delete Item"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </td>
-                                    </motion.tr>
-                                    {expandedRow === item.id && (
+            <div className="overflow-x-auto w-full">
+                <table className="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr className="opacity-60 text-sm border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+                            <th className="p-4">Name</th>
+                            <th className="p-4 text-right">Stock</th>
+                            <th className="p-4 text-right">Sell Price</th>
+                            <th className="p-4 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <AnimatePresence>
+                            {filteredInventory.length > 0 ? (
+                                filteredInventory.map(item => (
+                                    <React.Fragment key={item.id}>
                                         <motion.tr 
-                                            initial={{ opacity: 0, height: 0 }} 
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            exit={{ opacity: 0, height: 0 }}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            onClick={() => setExpandedRow(expandedRow === item.id ? null : item.id)}
+                                            className="border-b border-gray-100 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer group relative"
                                         >
-                                            <td colSpan={4} className="p-0">
-                                                <ProductDetailView item={item} />
+                                            <td className="p-4">
+                                                <div className="font-bold text-gray-800 dark:text-white">{item.name}</div>
+                                                <div className="flex gap-1 mt-1">
+                                                    {item.category && <div className="text-xs opacity-60 bg-gray-100 dark:bg-gray-700 inline-block px-1.5 py-0.5 rounded">{item.category}</div>}
+                                                    {item.shelfId && <div className="text-xs opacity-80 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 inline-block px-1.5 py-0.5 rounded flex items-center gap-0.5"><MapPin className="w-3 h-3" />{item.shelfId}</div>}
+                                                    {item.gstRate ? <div className="text-xs opacity-80 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 inline-block px-1.5 py-0.5 rounded flex items-center gap-0.5"><Receipt className="w-3 h-3" /> GST {item.gstRate}%</div> : null}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <div className={`font-mono ${item.stock < (item.lowStockThreshold || 10) ? 'text-orange-600 bg-orange-50 px-2 py-1 rounded inline-block font-bold' : ''}`}>
+                                                    {formatUnit(item.stock, item.unit, unitSystem)}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-right font-bold text-lg">{item.sellingPrice}</td>
+                                            <td className="p-4 flex justify-center gap-2 relative z-20" onClick={(e) => e.stopPropagation()}>
+                                                <button 
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); handleEdit(item); }} 
+                                                    className="p-2 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 transition-colors"
+                                                    title="Edit Item"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                <button 
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} 
+                                                    className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 transition-colors"
+                                                    title="Delete Item"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </td>
                                         </motion.tr>
-                                    )}
-                                </React.Fragment>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={4} className="p-12 text-center opacity-50">
-                                    {isSearchingAI ? "Analyzing Inventory..." : "No items found."}
-                                </td>
-                            </tr>
-                        )}
-                    </AnimatePresence>
-                </tbody>
-            </table>
+                                        {expandedRow === item.id && (
+                                            <motion.tr 
+                                                initial={{ opacity: 0, height: 0 }} 
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                            >
+                                                <td colSpan={4} className="p-0">
+                                                    <ProductDetailView item={item} />
+                                                </td>
+                                            </motion.tr>
+                                        )}
+                                    </React.Fragment>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={4} className="p-12 text-center opacity-50">
+                                        {isSearchingAI ? "Analyzing Inventory..." : "No items found."}
+                                    </td>
+                                </tr>
+                            )}
+                        </AnimatePresence>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         {/* Mobile Card List View */}

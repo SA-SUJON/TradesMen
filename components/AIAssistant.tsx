@@ -122,7 +122,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     // Layout Logic
     let containerClasses = "";
     if (variant === 'modal') {
-         containerClasses = `w-[90vw] md:w-[400px] h-[500px] flex flex-col overflow-hidden shadow-2xl ${
+         containerClasses = `w-[calc(100vw-32px)] md:w-[400px] h-[500px] flex flex-col overflow-hidden shadow-2xl ${
             theme === 'glass' ? 'bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl' :
             theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-2xl border border-white/40 dark:border-white/5' :
             'bg-white rounded-2xl border border-gray-200'
@@ -363,7 +363,7 @@ const AIAssistant: React.FC<{ forceHide?: boolean, isVisible?: boolean }> = ({ f
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-40 md:bottom-24 right-6 z-40"
+            className="fixed bottom-40 md:bottom-24 right-4 z-40 max-w-[calc(100vw-32px)]"
           >
              <ChatInterface variant="modal" onClose={() => setIsOpen(false)} />
           </motion.div>

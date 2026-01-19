@@ -41,6 +41,76 @@ interface MainLayoutProps {
   setExpenses: SetValue<Expense[]>;
 }
 
+// --- Animated Branding Components ---
+
+const AnimatedLogo: React.FC<{ size?: 'sm' | 'md' }> = ({ size = 'md' }) => {
+    const { theme } = useTheme();
+    
+    const getLogoStyle = () => {
+        switch(theme) {
+            case 'material': return 'bg-m3-primary text-white shadow-lg shadow-purple-500/30';
+            case 'glass': return 'bg-white/20 text-white backdrop-blur-md border border-white/30';
+            case 'neumorphism': return 'bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-700 dark:text-gray-200 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a]';
+            case 'fluent': default: return 'bg-blue-600 text-white shadow-lg shadow-blue-500/30';
+        }
+    };
+
+    const containerSize = size === 'sm' ? 'p-2 rounded-xl' : 'p-3 rounded-2xl';
+    const iconSize = size === 'sm' ? 'w-5 h-5' : 'w-6 h-6';
+
+    return (
+        <motion.div
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileTap={{ scale: 0.95 }}
+            className={`${containerSize} relative overflow-hidden group ${getLogoStyle()}`}
+        >
+             <motion.div
+                animate={{ rotate: [0, 5, 0, -5, 0] }}
+                transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+             >
+                <Store className={`${iconSize} relative z-10`} />
+             </motion.div>
+             
+             {/* Shine Effect */}
+             <motion.div 
+                initial={{ x: '-150%', skewX: -20 }}
+                animate={{ x: '150%', skewX: -20 }}
+                transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut", repeatDelay: 5 }}
+                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent z-20 pointer-events-none"
+             />
+        </motion.div>
+    );
+};
+
+const AnimatedTitle: React.FC<{ subtitle?: boolean }> = ({ subtitle = true }) => {
+    const { theme } = useTheme();
+    
+    // Gradient text styles based on theme
+    const gradientClass = theme === 'glass' 
+        ? 'from-white via-blue-100 to-white' 
+        : theme === 'material' 
+            ? 'from-m3-primary via-purple-500 to-m3-primary' 
+            : 'from-blue-600 via-indigo-500 to-blue-600 dark:from-blue-400 dark:via-indigo-300 dark:to-blue-400';
+
+    return (
+        <div className="flex flex-col justify-center">
+            <h1 className={`font-display font-bold leading-none tracking-tight bg-clip-text text-transparent bg-gradient-to-r bg-300% animate-gradient ${gradientClass} ${subtitle ? 'text-2xl' : 'text-xl'}`}>
+                TradesMen
+            </h1>
+            {subtitle && (
+                <motion.p 
+                    initial={{ opacity: 0, x: -5 }}
+                    animate={{ opacity: 0.6, x: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className={`text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5 pl-0.5 ${theme === 'glass' ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
+                >
+                    Pro Suite
+                </motion.p>
+            )}
+        </div>
+    );
+};
+
 const MainLayout: React.FC<MainLayoutProps> = ({ 
   inventory, setInventory, cart, setCart, customers, setCustomers, sales, setSales, expenses, setExpenses
 }) => {
@@ -79,15 +149,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   const isQuickScanVisible = showQuickScan && !isSettings && !isManagerTab;
   const isQuickScanPrimary = !isAssistantVisible;
   const isMagicBarVisible = !isManagerTab && !isSettings && !isMenuContext;
-
-  const getLogoStyle = () => {
-      switch(theme) {
-          case 'material': return 'bg-m3-primary text-white shadow-lg shadow-purple-500/30';
-          case 'glass': return 'bg-white/20 text-white backdrop-blur-md border border-white/30';
-          case 'neumorphism': return 'bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-700 dark:text-gray-200 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a]';
-          case 'fluent': default: return 'bg-blue-600 text-white shadow-lg shadow-blue-500/30';
-      }
-  };
 
   const getHeaderTitle = () => {
       if (activeTab === 'settings') return 'Settings';
@@ -128,267 +189,262 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   );
 
   return (
-      <div className={`flex h-screen w-full overflow-hidden transition-colors duration-500 ${styles.appBg} font-sans bg-dot-pattern`}>
+      <div className={`flex h-[100dvh] w-full overflow-hidden transition-colors duration-500 ${styles.appBg} font-sans bg-dot-pattern`}>
           
-          {/* --- DESKTOP FLOATING SIDEBAR --- */}
-          {/* Changed from fixed side to floating island design */}
-          <aside className={`hidden md:flex flex-col w-72 flex-shrink-0 z-30 m-4 rounded-3xl shadow-2xl transition-all duration-300 ${styles.surface}`}>
-              {/* Sidebar Header */}
-              <div className="p-6 flex items-center gap-3 mb-2">
-                  <div className={`p-3 rounded-2xl ${getLogoStyle()}`}>
-                      <Store className="w-6 h-6" />
+          {/* LAYOUT CONTAINER */}
+          {/* md:p-4 and md:gap-4 creates the floating effect safely within viewport */}
+          <div className="flex w-full h-full flex-col md:flex-row md:p-4 md:gap-4 overflow-hidden relative">
+
+              {/* --- DESKTOP FLOATING SIDEBAR --- */}
+              <aside className={`hidden md:flex flex-col w-72 flex-shrink-0 z-30 rounded-3xl shadow-2xl transition-all duration-300 h-full ${styles.surface}`}>
+                  {/* Sidebar Header */}
+                  <div className="p-6 flex items-center gap-3 mb-2 flex-shrink-0">
+                      <AnimatedLogo size="md" />
+                      <AnimatedTitle subtitle={true} />
                   </div>
-                  <div>
-                      <h1 className="text-2xl font-display font-bold leading-none tracking-tight">TradesMen</h1>
-                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mt-1 pl-0.5">Pro Suite</p>
+
+                  {/* Navigation Items */}
+                  <div className="flex-grow overflow-y-auto px-4 py-2 space-y-1 custom-scrollbar">
+                      <div className="text-xs font-bold opacity-40 uppercase tracking-widest px-4 mb-3 mt-2">Operations</div>
+                      {MAIN_TABS.map(tab => {
+                          const isActive = activeTab === tab.id;
+                          return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium transition-all group relative overflow-hidden ${
+                                    isActive 
+                                        ? styles.sidebarActive
+                                        : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
+                                }`}
+                            >
+                                {/* Active Indicator Line */}
+                                {isActive && theme !== 'neumorphism' && theme !== 'glass' && (
+                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-current rounded-r-full opacity-50" />
+                                )}
+
+                                <span className={`relative z-10 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                                    {tab.icon}
+                                </span>
+                                <span className="relative z-10">{tab.label}</span>
+                                
+                                {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-50" />}
+                            </button>
+                          );
+                      })}
+
+                      <div className="text-xs font-bold opacity-40 uppercase tracking-widest px-4 mb-3 mt-8">Business Tools</div>
+                      {MENU_TOOLS.map(tool => {
+                          const isActive = activeTab === tool.id;
+                          return (
+                            <button
+                                key={tool.id}
+                                onClick={() => setActiveTab(tool.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium transition-all group ${
+                                    isActive 
+                                        ? styles.sidebarActive
+                                        : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
+                                }`}
+                            >
+                                <span className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                                    {tool.icon}
+                                </span>
+                                <span>{tool.label}</span>
+                            </button>
+                          );
+                      })}
                   </div>
-              </div>
 
-              {/* Navigation Items */}
-              <div className="flex-grow overflow-y-auto px-4 py-2 space-y-1 custom-scrollbar">
-                  <div className="text-xs font-bold opacity-40 uppercase tracking-widest px-4 mb-3 mt-2">Operations</div>
-                  {MAIN_TABS.map(tab => {
-                      const isActive = activeTab === tab.id;
-                      return (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium transition-all group relative overflow-hidden ${
-                                isActive 
-                                    ? styles.sidebarActive
-                                    : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
-                            }`}
+                  {/* Sidebar Footer */}
+                  <div className="p-4 mt-2 flex-shrink-0">
+                      <button
+                          onClick={() => setActiveTab('settings')}
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all ${
+                              activeTab === 'settings' 
+                                ? styles.sidebarActive
+                                : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
+                          }`}
+                      >
+                          <SettingsIcon className={`w-5 h-5 ${activeTab === 'settings' ? 'animate-spin-slow' : ''}`} />
+                          Settings
+                      </button>
+                  </div>
+              </aside>
+
+
+              {/* --- MAIN CONTENT AREA --- */}
+              {/* Desktop: Floats right with rounding. Mobile: Full width. */}
+              <div className="flex-1 flex flex-col h-full overflow-hidden relative md:rounded-3xl transition-all duration-300 w-full">
+                
+                {/* Header (Adaptive) */}
+                <header className="flex-shrink-0 px-4 py-3 md:py-0 md:mb-4 md:px-4 z-20 flex flex-col gap-2">
+                    <div className="flex justify-between items-center w-full min-h-[48px]">
+                        {/* Mobile: Logo / Desktop: Page Title */}
+                        <div 
+                            className="flex items-center gap-3 select-none cursor-pointer md:cursor-default"
+                            onClick={() => {
+                                // Mobile Only: Back behavior
+                                if (window.innerWidth < 768) {
+                                    if (isMenuContext && activeTab !== 'menu') setActiveTab('menu');
+                                    else setActiveTab('inventory');
+                                }
+                            }}
                         >
-                            {/* Active Indicator Line */}
-                            {isActive && theme !== 'neumorphism' && theme !== 'glass' && (
-                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-current rounded-r-full opacity-50" />
-                            )}
-
-                            <span className={`relative z-10 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
-                                {tab.icon}
-                            </span>
-                            <span className="relative z-10">{tab.label}</span>
-                            
-                            {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-50" />}
-                        </button>
-                      );
-                  })}
-
-                  <div className="text-xs font-bold opacity-40 uppercase tracking-widest px-4 mb-3 mt-8">Business Tools</div>
-                  {MENU_TOOLS.map(tool => {
-                      const isActive = activeTab === tool.id;
-                      return (
-                        <button
-                            key={tool.id}
-                            onClick={() => setActiveTab(tool.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium transition-all group ${
-                                isActive 
-                                    ? styles.sidebarActive
-                                    : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
-                            }`}
-                        >
-                            <span className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
-                                {tool.icon}
-                            </span>
-                            <span>{tool.label}</span>
-                        </button>
-                      );
-                  })}
-              </div>
-
-              {/* Sidebar Footer */}
-              <div className="p-4 mt-2">
-                  <button
-                      onClick={() => setActiveTab('settings')}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all ${
-                          activeTab === 'settings' 
-                             ? styles.sidebarActive
-                             : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100'
-                      }`}
-                  >
-                      <SettingsIcon className={`w-5 h-5 ${activeTab === 'settings' ? 'animate-spin-slow' : ''}`} />
-                      Settings
-                  </button>
-              </div>
-          </aside>
-
-
-          {/* --- MAIN CONTENT AREA --- */}
-          {/* Desktop: Floats right with rounding. Mobile: Full width. */}
-          <div className="flex-1 flex flex-col h-full overflow-hidden relative md:m-4 md:ml-0 md:rounded-3xl transition-all duration-300">
-            
-            {/* Header (Adaptive) */}
-            <header className="flex-shrink-0 px-4 py-3 md:py-0 md:mb-4 md:px-4 z-20 flex flex-col gap-2">
-                <div className="flex justify-between items-center w-full min-h-[48px]">
-                    {/* Mobile: Logo / Desktop: Page Title */}
-                    <div 
-                        className="flex items-center gap-3 select-none cursor-pointer md:cursor-default"
-                        onClick={() => {
-                            // Mobile Only: Back behavior
-                            if (window.innerWidth < 768) {
-                                if (isMenuContext && activeTab !== 'menu') setActiveTab('menu');
-                                else setActiveTab('inventory');
-                            }
-                        }}
-                    >
-                        {/* Mobile Back Button Logic */}
-                        <div className="md:hidden flex items-center gap-2">
-                            {(isMenuContext && activeTab !== 'menu') ? (
-                                <div className="flex items-center gap-2">
-                                     <div className={`p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10`}>
-                                        <ChevronLeft className="w-6 h-6" />
-                                     </div>
-                                     <h1 className="text-xl font-bold">{getHeaderTitle()}</h1>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className={`p-2 rounded-xl transition-all duration-300 ${getLogoStyle()}`}>
-                                        <Store className="w-5 h-5" />
+                            {/* Mobile Back Button Logic */}
+                            <div className="md:hidden flex items-center gap-2">
+                                {(isMenuContext && activeTab !== 'menu') ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className={`p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10`}>
+                                            <ChevronLeft className="w-6 h-6" />
+                                        </div>
+                                        <h1 className="text-xl font-bold">{getHeaderTitle()}</h1>
                                     </div>
-                                    <div>
-                                        <h1 className="text-xl font-display font-bold leading-none">TradesMen</h1>
-                                    </div>
-                                </>
-                            )}
+                                ) : (
+                                    <>
+                                        <AnimatedLogo size="sm" />
+                                        <AnimatedTitle subtitle={false} />
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Desktop Page Title - Now integrated into the layout better */}
+                            <div className="hidden md:flex flex-col">
+                                <h2 className={`text-3xl font-display font-bold capitalize tracking-tight ${theme === 'glass' ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                                    {activeTab === 'menu' ? 'Dashboard' : 
+                                    MENU_TOOLS.find(t => t.id === activeTab)?.label || 
+                                    MAIN_TABS.find(t => t.id === activeTab)?.label || 
+                                    'Settings'}
+                                </h2>
+                                <p className="text-sm opacity-50 hidden lg:block">Manage your business efficiently</p>
+                            </div>
                         </div>
 
-                        {/* Desktop Page Title - Now integrated into the layout better */}
-                        <div className="hidden md:flex flex-col">
-                            <h2 className={`text-3xl font-display font-bold capitalize tracking-tight ${theme === 'glass' ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                                {activeTab === 'menu' ? 'Dashboard' : 
-                                 MENU_TOOLS.find(t => t.id === activeTab)?.label || 
-                                 MAIN_TABS.find(t => t.id === activeTab)?.label || 
-                                 'Settings'}
-                            </h2>
-                            <p className="text-sm opacity-50 hidden lg:block">Manage your business efficiently</p>
+                        {/* Magic Bar: Centered on Desktop, Auto on Mobile */}
+                        <div className="hidden md:block flex-grow max-w-xl mx-8">
+                            {isMagicBarVisible && <MagicBar onActivate={handleMagicActivate} />}
                         </div>
+
+                        {/* Mobile Settings Icon */}
+                        <button 
+                            onClick={() => setActiveTab('settings')}
+                            className={`md:hidden p-3 rounded-full transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/10`}
+                            title="Settings"
+                        >
+                            <SettingsIcon className={`w-6 h-6 ${activeTab === 'settings' ? 'animate-spin-slow' : ''}`} />
+                        </button>
                     </div>
 
-                    {/* Magic Bar: Centered on Desktop, Auto on Mobile */}
-                    <div className="hidden md:block flex-grow max-w-xl mx-8">
+                    {/* Mobile Magic Bar (Second Row) */}
+                    <div className="md:hidden w-full">
                         {isMagicBarVisible && <MagicBar onActivate={handleMagicActivate} />}
                     </div>
+                </header>
 
-                    {/* Mobile Settings Icon */}
-                    <button 
-                        onClick={() => setActiveTab('settings')}
-                        className={`md:hidden p-3 rounded-full transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/10`}
-                        title="Settings"
-                    >
-                        <SettingsIcon className={`w-6 h-6 ${activeTab === 'settings' ? 'animate-spin-slow' : ''}`} />
-                    </button>
-                </div>
-
-                {/* Mobile Magic Bar (Second Row) */}
-                <div className="md:hidden w-full">
-                    {isMagicBarVisible && <MagicBar onActivate={handleMagicActivate} />}
-                </div>
-            </header>
-
-            {/* Scrollable Content Container */}
-            {/* Added max-w-screen-2xl for better Ultra-wide support */}
-            <main className={`flex-grow relative ${isManagerTab ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'} pb-32 md:pb-0 px-4 md:px-4`}>
-                <div className="w-full max-w-[1600px] h-full mx-auto">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={activeTab}
-                            initial={{ opacity: 0, y: 10, scale: 0.99 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.99 }}
-                            transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="h-full"
-                        >
-                            {activeTab === 'inventory' && <Inventory inventory={inventory} setInventory={setInventory} />}
-                            {activeTab === 'billing' && (
-                                <Billing 
-                                    inventory={inventory}
-                                    setInventory={setInventory}
-                                    cart={cart} setCart={setCart} 
-                                    customers={customers} setCustomers={setCustomers}
-                                    sales={sales} setSales={setSales}
-                                />
-                            )}
-                            {activeTab === 'finance' && (
-                                <Finance 
-                                    sales={sales} 
-                                    expenses={expenses} setExpenses={setExpenses}
-                                    customers={customers} setCustomers={setCustomers}
-                                />
-                            )}
-                            {activeTab === 'customers' && <Customers customers={customers} setCustomers={setCustomers} />}
-                            
-                            {/* Menu Context Views */}
-                            {activeTab === 'menu' && <MenuGrid />}
-                            {activeTab === 'reports' && <Reports sales={sales} inventory={inventory} expenses={expenses} />}
-                            {activeTab === 'calculator' && <Calculator inventory={inventory} />}
-                            {activeTab === 'conversions' && <Conversions />}
-                            {activeTab === 'settings' && <Settings />}
-                            {activeTab === 'manager' && (
-                                <div className="flex flex-col h-full gap-4 pb-0 md:pb-6">
-                                    <div className="flex-shrink-0 z-10">
-                                        <InsightCards inventory={inventory} />
+                {/* Scrollable Content Container */}
+                {/* Added max-w-screen-2xl for better Ultra-wide support */}
+                <main className={`flex-grow relative ${isManagerTab ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'} pb-32 md:pb-0 px-4 md:px-4 w-full`}>
+                    <div className="w-full max-w-[1600px] h-full mx-auto">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeTab}
+                                initial={{ opacity: 0, y: 10, scale: 0.99 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -10, scale: 0.99 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                className="h-full w-full"
+                            >
+                                {activeTab === 'inventory' && <Inventory inventory={inventory} setInventory={setInventory} />}
+                                {activeTab === 'billing' && (
+                                    <Billing 
+                                        inventory={inventory}
+                                        setInventory={setInventory}
+                                        cart={cart} setCart={setCart} 
+                                        customers={customers} setCustomers={setCustomers}
+                                        sales={sales} setSales={setSales}
+                                    />
+                                )}
+                                {activeTab === 'finance' && (
+                                    <Finance 
+                                        sales={sales} 
+                                        expenses={expenses} setExpenses={setExpenses}
+                                        customers={customers} setCustomers={setCustomers}
+                                    />
+                                )}
+                                {activeTab === 'customers' && <Customers customers={customers} setCustomers={setCustomers} />}
+                                
+                                {/* Menu Context Views */}
+                                {activeTab === 'menu' && <MenuGrid />}
+                                {activeTab === 'reports' && <Reports sales={sales} inventory={inventory} expenses={expenses} />}
+                                {activeTab === 'calculator' && <Calculator inventory={inventory} />}
+                                {activeTab === 'conversions' && <Conversions />}
+                                {activeTab === 'settings' && <Settings />}
+                                {activeTab === 'manager' && (
+                                    <div className="flex flex-col h-full gap-4 pb-0 md:pb-6">
+                                        <div className="flex-shrink-0 z-10">
+                                            <InsightCards inventory={inventory} />
+                                        </div>
+                                        <div className={`flex-grow overflow-hidden rounded-3xl relative border shadow-xl ${theme === 'glass' ? 'border-white/20 bg-black/20' : 'border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-800'}`}>
+                                            <ChatInterface variant="page" className="h-full border-none shadow-none bg-transparent" />
+                                        </div>
                                     </div>
-                                    <div className={`flex-grow overflow-hidden rounded-3xl relative border shadow-xl ${theme === 'glass' ? 'border-white/20 bg-black/20' : 'border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-800'}`}>
-                                        <ChatInterface variant="page" className="h-full border-none shadow-none bg-transparent" />
-                                    </div>
-                                </div>
-                            )}
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
-            </main>
-
-             {/* --- MOBILE BOTTOM NAV (Hidden on Desktop) --- */}
-            <div className={`md:hidden fixed bottom-0 left-0 right-0 z-[50] pb-safe pt-2 px-2 transition-all duration-300 rounded-t-2xl ${
-                theme === 'glass' ? 'bg-black/40 backdrop-blur-xl border-t border-white/10' : 
-                theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[0_-5px_10px_#bebebe] dark:shadow-[0_-5px_10px_#1f2330]' :
-                'bg-white dark:bg-[#0f0f0f] border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]'
-            }`}>
-                <div className="grid grid-cols-5 gap-1 w-full">
-                {[...MAIN_TABS, MOBILE_MENU_TAB].map((tab) => {
-                    const isActive = activeTab === tab.id || (tab.id === 'menu' && isMenuContext);
-                    return (
-                        <button
-                            key={tab.id}
-                            onClick={() => {
-                                if (tab.id === 'menu' && isMenuContext) setActiveTab('menu');
-                                else setActiveTab(tab.id);
-                            }}
-                            className={`
-                                flex flex-col items-center justify-center py-2 rounded-xl transition-all
-                                ${isActive && theme === 'material' ? 'text-[#6750A4]' : ''}
-                                ${isActive && theme === 'glass' ? 'text-white bg-white/10' : ''}
-                                ${isActive && theme === 'fluent' ? 'text-blue-600' : ''}
-                                ${isActive && theme === 'neumorphism' ? 'text-blue-600 dark:text-blue-400 shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a] bg-[#E0E5EC] dark:bg-[#292d3e]' : ''}
-                                ${!isActive ? 'opacity-50 grayscale' : 'opacity-100'}
-                            `}
-                        >
-                            <div className={`transition-transform duration-200 ${isActive ? 'scale-110 mb-1' : 'mb-0.5'}`}>
-                                {React.cloneElement(tab.icon as React.ReactElement<any>, { className: "w-6 h-6" })}
-                            </div>
-                            {showNavLabels && (
-                            <span className={`text-[10px] font-medium truncate w-full text-center leading-none ${isActive ? 'font-bold' : ''}`}>
-                                {tab.label}
-                            </span>
-                            )}
-                            {isActive && theme !== 'neumorphism' && <div className="h-1 w-8 bg-current rounded-full mt-1 opacity-20" />}
-                        </button>
-                    );
-                })}
-                </div>
-            </div>
-
-            <QuickScan 
-                onScanStart={handleMagicActivate} 
-                isVisible={isQuickScanVisible}
-                isPrimary={isQuickScanPrimary}
-            />
-            
-            <AIAssistant 
-                isVisible={isAssistantVisible}
-                forceHide={activeTab === 'manager'} 
-            />
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </main>
+              </div>
           </div>
+
+          {/* --- MOBILE BOTTOM NAV (Hidden on Desktop) --- */}
+          <div className={`md:hidden fixed bottom-0 left-0 right-0 z-[50] pb-safe pt-2 px-2 transition-all duration-300 rounded-t-2xl ${
+              theme === 'glass' ? 'bg-black/40 backdrop-blur-xl border-t border-white/10' : 
+              theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[0_-5px_10px_#bebebe] dark:shadow-[0_-5px_10px_#1f2330]' :
+              'bg-white dark:bg-[#0f0f0f] border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]'
+          }`}>
+              <div className="grid grid-cols-5 gap-1 w-full">
+              {[...MAIN_TABS, MOBILE_MENU_TAB].map((tab) => {
+                  const isActive = activeTab === tab.id || (tab.id === 'menu' && isMenuContext);
+                  return (
+                      <button
+                          key={tab.id}
+                          onClick={() => {
+                              if (tab.id === 'menu' && isMenuContext) setActiveTab('menu');
+                              else setActiveTab(tab.id);
+                          }}
+                          className={`
+                              flex flex-col items-center justify-center py-2 rounded-xl transition-all
+                              ${isActive && theme === 'material' ? 'text-[#6750A4]' : ''}
+                              ${isActive && theme === 'glass' ? 'text-white bg-white/10' : ''}
+                              ${isActive && theme === 'fluent' ? 'text-blue-600' : ''}
+                              ${isActive && theme === 'neumorphism' ? 'text-blue-600 dark:text-blue-400 shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a] bg-[#E0E5EC] dark:bg-[#292d3e]' : ''}
+                              ${!isActive ? 'opacity-50 grayscale' : 'opacity-100'}
+                          `}
+                      >
+                          <div className={`transition-transform duration-200 ${isActive ? 'scale-110 mb-1' : 'mb-0.5'}`}>
+                              {React.cloneElement(tab.icon as React.ReactElement<any>, { className: "w-6 h-6" })}
+                          </div>
+                          {showNavLabels && (
+                          <span className={`text-[10px] font-medium truncate w-full text-center leading-none ${isActive ? 'font-bold' : ''}`}>
+                              {tab.label}
+                          </span>
+                          )}
+                          {isActive && theme !== 'neumorphism' && <div className="h-1 w-8 bg-current rounded-full mt-1 opacity-20" />}
+                      </button>
+                  );
+              })}
+              </div>
+          </div>
+
+          <QuickScan 
+              onScanStart={handleMagicActivate} 
+              isVisible={isQuickScanVisible}
+              isPrimary={isQuickScanPrimary}
+          />
+          
+          <AIAssistant 
+              isVisible={isAssistantVisible}
+              forceHide={activeTab === 'manager'} 
+          />
       </div>
   );
 };
