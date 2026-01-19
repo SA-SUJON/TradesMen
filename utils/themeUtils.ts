@@ -38,69 +38,75 @@ export const getThemeClasses = (theme: ThemeType) => {
       };
     case 'glass':
       return {
-        // Glass: Vibrant gradients with crystal inputs
-        appBg: 'bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 animate-gradient text-white min-h-screen',
-        surface: 'bg-white/10 dark:bg-black/30 backdrop-blur-xl border border-white/20',
-        card: 'bg-white/10 dark:bg-black/30 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-3xl shadow-xl p-6 hover:bg-white/15 dark:hover:bg-black/40 transition-all hover:-translate-y-1 hover:shadow-2xl',
+        // Professional Glass (Adaptive): Clean, Legible, Modern
+        appBg: 'bg-[#F0F4F8] dark:bg-[#0F172A] min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-500 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-100/40 via-transparent to-transparent dark:from-blue-900/20',
+        
+        surface: 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-white/10',
+        
+        // Cards: High readability with soft frosting
+        card: 'bg-white/70 dark:bg-slate-800/60 backdrop-blur-xl border border-white/50 dark:border-white/5 rounded-3xl shadow-sm hover:shadow-md transition-all p-6',
         
         // Navigation
-        sidebarContainer: 'bg-white/5 backdrop-blur-md border-r border-white/10',
-        bottomNavContainer: 'bg-black/40 backdrop-blur-xl border border-white/10 mb-4 mx-4 rounded-2xl shadow-2xl',
-        navItemBase: 'relative flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-300 text-white/70 hover:text-white',
-        navItemActive: 'text-white font-bold shadow-[0_0_15px_rgba(255,255,255,0.3)]',
-        navItemInactive: 'hover:bg-white/10',
-        navActiveIndicator: 'absolute inset-0 bg-white/20 border border-white/20 rounded-xl backdrop-blur-lg',
+        sidebarContainer: 'bg-white/60 dark:bg-slate-900/80 backdrop-blur-xl border-r border-white/20 dark:border-white/5',
+        bottomNavContainer: 'bg-white/80 dark:bg-slate-900/90 backdrop-blur-xl border border-white/20 dark:border-white/5 mb-4 mx-4 rounded-2xl shadow-lg',
+        
+        navItemBase: 'relative flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-300',
+        navItemActive: 'text-blue-700 dark:text-blue-300 font-bold bg-white/50 dark:bg-white/5 shadow-sm border border-white/50 dark:border-white/5',
+        navItemInactive: 'text-slate-600 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5',
+        navActiveIndicator: 'hidden', 
 
         // Buttons
-        buttonPrimary: 'bg-white/20 hover:bg-white/30 border border-white/40 text-white rounded-2xl px-6 py-3 font-semibold backdrop-blur-md shadow-lg transition-all active:scale-[0.98]',
-        buttonSecondary: 'bg-transparent border border-white/30 text-white/90 rounded-2xl px-6 py-3 hover:bg-white/10 transition-all active:scale-[0.98]',
+        buttonPrimary: 'bg-slate-900 dark:bg-blue-600 text-white hover:bg-slate-800 dark:hover:bg-blue-500 border border-transparent rounded-2xl px-6 py-3 font-semibold shadow-md transition-all active:scale-[0.98]',
+        buttonSecondary: 'bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-2xl px-6 py-3 font-medium transition-all active:scale-[0.98]',
         
-        // Inputs
-        label: 'text-white/90 text-xs font-bold tracking-widest mb-2 ml-1 block uppercase text-shadow-sm',
-        inputWrapper: 'bg-white/5 border border-white/20 rounded-2xl px-4 flex items-center min-h-[52px] backdrop-blur-md transition-all duration-300 focus-within:bg-white/10 focus-within:border-white/50 focus-within:shadow-[0_0_25px_rgba(255,255,255,0.2)]',
-        inputField: 'bg-transparent w-full h-full py-3 outline-none text-white placeholder-white/50 text-base font-medium',
-        inputIcon: 'text-white/80 mr-3',
+        // Inputs: Distinct background for contrast
+        label: 'text-slate-500 dark:text-slate-400 text-xs font-bold tracking-widest mb-2 ml-1 block uppercase',
+        inputWrapper: 'bg-white/60 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-2xl px-4 flex items-center min-h-[52px] transition-all duration-300 focus-within:bg-white dark:focus-within:bg-black/40 focus-within:border-blue-500/50 focus-within:shadow-md',
+        inputField: 'bg-transparent w-full h-full py-3 outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-base font-medium',
+        inputIcon: 'text-slate-400 dark:text-slate-500 mr-3',
         
         // Misc
-        accentText: 'text-white font-bold drop-shadow-md',
+        accentText: 'text-blue-600 dark:text-blue-400 font-bold',
         
         // Dropdown
-        dropdownMenu: 'bg-black/60 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl mt-2 p-2 z-[60]',
-        dropdownItem: 'p-3 rounded-xl hover:bg-white/10 transition-colors text-sm text-white cursor-pointer relative flex items-center gap-2',
-        dropdownItemActive: 'bg-white/20 font-bold border border-white/10',
+        dropdownMenu: 'bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl shadow-xl mt-2 p-2 z-[60]',
+        dropdownItem: 'p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-colors text-sm text-slate-700 dark:text-slate-200 cursor-pointer relative flex items-center gap-2',
+        dropdownItemActive: 'bg-slate-100 dark:bg-white/10 font-bold text-slate-900 dark:text-white',
       };
     case 'neumorphism':
       return {
-        // Neumorphism: Soft shadows, indented inputs
-        appBg: 'bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-700 dark:text-gray-200 transition-colors duration-300',
-        surface: 'bg-[#E0E5EC] dark:bg-[#292d3e] border border-white/50 dark:border-white/5',
-        card: 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-[30px] shadow-[12px_12px_24px_#b8b9be,-12px_-12px_24px_#ffffff] dark:shadow-[12px_12px_24px_#1f2330,-12px_-12px_24px_#33374a] p-6 border border-white/20 dark:border-white/5',
+        // Neumorphism: Soft Shadows, No Borders, Slate Text
+        appBg: 'bg-[#E0E5EC] dark:bg-[#292d3e] text-[#475569] dark:text-[#cbd5e1] transition-colors duration-300',
+        surface: 'bg-[#E0E5EC] dark:bg-[#292d3e]', 
+        // Card: Removed border to fix white edge. Added robust shadows.
+        card: 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-[30px] shadow-[12px_12px_24px_#b8b9be,-12px_-12px_24px_#ffffff] dark:shadow-[12px_12px_24px_#1f2330,-12px_-12px_24px_#33374a] p-6', 
         
         // Navigation
         sidebarContainer: 'bg-[#E0E5EC] dark:bg-[#292d3e]',
-        bottomNavContainer: 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] dark:shadow-[8px_8px_16px_#1f2330,-8px_-8px_16px_#33374a] mb-4 mx-4 rounded-2xl border border-white/20 dark:border-white/5',
+        bottomNavContainer: 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] dark:shadow-[8px_8px_16px_#1f2330,-8px_-8px_16px_#33374a] mb-4 mx-4 rounded-2xl',
         navItemBase: 'relative flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-300',
-        navItemActive: 'text-blue-600 dark:text-blue-400 font-bold shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a]',
-        navItemInactive: 'text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200',
-        navActiveIndicator: 'hidden', // Neumorphism handles active state via class directly (inset shadow)
+        navItemActive: 'text-[#3b82f6] dark:text-[#60a5fa] font-bold shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] dark:shadow-[inset_4px_4px_8px_#1f2330,inset_-4px_-4px_8px_#33374a]',
+        navItemInactive: 'text-[#64748b] dark:text-[#94a3b8] hover:text-[#334155] dark:hover:text-[#e2e8f0]',
+        navActiveIndicator: 'hidden', 
 
         // Buttons
-        buttonPrimary: 'bg-[#E0E5EC] dark:bg-[#292d3e] text-blue-600 dark:text-blue-400 font-bold rounded-2xl px-6 py-3 shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] dark:shadow-[6px_6px_12px_#1f2330,-6px_-6px_12px_#33374a] active:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] dark:active:shadow-[inset_4px_4px_8px_#1f2330,inset_-4px_-4px_8px_#33374a] transition-all active:translate-y-[1px]',
-        buttonSecondary: 'bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-500 dark:text-gray-400 font-medium rounded-2xl px-6 py-3 shadow-[5px_5px_10px_#b8b9be,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a] active:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] dark:active:shadow-[inset_4px_4px_8px_#1f2330,inset_-4px_-4px_8px_#33374a] transition-all',
+        buttonPrimary: 'bg-[#E0E5EC] dark:bg-[#292d3e] text-[#2563eb] dark:text-[#60a5fa] font-bold rounded-2xl px-6 py-3 shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] dark:shadow-[6px_6px_12px_#1f2330,-6px_-6px_12px_#33374a] active:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] dark:active:shadow-[inset_4px_4px_8px_#1f2330,inset_-4px_-4px_8px_#33374a] transition-all active:translate-y-[1px]',
+        buttonSecondary: 'bg-[#E0E5EC] dark:bg-[#292d3e] text-[#64748b] dark:text-[#94a3b8] font-medium rounded-2xl px-6 py-3 shadow-[5px_5px_10px_#b8b9be,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a] active:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] dark:active:shadow-[inset_4px_4px_8px_#1f2330,inset_-4px_-4px_8px_#33374a] transition-all',
         
         // Inputs
-        label: 'text-slate-500 dark:text-gray-400 text-xs font-bold tracking-widest mb-2 block ml-3 uppercase',
-        inputWrapper: 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-2xl px-4 flex items-center min-h-[52px] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] dark:shadow-[inset_4px_4px_8px_#1a1d26,inset_-4px_-4px_8px_#383e56] transition-all focus-within:shadow-[inset_6px_6px_12px_#b8b9be,inset_-6px_-6px_12px_#ffffff] dark:focus-within:shadow-[inset_6px_6px_12px_#1a1d26,inset_-6px_-6px_12px_#383e56]',
-        inputField: 'bg-transparent w-full h-full py-3 outline-none text-slate-700 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 text-base font-medium',
-        inputIcon: 'text-slate-400 dark:text-gray-500 mr-3',
+        label: 'text-[#64748b] dark:text-[#94a3b8] text-xs font-bold tracking-widest mb-2 block ml-3 uppercase',
+        inputWrapper: 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-2xl px-4 flex items-center min-h-[52px] shadow-[inset_5px_5px_10px_#b8b9be,inset_-5px_-5px_10px_#ffffff] dark:shadow-[inset_5px_5px_10px_#1f2330,inset_-5px_-5px_10px_#33374a] transition-all focus-within:shadow-[inset_2px_2px_5px_#b8b9be,inset_-2px_-2px_5px_#ffffff] dark:focus-within:shadow-[inset_2px_2px_5px_#1f2330,inset_-2px_-2px_5px_#33374a]',
+        // Explicitly colored text to avoid white-on-light
+        inputField: 'bg-transparent w-full h-full py-3 outline-none text-[#334155] dark:text-[#f1f5f9] placeholder-[#94a3b8] dark:placeholder-[#64748b] text-base font-medium',
+        inputIcon: 'text-[#94a3b8] dark:text-[#64748b] mr-3',
         
         // Misc
-        accentText: 'text-blue-600 dark:text-blue-400',
+        accentText: 'text-[#2563eb] dark:text-[#60a5fa]',
         
         // Dropdown
-        dropdownMenu: 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-2xl shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] dark:shadow-[8px_8px_16px_#1f2330,-8px_-8px_16px_#33374a] border border-white/40 dark:border-white/5 mt-3 p-3 z-[60]',
-        dropdownItem: 'p-3 rounded-xl mb-2 last:mb-0 hover:bg-[#d6dbe4] dark:hover:bg-[#33374a] text-slate-700 dark:text-white font-medium cursor-pointer transition-all relative flex items-center gap-2',
-        dropdownItemActive: 'shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a] text-blue-600 dark:text-blue-400 font-bold',
+        dropdownMenu: 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-2xl shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] dark:shadow-[8px_8px_16px_#1f2330,-8px_-8px_16px_#33374a] mt-3 p-3 z-[60]',
+        dropdownItem: 'p-3 rounded-xl mb-2 last:mb-0 hover:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] dark:hover:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a] text-[#475569] dark:text-[#cbd5e1] font-medium cursor-pointer transition-all relative flex items-center gap-2',
+        dropdownItemActive: 'shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a] text-[#2563eb] dark:text-[#60a5fa] font-bold',
       };
     case 'fluent':
     default:

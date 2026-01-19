@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Sale, Expense, Customer, Transaction } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
@@ -137,13 +138,13 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                             <Card className="!p-4">
                                 <div className="text-sm opacity-60 mb-1">Monthly Revenue</div>
-                                <div className="text-2xl font-bold flex items-center gap-2 text-blue-600">
+                                <div className="text-2xl font-bold flex items-center gap-2 text-blue-600 dark:text-blue-400">
                                     <DollarSign className="w-5 h-5" /> {dashboardData.totalRevenue.toLocaleString()}
                                 </div>
                             </Card>
                             <Card className="!p-4">
                                 <div className="text-sm opacity-60 mb-1">Monthly Expenses</div>
-                                <div className="text-2xl font-bold flex items-center gap-2 text-red-500">
+                                <div className="text-2xl font-bold flex items-center gap-2 text-red-500 dark:text-red-400">
                                     <ArrowDownLeft className="w-5 h-5" /> {dashboardData.totalCost.toLocaleString()}
                                 </div>
                             </Card>
@@ -155,7 +156,7 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                             </Card>
                             <Card className="!p-4">
                                 <div className="text-sm opacity-60 mb-1">Margin</div>
-                                <div className="text-2xl font-bold flex items-center gap-2 text-purple-600">
+                                <div className="text-2xl font-bold flex items-center gap-2 text-purple-600 dark:text-purple-400">
                                     % {dashboardData.totalRevenue ? ((dashboardData.netProfit / dashboardData.totalRevenue) * 100).toFixed(1) : 0}
                                 </div>
                             </Card>

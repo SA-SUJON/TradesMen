@@ -205,9 +205,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     let containerClasses = "";
     if (variant === 'modal') {
          containerClasses = `w-[calc(100vw-32px)] md:w-[400px] h-[500px] flex flex-col overflow-hidden shadow-2xl ${
-            theme === 'glass' ? 'bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl' :
+            theme === 'glass' ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/40 dark:border-white/10 rounded-2xl' :
             theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-2xl border border-white/40 dark:border-white/5' :
-            'bg-white rounded-2xl border border-gray-200'
+            'bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700'
           }`;
     } else {
         // Page Variant (Full Height)
@@ -215,7 +215,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     }
 
     const inputStyles = theme === 'glass' 
-        ? 'bg-white/10 border border-white/10 focus:bg-white/20 text-white placeholder-white/50' 
+        ? 'bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500'
         : theme === 'neumorphism'
             ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff] dark:shadow-[inset_2px_2px_5px_#1f2330,inset_-2px_-2px_5px_#33374a] text-slate-700 dark:text-white placeholder-slate-400 dark:placeholder-gray-500'
             : theme === 'material'
@@ -228,7 +228,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     return (
         <div className={containerClasses}>
             {/* Header */}
-            <div className={`p-4 border-b ${theme === 'glass' ? 'border-white/10' : 'border-gray-100 dark:border-white/10'} flex items-center justify-between`}>
+            <div className={`p-4 border-b ${theme === 'glass' ? 'border-gray-200/50 dark:border-white/10' : 'border-gray-100 dark:border-white/10'} flex items-center justify-between`}>
                 <div className="flex items-center gap-2">
                     {showHistory && !isPageDesktop ? (
                         <button onClick={() => setShowHistory(false)} className="mr-1">
@@ -241,7 +241,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                     )}
                    
                     <div className="flex flex-col justify-center">
-                        <h3 className={`font-bold leading-none ${theme === 'glass' ? 'text-white' : ''}`}>
+                        <h3 className={`font-bold leading-none ${theme === 'glass' ? 'text-slate-800 dark:text-white' : ''}`}>
                             {showHistory ? 'History' : 'Manager AI'}
                         </h3>
                         {!showHistory && (
@@ -257,7 +257,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                 <div className="flex items-center gap-2">
                     <button 
                         onClick={handleNewChat}
-                        className={`p-1.5 rounded-full ${theme === 'glass' ? 'hover:bg-white/20' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        className={`p-1.5 rounded-full ${theme === 'glass' ? 'hover:bg-black/5 dark:hover:bg-white/10' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
                         title="New Chat"
                     >
                         <MessageSquarePlus className="w-5 h-5" />
@@ -265,7 +265,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                     {!isPageDesktop && (
                         <button 
                             onClick={() => setShowHistory(!showHistory)}
-                            className={`p-1.5 rounded-full ${showHistory ? 'bg-blue-100 text-blue-600' : ''} ${theme === 'glass' ? 'hover:bg-white/20' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                            className={`p-1.5 rounded-full ${showHistory ? 'bg-blue-100 text-blue-600' : ''} ${theme === 'glass' ? 'hover:bg-black/5 dark:hover:bg-white/10' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
                             title="History"
                         >
                             <History className="w-5 h-5" />
@@ -296,8 +296,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                                         onClick={() => handleSelectSession(session.id)}
                                         className={`p-3 rounded-xl cursor-pointer transition-all group relative ${
                                             currentSessionId === session.id 
-                                                ? (theme === 'glass' ? 'bg-white/20' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-900') 
-                                                : (theme === 'glass' ? 'hover:bg-white/10' : 'hover:bg-gray-50 dark:hover:bg-white/5')
+                                                ? (theme === 'glass' ? 'bg-black/5 dark:bg-white/10' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-900') 
+                                                : (theme === 'glass' ? 'hover:bg-black/5 dark:hover:bg-white/5' : 'hover:bg-gray-50 dark:hover:bg-white/5')
                                         }`}
                                     >
                                         <div className="font-bold text-sm truncate pr-6">{session.title || 'New Chat'}</div>
@@ -336,7 +336,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                                     className={`max-w-[85%] p-3 rounded-2xl text-sm ${
                                     msg.role === 'user'
                                         ? `${theme === 'material' ? 'bg-[#6750A4]' : 'bg-blue-600'} text-white rounded-br-none shadow-md`
-                                        : `${theme === 'glass' ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-bl-none`
+                                        : `${theme === 'glass' ? 'bg-white/60 dark:bg-white/10 text-slate-800 dark:text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-bl-none`
                                     } ${msg.isError ? 'bg-red-100 text-red-600' : ''}`}
                                 >
                                     {msg.image && (
@@ -349,7 +349,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                     ))}
                     {isProcessing && (
                         <div className="flex justify-start">
-                        <div className={`p-3 rounded-2xl rounded-bl-none ${theme === 'glass' ? 'bg-white/10' : 'bg-gray-50 dark:bg-gray-800'}`}>
+                        <div className={`p-3 rounded-2xl rounded-bl-none ${theme === 'glass' ? 'bg-white/40 dark:bg-white/10' : 'bg-gray-50 dark:bg-gray-800'}`}>
                             <div className="flex gap-1">
                                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
@@ -369,7 +369,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                     )}
 
                     {/* Input Area */}
-                    <div className={`p-3 md:p-4 border-t ${theme === 'glass' ? 'border-white/10' : 'border-gray-100 dark:border-white/10'}`}>
+                    <div className={`p-3 md:p-4 border-t ${theme === 'glass' ? 'border-gray-200/50 dark:border-white/10' : 'border-gray-100 dark:border-white/10'}`}>
                     <div className="flex gap-2 items-center">
                         <input 
                             type="file" 
@@ -383,7 +383,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                         <div className="flex items-center gap-1">
                             <button 
                                 onClick={() => fileInputRef.current?.click()}
-                                className={`p-2 rounded-full transition-colors ${theme === 'glass' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                                className={`p-2 rounded-full transition-colors ${theme === 'glass' ? 'hover:bg-black/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
                                 title="Scan Memo"
                             >
                                 <Camera className="w-5 h-5 opacity-70" />
@@ -394,7 +394,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                                     isListening 
                                         ? 'bg-red-500 text-white animate-pulse' 
                                         : theme === 'glass' 
-                                            ? 'hover:bg-white/20 text-white' 
+                                            ? 'hover:bg-black/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400' 
                                             : 'hover:bg-gray-100 dark:hover:bg-white/10'
                                 }`}
                                 title="Voice Command"

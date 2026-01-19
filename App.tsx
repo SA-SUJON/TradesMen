@@ -42,6 +42,7 @@ interface MainLayoutProps {
   setSales: SetValue<Sale[]>;
   expenses: Expense[];
   setExpenses: SetValue<Expense[]>;
+  syncStatus?: string;
 }
 
 // --- Animated Branding Components ---
@@ -52,7 +53,8 @@ const AnimatedLogo: React.FC<{ size?: 'sm' | 'md' }> = ({ size = 'md' }) => {
     const getLogoStyle = () => {
         switch(theme) {
             case 'material': return 'bg-m3-primary text-white shadow-lg shadow-purple-500/30';
-            case 'glass': return 'bg-white/20 text-white backdrop-blur-md border border-white/30';
+            // FIXED: Adapted for Light/Dark mode in Glass theme
+            case 'glass': return 'bg-white/20 text-blue-600 dark:text-white backdrop-blur-md border border-blue-100 dark:border-white/30';
             case 'neumorphism': return 'bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-700 dark:text-gray-200 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a]';
             case 'fluent': default: return 'bg-blue-600 text-white shadow-lg shadow-blue-500/30';
         }
@@ -89,8 +91,9 @@ const AnimatedTitle: React.FC<{ subtitle?: boolean }> = ({ subtitle = true }) =>
     const { theme } = useTheme();
     
     // Gradient text styles based on theme
+    // FIXED: Adapted for Light/Dark mode in Glass theme
     const gradientClass = theme === 'glass' 
-        ? 'from-white via-blue-100 to-white' 
+        ? 'from-blue-700 via-indigo-600 to-blue-700 dark:from-white dark:via-blue-100 dark:to-white' 
         : theme === 'material' 
             ? 'from-m3-primary via-purple-500 to-m3-primary' 
             : 'from-blue-600 via-indigo-500 to-blue-600 dark:from-blue-400 dark:via-indigo-300 dark:to-blue-400';
@@ -105,7 +108,7 @@ const AnimatedTitle: React.FC<{ subtitle?: boolean }> = ({ subtitle = true }) =>
                     initial={{ opacity: 0, x: -5 }}
                     animate={{ opacity: 0.6, x: 0 }}
                     transition={{ delay: 0.5 }}
-                    className={`text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5 pl-0.5 ${theme === 'glass' ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
+                    className={`text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5 pl-0.5 ${theme === 'glass' ? 'text-slate-600 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'}`}
                 >
                     Pro Suite
                 </motion.p>
@@ -114,7 +117,7 @@ const AnimatedTitle: React.FC<{ subtitle?: boolean }> = ({ subtitle = true }) =>
     );
 };
 
-const MainLayout: React.FC<MainLayoutProps & { syncStatus?: string }> = ({ 
+const MainLayout: React.FC<MainLayoutProps> = ({ 
   inventory, setInventory, cart, setCart, customers, setCustomers, suppliers, setSuppliers, sales, setSales, expenses, setExpenses, syncStatus
 }) => {
   const { theme, showNavLabels, showQuickScan } = useTheme();
@@ -318,7 +321,10 @@ const MainLayout: React.FC<MainLayoutProps & { syncStatus?: string }> = ({
                                         <div className={`p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10`}>
                                             <ChevronLeft className="w-6 h-6" />
                                         </div>
-                                        <h1 className="text-xl font-bold">{getHeaderTitle()}</h1>
+                                        {/* FIXED: Explicit colors for mobile header title in Glass mode */}
+                                        <h1 className={`text-xl font-bold ${theme === 'glass' ? 'text-slate-900 dark:text-white' : ''}`}>
+                                            {getHeaderTitle()}
+                                        </h1>
                                     </div>
                                 ) : (
                                     <>
@@ -330,7 +336,7 @@ const MainLayout: React.FC<MainLayoutProps & { syncStatus?: string }> = ({
 
                             {/* Desktop Page Title */}
                             <div className="hidden md:flex flex-col">
-                                <h2 className={`text-3xl font-display font-bold capitalize tracking-tight ${theme === 'glass' ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                                <h2 className={`text-3xl font-display font-bold capitalize tracking-tight ${theme === 'glass' ? 'text-slate-900 dark:text-white' : 'text-gray-900 dark:text-white'}`}>
                                     {activeTab === 'menu' ? 'Dashboard' : 
                                     MENU_TOOLS.find(t => t.id === activeTab)?.label || 
                                     MAIN_TABS.find(t => t.id === activeTab)?.label || 
@@ -454,7 +460,7 @@ const MainLayout: React.FC<MainLayoutProps & { syncStatus?: string }> = ({
                                   />
                               )}
 
-                              <div className={`relative z-10 transition-transform duration-200 ${isActive ? 'scale-110 -translate-y-1' : 'opacity-50 group-active:scale-95'}`}>
+                              <div className={`relative z-10 transition-transform duration-200 ${isActive ? 'scale-110' : 'opacity-50 group-active:scale-95'}`}>
                                   {React.cloneElement(tab.icon as React.ReactElement<any>, { className: "w-6 h-6" })}
                               </div>
                               

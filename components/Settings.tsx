@@ -508,7 +508,7 @@ create policy "Public Access" on app_storage for all using (true);`}
                 onClick={() => setTheme(option.id)}
                 className={containerClass}
               >
-                <div className={`p-3 rounded-full ${isSelected ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
+                <div className={`p-3 rounded-full ${isSelected ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>
                   {option.icon}
                 </div>
                 <div className="text-left flex-grow">

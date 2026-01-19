@@ -39,11 +39,11 @@ const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
         let classes = "rounded-xl p-4 flex flex-col justify-between h-full relative overflow-hidden transition-all min-w-[85vw] md:min-w-0 snap-center ";
         
         if (theme === 'glass') {
-            classes += "backdrop-blur-md text-white border ";
-            if (variant === 'alert') classes += "bg-red-500/20 border-red-500/30 ";
-            if (variant === 'warning') classes += "bg-orange-500/20 border-orange-500/30 ";
-            if (variant === 'info') classes += "bg-blue-500/20 border-blue-500/30 ";
-            if (variant === 'success') classes += "bg-green-500/20 border-green-500/30 ";
+            classes += "backdrop-blur-md border border-white/20 dark:border-white/5 ";
+            if (variant === 'alert') classes += "bg-red-50/70 dark:bg-red-900/20 text-red-900 dark:text-red-100 ";
+            if (variant === 'warning') classes += "bg-orange-50/70 dark:bg-orange-900/20 text-orange-900 dark:text-orange-100 ";
+            if (variant === 'info') classes += "bg-blue-50/70 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100 ";
+            if (variant === 'success') classes += "bg-green-50/70 dark:bg-green-900/20 text-green-900 dark:text-green-100 ";
         } else if (theme === 'neumorphism') {
             classes += "bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-700 dark:text-gray-200 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a] border-transparent ";
              if (variant === 'alert') classes += "border-l-4 border-l-red-500 ";
@@ -76,14 +76,14 @@ const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
                 <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2 font-bold">
                         {lowStockItems.length > 0 
-                            ? <TrendingDown className={`w-5 h-5 ${theme === 'glass' ? 'text-red-200' : 'text-red-500'}`} /> 
-                            : <CheckCircle2 className={`w-5 h-5 ${theme === 'glass' ? 'text-green-200' : 'text-green-500'}`} />
+                            ? <TrendingDown className={`w-5 h-5 ${theme === 'glass' ? 'text-red-600 dark:text-red-400' : 'text-red-500'}`} /> 
+                            : <CheckCircle2 className={`w-5 h-5 ${theme === 'glass' ? 'text-green-600 dark:text-green-400' : 'text-green-500'}`} />
                         }
                         <span>Inventory Status</span>
                     </div>
                     {lowStockItems.length > 0 && (
                         <span className={`px-2 py-0.5 text-xs rounded-full font-bold ${
-                            theme === 'glass' ? 'bg-red-500/40 text-white' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+                            theme === 'glass' ? 'bg-red-500/10 text-red-700 dark:text-red-300' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
                         }`}>
                             Action Needed
                         </span>
@@ -104,7 +104,7 @@ const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
                                             <span>{item.name}</span>
                                             <span className="font-bold text-xs">{item.stock} {item.unit}</span>
                                         </div>
-                                        <div className={`h-1.5 rounded-full w-full ${theme === 'glass' ? 'bg-black/20' : 'bg-gray-200 dark:bg-white/10'}`}>
+                                        <div className={`h-1.5 rounded-full w-full ${theme === 'glass' ? 'bg-black/5 dark:bg-white/10' : 'bg-gray-200 dark:bg-white/10'}`}>
                                             <div style={{ width: `${fillPercent}%` }} className="h-full rounded-full bg-red-500"></div>
                                         </div>
                                     </div>
@@ -129,7 +129,7 @@ const InsightCards: React.FC<InsightCardsProps> = ({ inventory }) => {
             >
                 <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2 font-bold">
-                        <Calendar className={`w-5 h-5 ${expiringItems.length > 0 ? (theme === 'glass' ? 'text-orange-200' : 'text-orange-500') : (theme === 'glass' ? 'text-blue-200' : 'text-blue-500')}`} />
+                        <Calendar className={`w-5 h-5 ${expiringItems.length > 0 ? (theme === 'glass' ? 'text-orange-600 dark:text-orange-400' : 'text-orange-500') : (theme === 'glass' ? 'text-blue-600 dark:text-blue-400' : 'text-blue-500')}`} />
                         <span>Shelf Life</span>
                     </div>
                 </div>

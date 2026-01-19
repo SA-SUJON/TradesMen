@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useAI } from '../contexts/AIContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -62,7 +63,7 @@ const MagicBar: React.FC<MagicBarProps> = ({ onActivate }) => {
 
     // Style logic
     const containerClass = theme === 'glass' 
-        ? 'bg-white/10 backdrop-blur-md border border-white/20' 
+        ? 'bg-white/50 dark:bg-black/20 backdrop-blur-md border border-gray-200 dark:border-white/10' 
         : theme === 'neumorphism' 
             ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a]'
             : theme === 'material'
@@ -70,7 +71,7 @@ const MagicBar: React.FC<MagicBarProps> = ({ onActivate }) => {
                 : 'bg-white border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700';
 
     const inputClass = theme === 'glass'
-        ? 'text-white placeholder-white/60'
+        ? 'text-slate-800 dark:text-white placeholder-slate-500 dark:placeholder-white/60'
         : 'text-slate-800 placeholder-slate-400 dark:text-white dark:placeholder-gray-500';
 
     return (
