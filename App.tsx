@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Product, CartItem, Customer, Sale, Expense } from './types';
+import { Product, CartItem, Customer, Sale, Expense, Supplier } from './types';
 import { getThemeClasses } from './utils/themeUtils';
 import useLocalStorage from './hooks/useLocalStorage';
 import { useSupabaseSync } from './hooks/useSupabaseSync'; // NEW IMPORT
@@ -36,6 +36,8 @@ interface MainLayoutProps {
   setCart: SetValue<CartItem[]>;
   customers: Customer[];
   setCustomers: SetValue<Customer[]>;
+  suppliers: Supplier[];
+  setSuppliers: SetValue<Supplier[]>;
   sales: Sale[];
   setSales: SetValue<Sale[]>;
   expenses: Expense[];
@@ -113,7 +115,7 @@ const AnimatedTitle: React.FC<{ subtitle?: boolean }> = ({ subtitle = true }) =>
 };
 
 const MainLayout: React.FC<MainLayoutProps & { syncStatus?: string }> = ({ 
-  inventory, setInventory, cart, setCart, customers, setCustomers, sales, setSales, expenses, setExpenses, syncStatus
+  inventory, setInventory, cart, setCart, customers, setCustomers, suppliers, setSuppliers, sales, setSales, expenses, setExpenses, syncStatus
 }) => {
   const { theme, showNavLabels, showQuickScan } = useTheme();
   const { showAssistant } = useAI(); 
@@ -390,7 +392,12 @@ const MainLayout: React.FC<MainLayoutProps & { syncStatus?: string }> = ({
                                         customers={customers} setCustomers={setCustomers}
                                     />
                                 )}
-                                {activeTab === 'customers' && <Customers customers={customers} setCustomers={setCustomers} />}
+                                {activeTab === 'customers' && (
+                                    <Customers 
+                                        customers={customers} setCustomers={setCustomers} 
+                                        suppliers={suppliers} setSuppliers={setSuppliers}
+                                    />
+                                )}
                                 
                                 {activeTab === 'menu' && <MenuGrid />}
                                 {activeTab === 'reports' && <Reports sales={sales} inventory={inventory} expenses={expenses} />}
@@ -472,20 +479,21 @@ const AppDataWrapper: React.FC = () => {
   const [inventory, setInventory] = useLocalStorage<Product[]>('tradesmen-inventory', []);
   const [cart, setCart] = useLocalStorage<CartItem[]>('tradesmen-cart', []);
   const [customers, setCustomers] = useLocalStorage<Customer[]>('tradesmen-customers', []);
+  const [suppliers, setSuppliers] = useLocalStorage<Supplier[]>('tradesmen-suppliers', []); // NEW SUPPLIER STATE
   const [sales, setSales] = useLocalStorage<Sale[]>('tradesmen-sales', []);
   const [expenses, setExpenses] = useLocalStorage<Expense[]>('tradesmen-expenses', []);
 
   // Sync Hooks for each major data category
-  // This automatically fetches on mount and pushes on change if Supabase is configured
   const invStatus = useSupabaseSync('inventory', inventory, setInventory);
   const custStatus = useSupabaseSync('customers', customers, setCustomers);
+  const suppStatus = useSupabaseSync('suppliers', suppliers, setSuppliers); // NEW SYNC
   const salesStatus = useSupabaseSync('sales', sales, setSales);
   const expStatus = useSupabaseSync('expenses', expenses, setExpenses);
 
   // Aggregate Status
-  const aggregateStatus = [invStatus, custStatus, salesStatus, expStatus].includes('error') ? 'error' 
-                        : [invStatus, custStatus, salesStatus, expStatus].includes('syncing') ? 'syncing' 
-                        : [invStatus, custStatus, salesStatus, expStatus].every(s => s === 'synced' || s === 'idle') ? 'synced' 
+  const aggregateStatus = [invStatus, custStatus, suppStatus, salesStatus, expStatus].includes('error') ? 'error' 
+                        : [invStatus, custStatus, suppStatus, salesStatus, expStatus].includes('syncing') ? 'syncing' 
+                        : [invStatus, custStatus, suppStatus, salesStatus, expStatus].every(s => s === 'synced' || s === 'idle') ? 'synced' 
                         : 'idle';
 
   return (
@@ -497,6 +505,8 @@ const AppDataWrapper: React.FC = () => {
         setCart={setCart}
         customers={customers}
         setCustomers={setCustomers}
+        suppliers={suppliers}
+        setSuppliers={setSuppliers}
         sales={sales}
         setSales={setSales}
         expenses={expenses}

@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { Customer, Transaction } from '../types';
+import { Customer, Supplier } from '../types';
 import { Card, Input, Button } from './ui/BaseComponents';
-import { Users, Search, Plus, Trash2, Edit2, X, Phone, History, Calendar, AlertCircle, MapPin, Key, StickyNote, ExternalLink } from 'lucide-react';
+import { Users, Search, Plus, Trash2, Edit2, X, Phone, History, Calendar, AlertCircle, MapPin, Key, StickyNote, ExternalLink, Truck, Factory, Building2, Contact } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -11,75 +11,107 @@ import { openWhatsApp } from '../utils/appUtils';
 interface CustomersProps {
   customers: Customer[];
   setCustomers: (customers: Customer[] | ((val: Customer[]) => Customer[])) => void;
+  suppliers: Supplier[];
+  setSuppliers: (suppliers: Supplier[] | ((val: Supplier[]) => Supplier[])) => void;
 }
 
-const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
+const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, suppliers, setSuppliers }) => {
   const { theme } = useTheme();
   const styles = getThemeClasses(theme);
 
+  const [activeTab, setActiveTab] = useState<'clients' | 'suppliers'>('clients');
   const [search, setSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  
+  // Selection State
+  const [selectedClient, setSelectedClient] = useState<Customer | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
 
-  // Form State
-  const [formData, setFormData] = useState<Partial<Customer>>({
+  // Unified Form State (Superset of both)
+  const [formData, setFormData] = useState({
     name: '',
     phone: '',
     address: '',
-    gateCode: '',
+    gateCode: '', // Client Only
+    contactPerson: '', // Supplier Only
+    gstin: '', // Supplier Only
+    category: '', // Supplier Only
     notes: ''
   });
 
   const handleSave = () => {
     if (!formData.name) return;
 
-    if (editId) {
-        setCustomers(prev => prev.map(c => c.id === editId ? { ...c, ...formData } as Customer : c));
-        // Update selected view if editing currently selected
-        if (selectedCustomer?.id === editId) {
-            setSelectedCustomer(prev => prev ? { ...prev, ...formData } as Customer : null);
+    if (activeTab === 'clients') {
+        if (editId) {
+            setCustomers(prev => prev.map(c => c.id === editId ? { ...c, ...formData } as Customer : c));
+            if (selectedClient?.id === editId) setSelectedClient(prev => prev ? { ...prev, ...formData } as Customer : null);
+        } else {
+            const newCustomer: Customer = {
+                id: Date.now().toString(),
+                name: formData.name,
+                phone: formData.phone || '',
+                address: formData.address || '',
+                gateCode: formData.gateCode || '',
+                notes: formData.notes || '',
+                debt: 0,
+                history: []
+            };
+            setCustomers(prev => [...prev, newCustomer]);
         }
     } else {
-        const newCustomer: Customer = {
-            id: Date.now().toString(),
-            name: formData.name,
-            phone: formData.phone || '',
-            address: formData.address || '',
-            gateCode: formData.gateCode || '',
-            notes: formData.notes || '',
-            debt: 0,
-            history: []
-        };
-        setCustomers(prev => [...prev, newCustomer]);
+        if (editId) {
+            setSuppliers(prev => prev.map(s => s.id === editId ? { ...s, ...formData } as Supplier : s));
+            if (selectedSupplier?.id === editId) setSelectedSupplier(prev => prev ? { ...prev, ...formData } as Supplier : null);
+        } else {
+            const newSupplier: Supplier = {
+                id: Date.now().toString(),
+                name: formData.name,
+                contactPerson: formData.contactPerson || '',
+                phone: formData.phone || '',
+                address: formData.address || '',
+                gstin: formData.gstin || '',
+                category: formData.category || '',
+                notes: formData.notes || ''
+            };
+            setSuppliers(prev => [...prev, newSupplier]);
+        }
     }
     resetForm();
   };
 
   const handleDelete = (id: string) => {
-    // Timeout ensuring click release before confirm
     setTimeout(() => {
-        if(window.confirm("Are you sure? This will delete the customer and their history.")) {
-            setCustomers(prev => prev.filter(c => c.id !== id));
-            if (selectedCustomer?.id === id) setSelectedCustomer(null);
+        if(window.confirm(`Are you sure you want to delete this ${activeTab === 'clients' ? 'client' : 'supplier'}?`)) {
+            if (activeTab === 'clients') {
+                setCustomers(prev => prev.filter(c => c.id !== id));
+                if (selectedClient?.id === id) setSelectedClient(null);
+            } else {
+                setSuppliers(prev => prev.filter(s => s.id !== id));
+                if (selectedSupplier?.id === id) setSelectedSupplier(null);
+            }
         }
     }, 50);
   };
 
-  const handleEdit = (customer: Customer) => {
+  const handleEdit = (item: any) => {
       setFormData({ 
-          name: customer.name, 
-          phone: customer.phone,
-          address: customer.address || '',
-          gateCode: customer.gateCode || '',
-          notes: customer.notes || ''
+          name: item.name, 
+          phone: item.phone,
+          address: item.address || '',
+          gateCode: item.gateCode || '',
+          contactPerson: item.contactPerson || '',
+          gstin: item.gstin || '',
+          category: item.category || '',
+          notes: item.notes || ''
       });
-      setEditId(customer.id);
+      setEditId(item.id);
       setIsAdding(true);
   };
 
   const resetForm = () => {
-      setFormData({ name: '', phone: '', address: '', gateCode: '', notes: '' });
+      setFormData({ name: '', phone: '', address: '', gateCode: '', contactPerson: '', gstin: '', category: '', notes: '' });
       setIsAdding(false);
       setEditId(null);
   }
@@ -89,44 +121,54 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
   };
 
-  const filteredCustomers = customers.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
-    c.phone.includes(search)
-  );
+  // Filter Lists
+  const filteredClients = customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search));
+  const filteredSuppliers = suppliers.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.phone.includes(search));
 
   return (
     <div className="space-y-6 pb-24">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
-        {/* Customer List Column */}
+        {/* List Column */}
         <div className="md:col-span-1 space-y-4">
             <Card className="h-full flex flex-col">
                  <div className="flex flex-col gap-4 mb-4 flex-shrink-0">
-                    <h2 className={`text-xl font-bold flex items-center gap-2 ${styles.accentText}`}>
-                        <Users className="w-5 h-5" /> Clients
-                    </h2>
+                    <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-xl">
+                        <button 
+                            onClick={() => { setActiveTab('clients'); setSelectedSupplier(null); setSearch(''); }}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'clients' ? 'bg-white shadow text-blue-600 dark:bg-gray-800 dark:text-blue-400' : 'opacity-60 hover:opacity-100'}`}
+                        >
+                            <Users className="w-4 h-4" /> Clients
+                        </button>
+                        <button 
+                            onClick={() => { setActiveTab('suppliers'); setSelectedClient(null); setSearch(''); }}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'suppliers' ? 'bg-white shadow text-purple-600 dark:bg-gray-800 dark:text-purple-400' : 'opacity-60 hover:opacity-100'}`}
+                        >
+                            <Truck className="w-4 h-4" /> Suppliers
+                        </button>
+                    </div>
+
                     <div className="flex gap-2">
                         <Input 
-                            placeholder="Search name/phone..." 
+                            placeholder="Search..." 
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
-                        <Button onClick={() => setIsAdding(true)} className="px-3">
+                        <Button onClick={() => setIsAdding(true)} className={`px-3 ${activeTab === 'suppliers' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}>
                             <Plus className="w-5 h-5" />
                         </Button>
                     </div>
                 </div>
 
-                {/* Removed fixed max-height on mobile to allow page scroll with padding */}
                 <div className="md:overflow-y-auto md:flex-grow space-y-2 pr-1 custom-scrollbar min-h-[300px]">
-                    {filteredCustomers.length > 0 ? (
-                        filteredCustomers.map(customer => (
+                    {activeTab === 'clients' ? (
+                        filteredClients.length > 0 ? filteredClients.map(customer => (
                             <motion.div
                                 key={customer.id}
-                                onClick={() => setSelectedCustomer(customer)}
+                                onClick={() => setSelectedClient(customer)}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 className={`p-3 rounded-xl cursor-pointer border transition-all relative ${
-                                    selectedCustomer?.id === customer.id 
+                                    selectedClient?.id === customer.id 
                                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
                                         : theme === 'glass' ? 'bg-white/5 border-white/10' : 'border-gray-100 bg-white dark:bg-gray-800 dark:border-gray-700'
                                 }`}
@@ -137,133 +179,140 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
                                         <div className="text-xs opacity-60 flex items-center gap-1 mt-0.5">
                                             <Phone className="w-3 h-3" /> {customer.phone || 'No Phone'}
                                         </div>
-                                        {customer.address && (
-                                            <div className="text-[10px] opacity-50 mt-1 truncate max-w-[150px]">
-                                                {customer.address}
-                                            </div>
-                                        )}
                                         {customer.debt > 0 && (
                                             <div className="mt-1 text-[10px] font-bold text-orange-500 flex items-center gap-1">
                                                 <AlertCircle className="w-3 h-3" /> Due: {customer.debt}
                                             </div>
                                         )}
                                     </div>
-                                    <div 
-                                        className="flex gap-2 relative z-20 bg-gray-50/50 dark:bg-black/20 p-1 rounded-lg"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                         <button 
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); handleEdit(customer); }}
-                                            className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer"
-                                         >
+                                    <div className="flex gap-2 relative z-20 bg-gray-50/50 dark:bg-black/20 p-1 rounded-lg" onClick={(e) => e.stopPropagation()}>
+                                         <button type="button" onClick={(e) => { e.stopPropagation(); handleEdit(customer); }} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer">
                                             <Edit2 className="w-4 h-4 text-blue-500" />
                                          </button>
-                                          <button 
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); handleDelete(customer.id); }}
-                                            className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer"
-                                         >
+                                          <button type="button" onClick={(e) => { e.stopPropagation(); handleDelete(customer.id); }} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer">
                                             <Trash2 className="w-4 h-4 text-red-500" />
                                          </button>
                                     </div>
                                 </div>
                             </motion.div>
-                        ))
+                        )) : <div className="text-center opacity-50 py-8">No clients found.</div>
                     ) : (
-                        <div className="text-center opacity-50 py-8">No clients found.</div>
+                        filteredSuppliers.length > 0 ? filteredSuppliers.map(supplier => (
+                            <motion.div
+                                key={supplier.id}
+                                onClick={() => setSelectedSupplier(supplier)}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className={`p-3 rounded-xl cursor-pointer border transition-all relative ${
+                                    selectedSupplier?.id === supplier.id 
+                                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' 
+                                        : theme === 'glass' ? 'bg-white/5 border-white/10' : 'border-gray-100 bg-white dark:bg-gray-800 dark:border-gray-700'
+                                }`}
+                            >
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <div className="font-bold">{supplier.name}</div>
+                                        <div className="text-xs opacity-60 flex items-center gap-1 mt-0.5">
+                                            <Phone className="w-3 h-3" /> {supplier.phone || 'No Phone'}
+                                        </div>
+                                        {supplier.category && (
+                                            <div className="mt-1 text-[10px] bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 inline-block px-1.5 rounded">
+                                                {supplier.category}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-2 relative z-20 bg-gray-50/50 dark:bg-black/20 p-1 rounded-lg" onClick={(e) => e.stopPropagation()}>
+                                         <button type="button" onClick={(e) => { e.stopPropagation(); handleEdit(supplier); }} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer">
+                                            <Edit2 className="w-4 h-4 text-purple-500" />
+                                         </button>
+                                          <button type="button" onClick={(e) => { e.stopPropagation(); handleDelete(supplier.id); }} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full cursor-pointer">
+                                            <Trash2 className="w-4 h-4 text-red-500" />
+                                         </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )) : <div className="text-center opacity-50 py-8">No suppliers found.</div>
                     )}
                 </div>
             </Card>
         </div>
 
-        {/* Details & History Column */}
+        {/* Details Column */}
         <div className="md:col-span-2">
             <AnimatePresence mode="wait">
-                {selectedCustomer ? (
+                {activeTab === 'clients' && selectedClient ? (
                     <motion.div 
-                        key={selectedCustomer.id}
+                        key={selectedClient.id}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         className="h-full"
                     >
                         <Card className="h-full flex flex-col">
-                            {/* CRM Header Profile */}
+                            {/* Client Header */}
                             <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 border-b border-gray-100 dark:border-white/10 pb-4 gap-4">
                                 <div>
-                                    <h2 className="text-3xl font-display font-bold">{selectedCustomer.name}</h2>
+                                    <h2 className="text-3xl font-display font-bold">{selectedClient.name}</h2>
                                     <div className="flex gap-4 mt-2">
-                                        {selectedCustomer.phone && (
+                                        {selectedClient.phone && (
                                             <button 
-                                                onClick={() => openWhatsApp(selectedCustomer.phone, "Hello!")}
+                                                onClick={() => openWhatsApp(selectedClient.phone, "Hello!")}
                                                 className="opacity-70 hover:opacity-100 text-sm flex items-center gap-1 hover:text-green-600 transition-colors"
                                             >
-                                                <Phone className="w-4 h-4" /> {selectedCustomer.phone}
+                                                <Phone className="w-4 h-4" /> {selectedClient.phone}
                                             </button>
                                         )}
-                                        <span className="opacity-40 text-sm">ID: {selectedCustomer.id.slice(-4)}</span>
+                                        <span className="opacity-40 text-sm">ID: {selectedClient.id.slice(-4)}</span>
                                     </div>
                                 </div>
                                 <div className="text-left md:text-right p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 min-w-[140px]">
                                     <div className="text-xs opacity-60 uppercase tracking-wide">Balance Due</div>
-                                    <div className={`text-2xl font-black ${selectedCustomer.debt > 0 ? 'text-orange-500' : 'text-green-500'}`}>
-                                        {selectedCustomer.debt.toFixed(2)}
+                                    <div className={`text-2xl font-black ${selectedClient.debt > 0 ? 'text-orange-500' : 'text-green-500'}`}>
+                                        {selectedClient.debt.toFixed(2)}
                                     </div>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                {/* Address Card */}
-                                <div className="p-3 rounded-xl border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5 relative group">
+                                <div className="p-3 rounded-xl border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5">
                                     <div className="flex items-start gap-3">
                                         <MapPin className="w-5 h-5 opacity-50 mt-0.5 flex-shrink-0" />
                                         <div className="flex-grow">
                                             <div className="text-xs font-bold opacity-50 uppercase mb-1">Service Address</div>
-                                            <div className="text-sm font-medium leading-relaxed">
-                                                {selectedCustomer.address || "No address provided"}
-                                            </div>
-                                            {selectedCustomer.address && (
-                                                <button 
-                                                    onClick={() => openMap(selectedCustomer.address!)}
-                                                    className="mt-2 text-xs flex items-center gap-1 text-blue-600 hover:underline"
-                                                >
+                                            <div className="text-sm font-medium leading-relaxed">{selectedClient.address || "No address provided"}</div>
+                                            {selectedClient.address && (
+                                                <button onClick={() => openMap(selectedClient.address!)} className="mt-2 text-xs flex items-center gap-1 text-blue-600 hover:underline">
                                                     View on Map <ExternalLink className="w-3 h-3" />
                                                 </button>
                                             )}
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Gate Code / Notes Card */}
                                 <div className="space-y-3">
-                                    {selectedCustomer.gateCode && (
+                                    {selectedClient.gateCode && (
                                         <div className="p-3 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-800 flex items-center gap-3">
                                             <Key className="w-5 h-5 flex-shrink-0" />
                                             <div>
                                                 <div className="text-[10px] font-bold uppercase opacity-70">Gate / Access Code</div>
-                                                <div className="text-lg font-mono font-bold tracking-wider">{selectedCustomer.gateCode}</div>
+                                                <div className="text-lg font-mono font-bold tracking-wider">{selectedClient.gateCode}</div>
                                             </div>
                                         </div>
                                     )}
-                                    
-                                    {selectedCustomer.notes && (
+                                    {selectedClient.notes && (
                                         <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800">
-                                            <div className="flex items-center gap-2 mb-1 text-blue-700 dark:text-blue-300">
-                                                <StickyNote className="w-3 h-3" />
-                                                <span className="text-xs font-bold uppercase">Notes</span>
-                                            </div>
-                                            <p className="text-sm opacity-80 whitespace-pre-wrap">{selectedCustomer.notes}</p>
+                                            <div className="flex items-center gap-2 mb-1 text-blue-700 dark:text-blue-300"><StickyNote className="w-3 h-3" /><span className="text-xs font-bold uppercase">Notes</span></div>
+                                            <p className="text-sm opacity-80 whitespace-pre-wrap">{selectedClient.notes}</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="flex-grow overflow-y-auto border-t border-gray-100 dark:border-white/10 pt-4">
+                             {/* Transaction History */}
+                             <div className="flex-grow overflow-y-auto border-t border-gray-100 dark:border-white/10 pt-4">
                                 <h3 className="font-bold mb-4 flex items-center gap-2 opacity-80">
                                     <History className="w-4 h-4" /> Transaction History
                                 </h3>
-                                {selectedCustomer.history.length > 0 ? (
+                                {selectedClient.history.length > 0 ? (
                                     <table className="w-full text-left border-collapse">
                                         <thead>
                                             <tr className="opacity-60 text-xs uppercase tracking-wide border-b border-gray-200 dark:border-white/10">
@@ -274,46 +323,100 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {selectedCustomer.history.slice().reverse().map((tx) => (
+                                            {selectedClient.history.slice().reverse().map((tx) => (
                                                 <tr key={tx.id} className="border-b border-gray-100 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/5">
-                                                    <td className="py-3 text-sm flex items-center gap-2">
-                                                        <Calendar className="w-3 h-3 opacity-50" />
-                                                        {new Date(tx.date).toLocaleDateString()}
-                                                    </td>
-                                                    <td className="py-3 text-xs">
-                                                        <span className={`px-1.5 py-0.5 rounded ${
-                                                            tx.type === 'credit' ? 'bg-orange-100 text-orange-700' : 
-                                                            tx.type === 'payment' ? 'bg-green-100 text-green-700' : 
-                                                            'bg-gray-100 dark:bg-white/10'
-                                                        }`}>
-                                                            {tx.type || 'sale'}
-                                                        </span>
-                                                    </td>
+                                                    <td className="py-3 text-sm flex items-center gap-2"><Calendar className="w-3 h-3 opacity-50" />{new Date(tx.date).toLocaleDateString()}</td>
+                                                    <td className="py-3 text-xs"><span className={`px-1.5 py-0.5 rounded ${tx.type === 'credit' ? 'bg-orange-100 text-orange-700' : tx.type === 'payment' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-white/10'}`}>{tx.type || 'sale'}</span></td>
                                                     <td className="py-3 text-sm opacity-80">{tx.summary}</td>
-                                                    <td className={`py-3 font-bold text-right ${tx.type === 'payment' ? 'text-green-600' : ''}`}>
-                                                        {tx.type === 'payment' ? '-' : ''}{tx.amount.toFixed(2)}
-                                                    </td>
+                                                    <td className={`py-3 font-bold text-right ${tx.type === 'payment' ? 'text-green-600' : ''}`}>{tx.type === 'payment' ? '-' : ''}{tx.amount.toFixed(2)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
-                                ) : (
-                                    <div className="text-center py-12 opacity-40">
-                                        No purchase history available.
+                                ) : <div className="text-center py-12 opacity-40">No purchase history available.</div>}
+                            </div>
+                        </Card>
+                    </motion.div>
+                ) : activeTab === 'suppliers' && selectedSupplier ? (
+                     <motion.div 
+                        key={selectedSupplier.id}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="h-full"
+                    >
+                        <Card className="h-full flex flex-col">
+                            {/* Supplier Header */}
+                            <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 border-b border-gray-100 dark:border-white/10 pb-4 gap-4">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h2 className="text-3xl font-display font-bold">{selectedSupplier.name}</h2>
+                                        {selectedSupplier.category && <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-bold">{selectedSupplier.category}</span>}
                                     </div>
-                                )}
+                                    <div className="flex gap-4 mt-2">
+                                        {selectedSupplier.phone && (
+                                            <button 
+                                                onClick={() => openWhatsApp(selectedSupplier.phone, "Hello, inquiry about supply.")}
+                                                className="opacity-70 hover:opacity-100 text-sm flex items-center gap-1 hover:text-green-600 transition-colors"
+                                            >
+                                                <Phone className="w-4 h-4" /> {selectedSupplier.phone}
+                                            </button>
+                                        )}
+                                        {selectedSupplier.contactPerson && (
+                                            <div className="flex items-center gap-1 text-sm opacity-60">
+                                                <Contact className="w-4 h-4" /> {selectedSupplier.contactPerson}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="text-left md:text-right p-3 rounded-xl bg-purple-50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800/30 min-w-[140px]">
+                                    <div className="text-xs opacity-60 uppercase tracking-wide flex items-center gap-1 justify-end"><Factory className="w-3 h-3" /> Vendor Profile</div>
+                                    <div className="text-sm font-bold text-purple-700 dark:text-purple-300 mt-1">
+                                        Active Supplier
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div className="p-3 rounded-xl border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+                                    <div className="flex items-start gap-3">
+                                        <MapPin className="w-5 h-5 opacity-50 mt-0.5 flex-shrink-0" />
+                                        <div className="flex-grow">
+                                            <div className="text-xs font-bold opacity-50 uppercase mb-1">Warehouse / Address</div>
+                                            <div className="text-sm font-medium leading-relaxed">{selectedSupplier.address || "No address provided"}</div>
+                                            {selectedSupplier.address && (
+                                                <button onClick={() => openMap(selectedSupplier.address!)} className="mt-2 text-xs flex items-center gap-1 text-blue-600 hover:underline">
+                                                    View on Map <ExternalLink className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    {selectedSupplier.gstin && (
+                                        <div className="p-3 rounded-xl bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/5 flex items-center gap-3">
+                                            <Building2 className="w-5 h-5 flex-shrink-0 opacity-60" />
+                                            <div>
+                                                <div className="text-[10px] font-bold uppercase opacity-70">GSTIN (Tax ID)</div>
+                                                <div className="text-lg font-mono font-bold tracking-wider">{selectedSupplier.gstin}</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {selectedSupplier.notes && (
+                                        <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800">
+                                            <div className="flex items-center gap-2 mb-1 text-purple-700 dark:text-purple-300"><StickyNote className="w-3 h-3" /><span className="text-xs font-bold uppercase">Notes</span></div>
+                                            <p className="text-sm opacity-80 whitespace-pre-wrap">{selectedSupplier.notes}</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </Card>
                     </motion.div>
                 ) : (
-                    <motion.div 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        className="h-full flex items-center justify-center opacity-30 min-h-[400px]"
-                    >
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex items-center justify-center opacity-30 min-h-[400px]">
                         <div className="text-center">
-                            <Users className="w-16 h-16 mx-auto mb-4" />
-                            <p>Select a client to view profile</p>
+                            {activeTab === 'clients' ? <Users className="w-16 h-16 mx-auto mb-4" /> : <Truck className="w-16 h-16 mx-auto mb-4" />}
+                            <p>Select a {activeTab === 'clients' ? 'client' : 'supplier'} to view details</p>
                         </div>
                     </motion.div>
                 )}
@@ -340,36 +443,62 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers }) => {
                 >
                     <Card>
                         <div className="flex justify-between items-center mb-6 border-b border-gray-100 dark:border-white/10 pb-4">
-                            <h3 className={`text-lg font-bold ${styles.accentText}`}>{editId ? 'Edit Client Profile' : 'New Client'}</h3>
+                            <h3 className={`text-lg font-bold ${styles.accentText}`}>
+                                {editId ? 'Edit Profile' : `New ${activeTab === 'clients' ? 'Client' : 'Supplier'}`}
+                            </h3>
                             <button onClick={resetForm}><X className="w-6 h-6 opacity-60 hover:opacity-100" /></button>
                         </div>
                         <div className="space-y-4">
+                            {/* Common Fields */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2">
-                                    <Input label="Full Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} autoFocus />
+                                    <Input 
+                                        label={activeTab === 'clients' ? "Full Name" : "Company Name"} 
+                                        value={formData.name} 
+                                        onChange={e => setFormData({...formData, name: e.target.value})} 
+                                        autoFocus 
+                                    />
                                 </div>
                                 <div className="col-span-2 md:col-span-1">
                                     <Input label="Phone Number" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="Mobile" />
                                 </div>
-                                <div className="col-span-2 md:col-span-1">
-                                    <Input label="Gate / Entry Code" value={formData.gateCode} onChange={e => setFormData({...formData, gateCode: e.target.value})} placeholder="e.g. #1234" icon={<Key className="w-4 h-4" />} />
-                                </div>
+                                
+                                {/* Client Specific */}
+                                {activeTab === 'clients' && (
+                                    <div className="col-span-2 md:col-span-1">
+                                        <Input label="Gate Code" value={formData.gateCode} onChange={e => setFormData({...formData, gateCode: e.target.value})} placeholder="#1234" icon={<Key className="w-4 h-4" />} />
+                                    </div>
+                                )}
+                                
+                                {/* Supplier Specific */}
+                                {activeTab === 'suppliers' && (
+                                    <div className="col-span-2 md:col-span-1">
+                                        <Input label="Category" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} placeholder="e.g. Dairy" />
+                                    </div>
+                                )}
                             </div>
+
+                            {activeTab === 'suppliers' && (
+                                <div className="grid grid-cols-2 gap-4">
+                                     <Input label="Contact Person" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} placeholder="Manager Name" icon={<Contact className="w-4 h-4" />} />
+                                     <Input label="GSTIN" value={formData.gstin} onChange={e => setFormData({...formData, gstin: e.target.value})} placeholder="Tax ID" />
+                                </div>
+                            )}
                             
-                            <Input label="Service Address" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="Street, City, Zip" icon={<MapPin className="w-4 h-4" />} />
+                            <Input label={activeTab === 'clients' ? "Service Address" : "Warehouse Address"} value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="Street, City, Zip" icon={<MapPin className="w-4 h-4" />} />
                             
                             <div>
                                 <label className={`${styles.label} mb-2`}>Notes</label>
                                 <textarea 
                                     className={`w-full p-3 rounded-xl min-h-[100px] outline-none ${theme === 'glass' ? 'bg-black/20 border border-white/10 text-white' : 'bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-white'}`}
-                                    placeholder="Important client details..."
+                                    placeholder="Important details..."
                                     value={formData.notes}
                                     onChange={e => setFormData({...formData, notes: e.target.value})}
                                 />
                             </div>
 
                             <div className="pt-4 flex gap-3">
-                                <Button className="w-full" onClick={handleSave}>Save Profile</Button>
+                                <Button className={`w-full ${activeTab === 'suppliers' ? 'bg-purple-600 hover:bg-purple-700' : ''}`} onClick={handleSave}>Save Profile</Button>
                                 <Button variant="secondary" onClick={resetForm}>Cancel</Button>
                             </div>
                         </div>

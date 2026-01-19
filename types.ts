@@ -69,6 +69,17 @@ export interface Customer {
   history: Transaction[];
 }
 
+export interface Supplier {
+  id: string;
+  name: string; // Company Name
+  contactPerson?: string;
+  phone: string;
+  address?: string;
+  gstin?: string;
+  notes?: string;
+  category?: string; // e.g., 'Dairy', 'Grains'
+}
+
 export interface Expense {
   id: string;
   title: string;
