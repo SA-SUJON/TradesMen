@@ -90,7 +90,7 @@ const checkExpiryTool: FunctionDeclaration = {
 const INTRO_MESSAGE: ChatMessage = {
     id: 'intro',
     role: 'model',
-    text: 'Hello! I am your Shop Manager. I can help you manage inventory, bill items, or scan memos. How can I help?'
+    text: "Hi! It's Your Manager. What Can I Do For You?"
 };
 
 export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, setInventory, cart, setCart }) => {

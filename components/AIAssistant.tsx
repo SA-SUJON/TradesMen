@@ -4,7 +4,7 @@ import { useAI } from '../contexts/AIContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff, History, MessageSquarePlus, Trash2, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff, History, MessageSquarePlus, Trash2, ArrowLeft } from 'lucide-react';
 import { Button, Card } from './ui/BaseComponents';
 
 interface ChatInterfaceProps {
@@ -16,7 +16,8 @@ interface ChatInterfaceProps {
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal', onClose, className = '' }) => {
     const { 
         messages, sendMessage, isProcessing,
-        sessions, currentSessionId, startNewChat, loadSession, deleteSession
+        sessions, currentSessionId, startNewChat, loadSession, deleteSession,
+        aiModel
     } = useAI();
     const { theme } = useTheme();
     const styles = getThemeClasses(theme);
@@ -111,6 +112,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
         setShowHistory(false);
     };
 
+    const getModelLabel = (model: string) => {
+        if (model.includes('2.5-flash')) return 'Flash 2.5';
+        if (model.includes('3-flash')) return 'Flash 3.0';
+        if (model.includes('3-pro')) return 'Pro 3.0';
+        return 'Gemini';
+    };
+
     // Layout Logic
     let containerClasses = "";
     if (variant === 'modal') {
@@ -148,9 +156,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                          <Sparkles className={`w-5 h-5 ${styles.accentText}`} />
                     )}
                    
-                    <h3 className={`font-bold ${theme === 'glass' ? 'text-white' : ''}`}>
-                        {showHistory ? 'History' : 'Manager'}
-                    </h3>
+                    <div className="flex flex-col justify-center">
+                        <h3 className={`font-bold leading-none ${theme === 'glass' ? 'text-white' : ''}`}>
+                            {showHistory ? 'History' : 'Manager'}
+                        </h3>
+                        {!showHistory && (
+                             <div className="mt-1">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-800 uppercase tracking-wider select-none">
+                                    {getModelLabel(aiModel)}
+                                </span>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 
                 <div className="flex items-center gap-2">

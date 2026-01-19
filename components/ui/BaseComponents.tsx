@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, HTMLMotionProps } from 'framer-motion';
 import { getThemeClasses } from '../../utils/themeUtils';
@@ -21,7 +22,7 @@ export const Button: React.FC<ButtonProps> = ({ variant = 'primary', className =
   return (
     <motion.button
       whileTap={{ scale: 0.96 }}
-      className={`${baseClass} min-h-[48px] flex items-center justify-center ${className}`} // Enforce min-height for touch
+      className={`${baseClass} min-h-[48px] flex items-center justify-center ${className}`} 
       {...props as any}
     >
       {children}
@@ -36,14 +37,13 @@ interface CardProps extends HTMLMotionProps<"div">, BaseProps {
 export const Card: React.FC<CardProps> = ({ className = '', children, ...props }) => {
   const { theme } = useTheme();
   const styles = getThemeClasses(theme);
-  // Adjusted padding: p-4 on mobile, p-6 on desktop
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`${styles.card} p-4 md:p-6 ${className}`}
+      className={`${styles.card} ${className}`}
       {...props}
     >
       {children}
@@ -53,9 +53,11 @@ export const Card: React.FC<CardProps> = ({ className = '', children, ...props }
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement>, BaseProps {
   label?: string;
+  icon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
-export const Input: React.FC<InputProps> = ({ label, className = '', type="text", ...props }) => {
+export const Input: React.FC<InputProps> = ({ label, icon, rightIcon, className = '', type="text", ...props }) => {
   const { theme } = useTheme();
   const styles = getThemeClasses(theme);
   
@@ -63,23 +65,28 @@ export const Input: React.FC<InputProps> = ({ label, className = '', type="text"
   const inputMode = type === 'number' ? 'decimal' : props.inputMode;
 
   return (
-    <div className="w-full">
+    <div className={`w-full group ${className}`}>
       {label && <label className={styles.label}>{label}</label>}
-      <input 
-        type={type}
-        inputMode={inputMode}
-        className={`${styles.input} w-full min-h-[48px] ${className}`} // Enforce min-height
-        {...props} 
-      />
+      <div className={styles.inputWrapper}>
+        {icon && <span className={styles.inputIcon}>{icon}</span>}
+        <input 
+          type={type}
+          inputMode={inputMode}
+          className={styles.inputField} 
+          {...props} 
+        />
+        {rightIcon && <span className={`${styles.inputIcon} mr-0 ml-2`}>{rightIcon}</span>}
+      </div>
     </div>
   );
 };
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement>, BaseProps {
     label?: string;
+    icon?: React.ReactNode;
 }
 
-export const Select: React.FC<SelectProps> = ({ label, className = '', children, ...props }) => {
+export const Select: React.FC<SelectProps> = ({ label, icon, className = '', children, ...props }) => {
     const { theme } = useTheme();
     const styles = getThemeClasses(theme);
     const [isOpen, setIsOpen] = useState(false);
@@ -121,15 +128,16 @@ export const Select: React.FC<SelectProps> = ({ label, className = '', children,
     }
 
     return (
-        <div className="w-full relative" ref={containerRef}>
+        <div className={`w-full relative ${className}`} ref={containerRef}>
              {label && <label className={styles.label}>{label}</label>}
              
              {/* Trigger */}
              <div 
                 onClick={() => setIsOpen(!isOpen)}
-                className={`${styles.input} w-full min-h-[48px] flex items-center justify-between cursor-pointer relative ${className}`}
+                className={`${styles.inputWrapper} cursor-pointer relative !pr-10`}
              >
-                <span className={`truncate block w-full pr-6 ${!selectedOption?.value ? 'opacity-50' : ''}`}>
+                {icon && <span className={styles.inputIcon}>{icon}</span>}
+                <span className={`block w-full truncate ${styles.inputField} flex items-center ${!selectedOption?.value ? 'opacity-50' : ''}`}>
                     {selectedOption ? selectedOption.label : "Select..."}
                 </span>
                 <ChevronDown className={`w-4 h-4 transition-transform opacity-50 absolute right-3 ${isOpen ? 'rotate-180' : ''}`} />
@@ -149,12 +157,12 @@ export const Select: React.FC<SelectProps> = ({ label, className = '', children,
                             <div 
                                 key={idx}
                                 onClick={() => handleSelect(opt.value)}
-                                className={`${styles.dropdownItem} min-h-[44px] flex items-center ${String(props.value) === String(opt.value) ? styles.dropdownItemActive : ''}`}
+                                className={`${styles.dropdownItem} min-h-[44px] ${String(props.value) === String(opt.value) ? styles.dropdownItemActive : ''}`}
                             >
-                                {opt.label}
                                 {String(props.value) === String(opt.value) && (
-                                    <Check className="w-4 h-4 absolute right-3 opacity-70" />
+                                    <Check className="w-4 h-4 text-green-500 mr-2" />
                                 )}
+                                {opt.label}
                             </div>
                         ))}
                         {options.length === 0 && (
