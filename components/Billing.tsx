@@ -1,14 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Product, CartItem, Customer, Transaction, Sale, ProductHistoryEvent, BusinessProfile } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle, MapPin, Building2, Phone, ArrowRight, Grid, List, PauseCircle, PlayCircle, Clock, X } from 'lucide-react';
+import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle, MapPin, Building2, Phone, ArrowRight, Grid, List, PauseCircle, PlayCircle, Clock, X, AlertTriangle, Filter } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { speak, formatUnit, openWhatsApp, formatBillMessage } from '../utils/appUtils';
 import BarcodeScanner from './BarcodeScanner';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface BillingProps {
   inventory: Product[];
@@ -46,6 +46,9 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
   const [discount, setDiscount] = useState<number | ''>(0);
   const [showScanner, setShowScanner] = useState(false);
   
+  // POS Grid State
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  
   // Customer & Bill State
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState(sales.length + 1001);
@@ -54,29 +57,66 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
   const [parkedBills, setParkedBills] = useLocalStorage<ParkedBill[]>('tradesmen-parked-bills', []);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [showParkedList, setShowParkedList] = useState(false);
+  
+  // Payment Modal State
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [tenderedAmount, setTenderedAmount] = useState<number | ''>('');
 
-  // Quick Grid Items (Favorites)
-  const quickItems = inventory.filter(i => i.isFavorite);
+  // Extract unique categories for filter
+  const categories = useMemo(() => {
+      const cats = new Set(inventory.map(i => i.category).filter(Boolean));
+      return ['All', 'Favorites', ...Array.from(cats).sort()];
+  }, [inventory]);
+
+  // Filter items for grid
+  const gridItems = useMemo(() => {
+      if (selectedCategory === 'All') return inventory;
+      if (selectedCategory === 'Favorites') return inventory.filter(i => i.isFavorite);
+      return inventory.filter(i => i.category === selectedCategory);
+  }, [inventory, selectedCategory]);
 
   const addItem = (prodId = selectedId, quantity = qty) => {
     if(!prodId || !quantity) return;
     const product = inventory.find(p => p.id === prodId);
     if(!product) return;
 
+    // Logic: Check Stock
+    const currentStock = product.stock;
+    const itemInCart = cart.find(c => c.id === prodId);
+    const cartQty = itemInCart ? itemInCart.quantity : 0;
+    
+    if (currentStock < (cartQty + Number(quantity))) {
+        if(!window.confirm(`Low Stock Warning!\nAvailable: ${currentStock}\nAlready in Cart: ${cartQty}\nAdding: ${quantity}\n\nProceed anyway?`)) {
+            return;
+        }
+    }
+
     const baseTotal = product.sellingPrice * Number(quantity);
     const taxRate = product.gstRate || 0;
     const taxAmount = (baseTotal * taxRate) / 100;
 
-    const newItem: CartItem = {
-        ...product,
-        cartId: Date.now().toString() + Math.random(),
-        quantity: Number(quantity),
-        discount: Number(discount) || 0,
-        taxAmount: taxAmount
-    };
-
-    setCart(prev => [...prev, newItem]);
-    speak(`Added ${quantity} ${product.unit} of ${product.name}`, voiceEnabled);
+    // Logic: Merge with existing item in cart if same price/discount
+    const existingIndex = cart.findIndex(c => c.id === prodId && c.discount === Number(discount));
+    
+    if (existingIndex > -1) {
+        setCart(prev => {
+            const newCart = [...prev];
+            newCart[existingIndex].quantity += Number(quantity);
+            newCart[existingIndex].taxAmount = ((newCart[existingIndex].sellingPrice * newCart[existingIndex].quantity) * taxRate) / 100;
+            return newCart;
+        });
+        speak(`Updated ${product.name} quantity`, voiceEnabled);
+    } else {
+        const newItem: CartItem = {
+            ...product,
+            cartId: Date.now().toString() + Math.random(),
+            quantity: Number(quantity),
+            discount: Number(discount) || 0,
+            taxAmount: taxAmount
+        };
+        setCart(prev => [...prev, newItem]);
+        speak(`Added ${product.name}`, voiceEnabled);
+    }
 
     // Reset inputs
     setQty(1);
@@ -87,20 +127,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
   const handleScan = (code: string) => {
       const product = inventory.find(p => p.barcode === code || p.id === code);
       if (product) {
-          // Direct add if found
-          const baseTotal = product.sellingPrice * 1;
-          const taxRate = product.gstRate || 0;
-          const taxAmount = (baseTotal * taxRate) / 100;
-          
-          const newItem: CartItem = {
-              ...product,
-              cartId: Date.now().toString(),
-              quantity: 1,
-              discount: 0,
-              taxAmount: taxAmount
-          };
-          setCart(prev => [...prev, newItem]);
-          speak(`Added ${product.name}`, voiceEnabled);
+          addItem(product.id, 1);
       } else {
           speak("Item not found", voiceEnabled);
           alert("Item not found!");
@@ -188,11 +215,6 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
 
     const total = calculateGrandTotal();
     const totalTax = calculateTotalTax();
-    const profit = cart.reduce((acc, item) => {
-        const revenue = (item.sellingPrice * item.quantity) * (1 - item.discount/100);
-        const cost = (item.buyingPrice || 0) * item.quantity;
-        return acc + (revenue - cost);
-    }, 0);
     
     // Check Credit Limit
     if (method === 'credit' && selectedCustomerId) {
@@ -209,6 +231,14 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
         return;
     }
     
+    // Profit Calc
+    const profit = cart.reduce((acc, item) => {
+        const revenue = (item.sellingPrice * item.quantity) * (1 - item.discount/100);
+        const cost = (item.buyingPrice || 0) * item.quantity;
+        // If buying price is 0, we treat revenue as profit for now, but in reality its undefined cost
+        return acc + (revenue - cost);
+    }, 0);
+
     // 1. Create Sale Record
     const newSale: Sale = {
         id: Date.now().toString(),
@@ -264,15 +294,16 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
 
     setInvoiceNumber(prev => prev + 1);
     setCart([]);
-    alert("Invoice Saved Successfully!");
+    setShowPaymentModal(false);
+    setTenderedAmount('');
+    // Optionally trigger print here automatically
+    // window.print();
   };
 
   const getSelectedProductInfo = () => inventory.find(p => p.id === selectedId);
   const selectedProduct = getSelectedProductInfo();
-  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
 
   // Dynamic Styles for Sticky Action Bar based on Theme
-  // Returns classes for: container, label, value, iconBtn, payBtn
   const dockStyles = (() => {
       const baseIcon = "w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95";
       const basePay = "h-11 px-6 rounded-full font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-transform flex-grow justify-center";
@@ -315,33 +346,124 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
 
   return (
     <div className="space-y-6 pb-64 md:pb-0 relative">
-      {/* HIDDEN INVOICE TEMPLATE (Visible only on Print) */}
-      <div id="printable-invoice" className="hidden print:block p-8 bg-white text-black font-sans max-w-[210mm] mx-auto h-full">
-           {/* ... Print Template Content ... */}
-           <h1 className="text-3xl font-bold">{profile.name}</h1>
-           <p className="mb-4">Invoice #{invoiceNumber}</p>
-           <div className="border-t border-b border-black py-2 mb-4">
-                <div className="flex justify-between font-bold">
-                    <span>Item</span>
-                    <span>Qty</span>
-                    <span>Total</span>
-                </div>
+      {/* THERMAL PRINTER INVOICE TEMPLATE (58mm/80mm Optimized) */}
+      <div id="printable-invoice">
+           <div className="print-center print-bold" style={{ fontSize: '16px', marginBottom: '5px' }}>{profile.name}</div>
+           <div className="print-center">{profile.address}</div>
+           <div className="print-center">{profile.phone}</div>
+           <div className="print-divider"></div>
+           <div className="print-row">
+               <span>Inv:{invoiceNumber}</span>
+               <span>{new Date().toLocaleDateString()}</span>
            </div>
-           {cart.map(item => (
-               <div key={item.cartId} className="flex justify-between mb-2">
-                   <span>{item.name}</span>
-                   <span>{item.quantity} {item.unit}</span>
-                   <span>{((item.sellingPrice * item.quantity) * (1 - item.discount/100)).toFixed(2)}</span>
-               </div>
-           ))}
-           <div className="border-t border-black pt-2 mt-4 flex justify-between font-bold text-xl">
+           {selectedCustomerId && <div className="print-center">Cust: {customers.find(c => c.id === selectedCustomerId)?.name}</div>}
+           <div className="print-divider"></div>
+           <div className="print-row print-bold">
+                <span style={{flex: 2}}>Item</span>
+                <span style={{flex: 1, textAlign: 'right'}}>Qty</span>
+                <span style={{flex: 1, textAlign: 'right'}}>Val</span>
+           </div>
+           <div className="print-divider"></div>
+           {cart.map(item => {
+               const val = ((item.sellingPrice * item.quantity) * (1 - item.discount/100));
+               return (
+                   <div key={item.cartId} style={{marginBottom: '3px'}}>
+                       <div>{item.name}</div>
+                       <div className="print-row">
+                           <span style={{fontSize: '10px', paddingLeft: '5px'}}>@{item.sellingPrice}</span>
+                           <span style={{flex: 1, textAlign: 'right'}}>{item.quantity}{item.unit}</span>
+                           <span style={{flex: 1, textAlign: 'right'}}>{val.toFixed(2)}</span>
+                       </div>
+                   </div>
+               )
+           })}
+           <div className="print-divider"></div>
+           <div className="print-row print-bold" style={{ fontSize: '14px' }}>
                <span>TOTAL</span>
                <span>{calculateGrandTotal().toFixed(2)}</span>
            </div>
+           <div className="print-divider"></div>
+           <div className="print-center" style={{marginTop: '10px'}}>{profile.terms || 'Thank You!'}</div>
       </div>
 
       {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
       
+      {/* Cash Payment / Change Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-gray-800"
+            >
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-bold text-xl">Confirm Payment</h3>
+                    <button onClick={() => setShowPaymentModal(false)}><X className="w-6 h-6" /></button>
+                </div>
+
+                <div className="text-center mb-6">
+                    <div className="text-sm opacity-60 uppercase tracking-wide">Total Amount to Pay</div>
+                    <div className="text-4xl font-black text-blue-600 dark:text-blue-400 mt-1">
+                        {calculateGrandTotal().toFixed(2)}
+                    </div>
+                </div>
+
+                <div className="mb-6 space-y-4">
+                    <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl">
+                        <label className="text-xs font-bold opacity-60 uppercase block mb-2">Cash Tendered (Received)</label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">$</span>
+                            <input 
+                                type="number" 
+                                autoFocus
+                                className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-lg py-3 pl-8 text-xl font-bold outline-none focus:border-blue-500"
+                                placeholder="0.00"
+                                value={tenderedAmount}
+                                onChange={e => setTenderedAmount(e.target.valueAsNumber)}
+                            />
+                        </div>
+                        {/* Quick Cash Buttons */}
+                        <div className="flex gap-2 mt-2">
+                             {[100, 500, 1000, 2000].map(amt => (
+                                 <button 
+                                    key={amt} 
+                                    onClick={() => setTenderedAmount(amt)}
+                                    className="px-2 py-1 text-xs bg-white dark:bg-gray-800 border rounded hover:bg-gray-100"
+                                 >
+                                     +{amt}
+                                 </button>
+                             ))}
+                        </div>
+                    </div>
+
+                    {tenderedAmount && tenderedAmount >= calculateGrandTotal() && (
+                        <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 rounded-xl text-center">
+                            <div className="text-xs font-bold uppercase opacity-70">Change Due</div>
+                            <div className="text-3xl font-bold">
+                                {(Number(tenderedAmount) - calculateGrandTotal()).toFixed(2)}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <Button 
+                        onClick={() => handleCompleteOrder('credit')} 
+                        className="bg-orange-100 text-orange-700 hover:bg-orange-200 border-none"
+                    >
+                        Credit Bill
+                    </Button>
+                    <Button 
+                        onClick={() => handleCompleteOrder('cash')} 
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                        Mark Paid
+                    </Button>
+                </div>
+            </motion.div>
+        </div>
+      )}
+
       {/* Retrieve Bill Modal */}
       {showParkedList && (
           <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -401,7 +523,9 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                         {selectedProduct && (
                             <div className="text-xs space-y-1 bg-gray-50 dark:bg-white/5 p-2 rounded flex justify-between">
                                  <span className="font-bold">{selectedProduct.sellingPrice} / {selectedProduct.unit}</span>
-                                 {selectedProduct.gstRate ? <span className="text-green-600">GST {selectedProduct.gstRate}%</span> : null}
+                                 <span className={selectedProduct.stock < 10 ? 'text-red-500 font-bold' : 'text-green-600'}>
+                                     Stock: {selectedProduct.stock}
+                                 </span>
                             </div>
                         )}
                         
@@ -415,10 +539,27 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                         </Button>
                     </div>
                 ) : (
-                    // Quick Grid View (Updated Visual POS)
+                    // Quick Grid View (Visual POS)
                     <div className="space-y-4">
-                         <div className="grid grid-cols-3 gap-3 max-h-[300px] overflow-y-auto">
-                             {quickItems.length > 0 ? quickItems.map(item => (
+                        {/* Categories Filter Tabs */}
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                            {categories.map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setSelectedCategory(cat)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors border ${
+                                        selectedCategory === cat 
+                                            ? 'bg-blue-600 text-white border-blue-600' 
+                                            : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+
+                         <div className="grid grid-cols-3 gap-3 max-h-[400px] overflow-y-auto content-start">
+                             {gridItems.length > 0 ? gridItems.map(item => (
                                  <motion.button 
                                     whileTap={{ scale: 0.95 }}
                                     key={item.id}
@@ -440,11 +581,15 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                                              {item.sellingPrice}
                                          </div>
                                      </div>
+                                     {/* Stock Low Indicator */}
+                                     {item.stock < (item.lowStockThreshold || 5) && (
+                                         <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Low Stock"></div>
+                                     )}
                                  </motion.button>
                              )) : (
                                 <div className="col-span-3 text-center opacity-50 text-xs py-10 flex flex-col items-center gap-2">
                                     <Grid className="w-8 h-8 opacity-20" />
-                                    Mark items as "Favorites" in Inventory to enable Visual POS.
+                                    No items in this category.
                                 </div>
                              )}
                          </div>
@@ -560,7 +705,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                         <span className={styles.accentText}>{calculateGrandTotal().toFixed(2)}</span>
                     </div>
                     
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                          <Button variant="secondary" className="flex justify-center gap-2" onClick={handlePrint}>
                             <Printer className="w-4 h-4" /> Print
                         </Button>
@@ -573,18 +718,11 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                             <MessageCircle className="w-4 h-4" /> Share
                         </Button>
                         <Button 
-                            className="flex justify-center gap-2 bg-orange-100 hover:bg-orange-200 text-orange-700 border-none"
-                            onClick={() => handleCompleteOrder('credit')}
-                            disabled={cart.length === 0}
-                        >
-                            <CreditCard className="w-4 h-4" /> Credit
-                        </Button>
-                        <Button 
                             className="flex justify-center gap-2 bg-green-600 hover:bg-green-700 text-white" 
-                            onClick={() => handleCompleteOrder('cash')} 
+                            onClick={() => setShowPaymentModal(true)} 
                             disabled={cart.length === 0}
                         >
-                            <Banknote className="w-4 h-4" /> Pay
+                            <Banknote className="w-4 h-4" /> Checkout
                         </Button>
                     </div>
                 </div>
@@ -618,18 +756,9 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                     <Share2 className="w-5 h-5" />
                  </button>
 
-                 {/* Credit */}
+                 {/* Pay */}
                  <button 
-                    onClick={() => handleCompleteOrder('credit')}
-                    disabled={cart.length === 0}
-                    className={dockStyles.iconBtn}
-                 >
-                    <User className="w-5 h-5" />
-                 </button>
-
-                 {/* Pay Cash */}
-                 <button 
-                    onClick={() => handleCompleteOrder('cash')} 
+                    onClick={() => setShowPaymentModal(true)} 
                     disabled={cart.length === 0}
                     className={dockStyles.payBtn}
                  >

@@ -106,8 +106,12 @@
         background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
       }
 
-      /* PRINT STYLES */
+      /* THERMAL PRINTER STYLES */
       @media print {
+        @page {
+            margin: 0;
+            size: auto;
+        }
         body * {
           visibility: hidden;
         }
@@ -115,14 +119,32 @@
           visibility: visible;
         }
         #printable-invoice {
-          position: absolute;
+          position: fixed;
           left: 0;
           top: 0;
-          width: 100%;
+          width: 100%; /* For 58mm/80mm printers, browser handles width scaling usually, or use max-width */
+          max-width: 80mm; /* Constraint width for preview consistency */
           margin: 0;
-          padding: 0;
+          padding: 10px;
           background: white;
           color: black;
+          font-family: 'Courier New', Courier, monospace; /* Monospace aligns numbers better */
+          font-size: 12px;
+          line-height: 1.2;
+        }
+        .print-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .print-divider {
+            border-bottom: 1px dashed black;
+            margin: 5px 0;
+        }
+        .print-bold {
+            font-weight: bold;
+        }
+        .print-center {
+            text-align: center;
         }
         nav, header, footer, button, .no-print {
             display: none !important;
@@ -132,16 +154,16 @@
 <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
     "framer-motion": "https://esm.sh/framer-motion@^12.27.1",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
     "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
-    "html5-qrcode": "https://esm.sh/html5-qrcode@^2.3.8",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1",
     "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "html5-qrcode": "https://esm.sh/html5-qrcode@^2.3.8",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1"
   }
 }
 </script>

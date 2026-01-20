@@ -5,7 +5,7 @@ import { Card, Input, Button, Select } from './ui/BaseComponents';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PieChart, TrendingUp, DollarSign, Wallet, ArrowUpRight, ArrowDownLeft, AlertCircle, Calendar, Trash2, Plus, Bell, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { PieChart, TrendingUp, DollarSign, Wallet, ArrowUpRight, ArrowDownLeft, AlertCircle, Calendar, Trash2, Plus, Bell, MessageCircle, CheckCircle2, BarChart3 } from 'lucide-react';
 import { openWhatsApp } from '../utils/appUtils';
 
 interface FinanceProps {
@@ -33,9 +33,17 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
 
         // Totals
         const totalRevenue = monthlySales.reduce((acc, s) => acc + s.totalAmount, 0);
-        const totalProfit = monthlySales.reduce((acc, s) => acc + s.totalProfit, 0);
+        
+        // Robust Profit Calculation: If buy price missing, treat revenue as profit is misleading.
+        // We accumulate calculated profit from sale items.
+        // Note: sales[].totalProfit is stored at time of sale.
+        const totalProfit = monthlySales.reduce((acc, s) => acc + (s.totalProfit || 0), 0);
+        
         const totalCost = monthlyExpenses.reduce((acc, e) => acc + e.amount, 0);
         const netProfit = totalProfit - totalCost;
+        
+        // Average Basket Size
+        const avgSaleValue = monthlySales.length > 0 ? totalRevenue / monthlySales.length : 0;
 
         // Top Items Logic
         const itemMap = new Map<string, number>();
@@ -50,7 +58,7 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
             .slice(0, 5)
             .map(([name, qty], index) => ({ name, qty, color: ['bg-blue-500', 'bg-purple-500', 'bg-pink-500', 'bg-orange-500', 'bg-teal-500'][index] || 'bg-gray-500' }));
 
-        return { totalRevenue, totalProfit, totalCost, netProfit, topItems };
+        return { totalRevenue, totalProfit, totalCost, netProfit, topItems, avgSaleValue };
     }, [sales, expenses]);
 
     // --- EXPENSE LOGIC ---
@@ -155,9 +163,9 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                                 </div>
                             </Card>
                             <Card className="!p-4">
-                                <div className="text-sm opacity-60 mb-1">Margin</div>
+                                <div className="text-sm opacity-60 mb-1">Avg Sale Value</div>
                                 <div className="text-2xl font-bold flex items-center gap-2 text-purple-600 dark:text-purple-400">
-                                    % {dashboardData.totalRevenue ? ((dashboardData.netProfit / dashboardData.totalRevenue) * 100).toFixed(1) : 0}
+                                    <BarChart3 className="w-5 h-5" /> {dashboardData.avgSaleValue.toFixed(0)}
                                 </div>
                             </Card>
                         </div>
@@ -282,15 +290,10 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                         </div>
                     </motion.div>
                 )}
-
+                {/* Debt Tab logic remains largely same... */}
                 {subTab === 'debt' && (
-                    <motion.div
-                        key="debt"
-                         initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                        className="space-y-6"
-                    >
+                     <motion.div key="debt" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-6">
+                         {/* ... Existing debt UI ... */}
                          <Card>
                             <div className="flex justify-between items-center mb-4">
                                 <div>
@@ -305,7 +308,6 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                                 </div>
                             </div>
                          </Card>
-
                          <div className="grid grid-cols-1 gap-4">
                             {debtCustomers.map(c => (
                                 <Card key={c.id} className="!border-l-4 !border-l-orange-500">
@@ -318,34 +320,19 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                                             </div>
                                         </div>
                                         <div className="flex gap-2 w-full md:w-auto">
-                                            <Button 
-                                                variant="secondary" 
-                                                onClick={() => sendDebtReminder(c)}
-                                                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-green-50 text-green-700 hover:bg-green-100 border-none"
-                                            >
+                                            <Button variant="secondary" onClick={() => sendDebtReminder(c)} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-green-50 text-green-700 hover:bg-green-100 border-none">
                                                 <MessageCircle className="w-4 h-4" /> Remind
                                             </Button>
-                                            <Button 
-                                                onClick={() => {
-                                                    const amt = prompt(`Enter amount received from ${c.name}:`, c.debt.toString());
-                                                    if(amt) settleDebt(c.id, Number(amt));
-                                                }}
-                                                className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white"
-                                            >
+                                            <Button onClick={() => { const amt = prompt(`Enter amount received from ${c.name}:`, c.debt.toString()); if(amt) settleDebt(c.id, Number(amt)); }} className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white">
                                                 Settle
                                             </Button>
                                         </div>
                                     </div>
                                 </Card>
                             ))}
-                            {debtCustomers.length === 0 && (
-                                <div className="text-center py-12 opacity-50">
-                                    <CheckCircle2 className="w-12 h-12 mx-auto mb-2 text-green-500 opacity-50" />
-                                    No outstanding debts. Great job!
-                                </div>
-                            )}
+                            {debtCustomers.length === 0 && <div className="text-center py-12 opacity-50"><CheckCircle2 className="w-12 h-12 mx-auto mb-2 text-green-500 opacity-50" />No outstanding debts. Great job!</div>}
                          </div>
-                    </motion.div>
+                     </motion.div>
                 )}
             </AnimatePresence>
         </div>
