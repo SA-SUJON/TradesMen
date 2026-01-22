@@ -10,6 +10,30 @@ export default defineConfig({
     'process.env': {}
   },
   build: {
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
+            }
+            if (id.includes('@google/genai')) {
+              return 'genai-vendor';
+            }
+            if (id.includes('framer-motion')) {
+              return 'framer-motion-vendor';
+            }
+            if (id.includes('lucide-react')) {
+              return 'lucide-vendor';
+            }
+            if (id.includes('html5-qrcode')) {
+              return 'html5-qrcode-vendor';
+            }
+            return 'vendor';
+          }
+        }
+      }
+    }
   }
 });
