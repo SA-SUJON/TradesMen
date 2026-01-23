@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeType, BusinessProfile, TelegramConfig, AuthConfig } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus, Smartphone, Key, Moon, Code, MessageSquare, Bot, ShieldCheck } from 'lucide-react';
+import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus, Smartphone, Key, Moon, Code, MessageSquare, Bot, ShieldCheck, Globe } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAI } from '../contexts/AIContext';
 import { initGapi, handleAuth, uploadBackup, downloadBackup, getClientIdStatus } from '../utils/googleDrive';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { getBotInfo } from '../utils/telegramBot';
+import { CURRENCIES } from '../utils/currencyList';
 
 const Settings: React.FC = () => {
   const { 
@@ -17,7 +18,8 @@ const Settings: React.FC = () => {
       showQuickScan, setShowQuickScan,
       voiceEnabled, setVoiceEnabled,
       unitSystem, setUnitSystem,
-      darkMode, setDarkMode
+      darkMode, setDarkMode,
+      currencyCode, setCurrencyCode
   } = useTheme();
   
   const { 
@@ -314,6 +316,15 @@ const Settings: React.FC = () => {
       <Card>
         <h2 className={`text-xl font-bold flex items-center gap-2 mb-6 ${styles.accentText}`}><Monitor className="w-5 h-5" /> Interface</h2>
         <div className="space-y-6">
+           <div className="flex items-center justify-between"><div><div className="font-bold flex items-center gap-2"><Globe className="w-4 h-4" /> Shop Currency</div></div>
+             <div className="w-40">
+                 <Select value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)}>
+                     {CURRENCIES.map(c => (
+                         <option key={c.code} value={c.code}>{c.code} - {c.name}</option>
+                     ))}
+                 </Select>
+             </div>
+           </div>
            <div className="flex items-center justify-between"><div><div className="font-bold flex items-center gap-2"><Moon className="w-4 h-4" /> Dark Mode</div></div><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" className="sr-only peer" checked={darkMode} onChange={(e) => setDarkMode(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-4"></div></label></div>
            <div className="flex items-center justify-between"><div><div className="font-bold flex items-center gap-2"><Scale className="w-4 h-4" /> Unit System</div></div><div className={`flex rounded-lg p-1 ${theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-inner' : 'bg-gray-100 dark:bg-gray-800'}`}><button onClick={() => setUnitSystem('metric')} className={`px-3 py-1 text-xs rounded-md transition-all ${unitSystem === 'metric' ? 'bg-white shadow text-black' : 'opacity-60'}`}>Metric</button><button onClick={() => setUnitSystem('local')} className={`px-3 py-1 text-xs rounded-md transition-all ${unitSystem === 'local' ? 'bg-white shadow text-black' : 'opacity-60'}`}>Local</button></div></div>
           <div className="flex items-center justify-between"><div><div className="font-bold">Show Navigation Labels</div></div><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" className="sr-only peer" checked={showNavLabels} onChange={(e) => setShowNavLabels(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-4"></div></label></div>

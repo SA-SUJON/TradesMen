@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Product, ProductHistoryEvent } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin, History, ShoppingBag, Clock, PlusCircle, Receipt, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowUpDown, Star, Palette, Smile, Copy, CheckCircle2, AlertTriangle, Camera, UploadCloud } from 'lucide-react';
+import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin, History, ShoppingBag, Clock, PlusCircle, Receipt, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowUpDown, Star, Palette, Smile, Copy, CheckCircle2, AlertTriangle, Camera, UploadCloud, FileImage, Download } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -54,6 +54,9 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
   const [showScanner, setShowScanner] = useState(false);
   const [scanningFor, setScanningFor] = useState<'search' | 'add'>('search');
   
+  // Catalog Modal
+  const [showCatalog, setShowCatalog] = useState(false);
+
   // Sorting State
   const [sortConfig, setSortConfig] = useState<{ key: 'name' | 'stock' | 'sellingPrice'; direction: 'asc' | 'desc' }>({ 
       key: 'name', 
@@ -388,6 +391,11 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
                  </div>
                  
                  <div className="flex gap-2">
+                     {/* Catalog Button */}
+                     <Button onClick={() => setShowCatalog(true)} className="flex items-center gap-2 px-3 py-2 text-sm bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none">
+                         <FileImage className="w-4 h-4" /> <span className="hidden md:inline">Catalog</span>
+                     </Button>
+
                      {/* Shelf Audit Button */}
                      {userRole === 'admin' && (
                          <label className="flex items-center gap-2 px-3 py-2 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-lg text-sm font-bold cursor-pointer hover:bg-purple-200 transition-colors">
@@ -419,6 +427,42 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
             </div>
         </div>
       </Card>
+
+      {/* Catalog Modal */}
+      <AnimatePresence>
+          {showCatalog && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="bg-white dark:bg-gray-900 w-full max-w-4xl h-[85vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+                      <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-white/5">
+                          <div>
+                              <h3 className="font-bold text-lg flex items-center gap-2"><FileImage className="w-5 h-5 text-indigo-500" /> Digital Catalog</h3>
+                              <p className="text-xs opacity-60">Ready to share via Screenshot or PDF</p>
+                          </div>
+                          <div className="flex gap-2">
+                              <Button onClick={() => window.print()} className="bg-blue-600 text-white flex gap-2 text-xs h-8 px-3">
+                                  <Download className="w-3 h-3" /> Print / PDF
+                              </Button>
+                              <button onClick={() => setShowCatalog(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full"><X className="w-5 h-5" /></button>
+                          </div>
+                      </div>
+                      <div className="flex-grow overflow-y-auto p-6 bg-white">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4" id="printable-catalog">
+                              {inventory.filter(i => i.stock > 0).map(item => (
+                                  <div key={item.id} className="border border-gray-100 rounded-xl p-4 flex flex-col items-center text-center">
+                                      <div className="text-4xl mb-2">{item.emoji || '📦'}</div>
+                                      <div className="font-bold text-gray-900 text-sm mb-1 line-clamp-2 h-10">{item.name}</div>
+                                      <div className="text-blue-600 font-bold text-lg">{item.sellingPrice} <span className="text-xs text-gray-400 font-normal">/ {item.unit}</span></div>
+                                  </div>
+                              ))}
+                          </div>
+                          <div className="mt-8 text-center text-xs text-gray-400">
+                              Generated by TradesMen Pro
+                          </div>
+                      </div>
+                  </div>
+              </motion.div>
+          )}
+      </AnimatePresence>
 
       {/* AI Audit Results Modal */}
       <AnimatePresence>

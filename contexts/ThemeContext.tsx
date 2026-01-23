@@ -1,6 +1,8 @@
+
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { ThemeType, UnitSystem } from '../types';
+import { CURRENCIES, Currency } from '../utils/currencyList';
 
 interface ThemeContextType {
   theme: ThemeType;
@@ -15,6 +17,10 @@ interface ThemeContextType {
   setUnitSystem: (system: UnitSystem) => void;
   darkMode: boolean;
   setDarkMode: (enabled: boolean) => void;
+  // New Currency Support
+  currencyCode: string;
+  setCurrencyCode: (code: string) => void;
+  currencySymbol: string;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -32,6 +38,12 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Dark Mode State
   const [darkMode, setDarkMode] = useLocalStorage<boolean>('tradesmen-dark-mode', false);
 
+  // Currency State (Default USD)
+  const [currencyCode, setCurrencyCode] = useLocalStorage<string>('tradesmen-currency-code', 'USD');
+
+  // Derived Symbol
+  const currencySymbol = CURRENCIES.find(c => c.code === currencyCode)?.symbol || '$';
+
   // Apply Dark Mode to HTML Root
   useEffect(() => {
     if (darkMode) {
@@ -48,7 +60,9 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         showQuickScan, setShowQuickScan,
         voiceEnabled, setVoiceEnabled,
         unitSystem, setUnitSystem,
-        darkMode, setDarkMode
+        darkMode, setDarkMode,
+        currencyCode, setCurrencyCode,
+        currencySymbol
     }}>
       {children}
     </ThemeContext.Provider>

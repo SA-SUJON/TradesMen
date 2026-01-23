@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Product, CartItem, Customer, Transaction, Sale, ProductHistoryEvent, BusinessProfile } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle, MapPin, Building2, Phone, ArrowRight, Grid, List, PauseCircle, PlayCircle, Clock, X, AlertTriangle, Filter } from 'lucide-react';
+import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle, MapPin, Building2, Phone, ArrowRight, Grid, List, PauseCircle, PlayCircle, Clock, X, AlertTriangle, Filter, Gift, QrCode } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { speak, formatUnit, openWhatsApp, formatBillMessage } from '../utils/appUtils';
@@ -27,6 +27,10 @@ interface ParkedBill {
     cart: CartItem[];
     customerName?: string;
 }
+
+// Config for Loyalty
+const POINTS_PER_CURRENCY = 0.1; // Earn 1 point for every 10 currency spent
+const VALUE_PER_POINT = 1; // 1 Point = 1 Currency redemption
 
 const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCart, customers, setCustomers, sales, setSales }) => {
   const { theme, voiceEnabled, unitSystem } = useTheme();
@@ -53,6 +57,9 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState(sales.length + 1001);
 
+  // Loyalty State
+  const [redeemPoints, setRedeemPoints] = useState(false);
+
   // New Features State
   const [parkedBills, setParkedBills] = useLocalStorage<ParkedBill[]>('tradesmen-parked-bills', []);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
@@ -74,6 +81,10 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
       if (selectedCategory === 'Favorites') return inventory.filter(i => i.isFavorite);
       return inventory.filter(i => i.category === selectedCategory);
   }, [inventory, selectedCategory]);
+
+  const selectedCustomer = useMemo(() => 
+      customers.find(c => c.id === selectedCustomerId), 
+  [customers, selectedCustomerId]);
 
   const addItem = (prodId = selectedId, quantity = qty) => {
     if(!prodId || !quantity) return;
@@ -156,8 +167,16 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
       }, 0);
   }
 
+  const calculateDiscountAmount = () => {
+      if (redeemPoints && selectedCustomer?.loyaltyPoints) {
+          return selectedCustomer.loyaltyPoints * VALUE_PER_POINT;
+      }
+      return 0;
+  }
+
   const calculateGrandTotal = () => {
-      return calculateSubTotal() + calculateTotalTax();
+      const total = calculateSubTotal() + calculateTotalTax() - calculateDiscountAmount();
+      return Math.max(total, 0); // Ensure no negative bills
   }
 
   const handlePrint = () => {
@@ -235,9 +254,19 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
     const profit = cart.reduce((acc, item) => {
         const revenue = (item.sellingPrice * item.quantity) * (1 - item.discount/100);
         const cost = (item.buyingPrice || 0) * item.quantity;
-        // If buying price is 0, we treat revenue as profit for now, but in reality its undefined cost
         return acc + (revenue - cost);
     }, 0);
+
+    // Points Logic
+    let earnedPoints = 0;
+    let redeemedPoints = 0;
+    if (selectedCustomer) {
+        if (redeemPoints) {
+            redeemedPoints = selectedCustomer.loyaltyPoints || 0;
+        }
+        // Points earned on the actual cash amount paid (total)
+        earnedPoints = Math.floor(total * POINTS_PER_CURRENCY);
+    }
 
     // 1. Create Sale Record
     const newSale: Sale = {
@@ -249,7 +278,9 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
         totalProfit: profit,
         paymentMethod: method,
         items: [...cart],
-        customerId: selectedCustomerId || undefined
+        customerId: selectedCustomerId || undefined,
+        pointsEarned: earnedPoints,
+        pointsRedeemed: redeemedPoints
     };
     setSales(prev => [...prev, newSale]);
 
@@ -269,7 +300,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
         return prod;
     }));
 
-    // 3. Update Customer
+    // 3. Update Customer (Debt & Points)
     if (selectedCustomerId) {
         setCustomers(prev => {
              const customer = prev.find(c => c.id === selectedCustomerId);
@@ -281,10 +312,15 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                     summary: `Invoice #${invoiceNumber}`,
                     type: method === 'credit' ? 'credit' : 'sale'
                 };
+                
+                const currentPoints = customer.loyaltyPoints || 0;
+                const newPointsBalance = currentPoints - redeemedPoints + earnedPoints;
+
                 const updatedCustomer = {
                     ...customer,
                     history: [...customer.history, newTransaction],
-                    debt: method === 'credit' ? (customer.debt || 0) + total : (customer.debt || 0)
+                    debt: method === 'credit' ? (customer.debt || 0) + total : (customer.debt || 0),
+                    loyaltyPoints: newPointsBalance
                 };
                 return prev.map(c => c.id === selectedCustomerId ? updatedCustomer : c);
              }
@@ -295,9 +331,8 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
     setInvoiceNumber(prev => prev + 1);
     setCart([]);
     setShowPaymentModal(false);
+    setRedeemPoints(false);
     setTenderedAmount('');
-    // Optionally trigger print here automatically
-    // window.print();
   };
 
   const getSelectedProductInfo = () => inventory.find(p => p.id === selectedId);
@@ -349,8 +384,6 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
       
       {/* 
         INVOICE PREVIEW / PRINT TEMPLATE 
-        Note: We maintain 'id="printable-invoice"' for the print @media query in index.html, 
-        but use Tailwind classes to style it beautifully for the screen.
       */}
       <motion.div 
         id="printable-invoice"
@@ -415,6 +448,13 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
     
                <div className="border-b-2 border-black my-4" />
     
+               {redeemPoints && selectedCustomer?.loyaltyPoints && (
+                   <div className="flex justify-between items-center text-xs mb-1 text-green-600">
+                       <span>Points Redeemed</span>
+                       <span>-{calculateDiscountAmount().toFixed(2)}</span>
+                   </div>
+               )}
+
                <div className="flex justify-between items-center text-xl font-black">
                    <span>TOTAL</span>
                    <motion.span 
@@ -426,6 +466,13 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                       {calculateGrandTotal().toFixed(2)}
                    </motion.span>
                </div>
+               
+               {/* Loyalty Info Footer */}
+               {selectedCustomerId && (
+                   <div className="mt-2 text-center text-[10px] opacity-70">
+                       Pts Earned: {Math.floor(calculateGrandTotal() * POINTS_PER_CURRENCY)}
+                   </div>
+               )}
     
                <div className="border-b-2 border-dashed border-gray-300 my-4 opacity-50" />
     
@@ -433,9 +480,10 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                    {profile.terms || 'Thank You!'}
                </div>
                
-               {/* Barcode visual for screen only */}
-               <div className="mt-4 flex justify-center opacity-40 print:hidden">
-                    <div className="h-8 w-48 bg-current" style={{ clipPath: 'polygon(0% 0%, 5% 0%, 5% 100%, 10% 100%, 10% 0%, 15% 0%, 15% 100%, 20% 100%, 20% 0%, 25% 0%, 25% 100%, 30% 100%, 30% 0%, 40% 0%, 40% 100%, 45% 100%, 45% 0%, 50% 0%, 50% 100%, 55% 100%, 55% 0%, 65% 0%, 65% 100%, 70% 100%, 70% 0%, 80% 0%, 80% 100%, 85% 100%, 85% 0%, 90% 0%, 90% 100%, 95% 100%, 95% 0%, 100% 0%, 100% 100%, 0% 100%)' }}></div>
+               {/* Simulated Payment QR for Receipt */}
+               <div className="mt-4 flex flex-col items-center justify-center opacity-80 print:flex">
+                    <QrCode className="w-12 h-12 mb-1" />
+                    <span className="text-[10px] uppercase">Scan to Pay</span>
                </div>
 
            </motion.div>
@@ -462,6 +510,30 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                         {calculateGrandTotal().toFixed(2)}
                     </div>
                 </div>
+
+                {/* Loyalty Redemption Section */}
+                {selectedCustomer && selectedCustomer.loyaltyPoints && selectedCustomer.loyaltyPoints > 0 && (
+                    <div className="mb-6 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 rounded-xl">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <Gift className="w-5 h-5 text-purple-600" />
+                                <div>
+                                    <div className="font-bold text-sm text-purple-900 dark:text-purple-200">Use Loyalty Points</div>
+                                    <div className="text-xs opacity-70">Available: {selectedCustomer.loyaltyPoints} pts (${(selectedCustomer.loyaltyPoints * VALUE_PER_POINT).toFixed(2)})</div>
+                                </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    className="sr-only peer" 
+                                    checked={redeemPoints} 
+                                    onChange={(e) => setRedeemPoints(e.target.checked)} 
+                                />
+                                <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600`}></div>
+                            </label>
+                        </div>
+                    </div>
+                )}
 
                 <div className="mb-6 space-y-4">
                     <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl">
@@ -662,6 +734,11 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                         <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
                     ))}
                 </Select>
+                {selectedCustomer && (
+                    <div className="mt-2 text-xs flex items-center gap-2 text-purple-600 font-bold px-2 py-1 bg-purple-50 rounded">
+                        <Gift className="w-3 h-3" /> Points: {selectedCustomer.loyaltyPoints || 0}
+                    </div>
+                )}
             </Card>
         </div>
 

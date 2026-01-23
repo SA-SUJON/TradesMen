@@ -85,6 +85,7 @@ export interface Customer {
   notes?: string;     // CRM: Client Notes
   debt: number;
   creditLimit?: number; // Max debt allowed
+  loyaltyPoints?: number; // Rewards System
   history: Transaction[];
 }
 
@@ -117,6 +118,8 @@ export interface Sale {
   paymentMethod: 'cash' | 'credit' | 'upi' | 'bank';
   items: CartItem[];
   customerId?: string;
+  pointsEarned?: number;
+  pointsRedeemed?: number;
 }
 
 export interface Conversion {

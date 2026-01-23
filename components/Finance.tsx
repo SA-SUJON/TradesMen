@@ -5,7 +5,7 @@ import { Card, Input, Button, Select } from './ui/BaseComponents';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PieChart, TrendingUp, DollarSign, Wallet, ArrowUpRight, ArrowDownLeft, AlertCircle, Calendar, Trash2, Plus, Bell, MessageCircle, CheckCircle2, BarChart3 } from 'lucide-react';
+import { PieChart, TrendingUp, DollarSign, Wallet, ArrowUpRight, ArrowDownLeft, AlertCircle, Calendar, Trash2, Plus, Bell, MessageCircle, CheckCircle2, BarChart3, Clock } from 'lucide-react';
 import { openWhatsApp } from '../utils/appUtils';
 
 interface FinanceProps {
@@ -14,6 +14,98 @@ interface FinanceProps {
     setExpenses: (expenses: Expense[] | ((val: Expense[]) => Expense[])) => void;
     customers: Customer[];
     setCustomers: (customers: Customer[] | ((val: Customer[]) => Customer[])) => void;
+}
+
+// --- Reusable SVG Charts ---
+
+const LineChart: React.FC<{ data: number[], labels: string[] }> = ({ data, labels }) => {
+    if (data.length === 0) return null;
+    const max = Math.max(...data) || 1;
+    const points = data.map((d, i) => {
+        const x = (i / (data.length - 1)) * 100;
+        const y = 100 - (d / max) * 100;
+        return `${x},${y}`;
+    }).join(' ');
+
+    return (
+        <div className="w-full h-32 relative">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                {/* Gradient Fill */}
+                <defs>
+                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                    </linearGradient>
+                </defs>
+                <polyline points={`${points} 100,100 0,100`} fill="url(#chartGradient)" />
+                <polyline points={points} fill="none" stroke="#3b82f6" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                {/* Dots */}
+                {data.map((d, i) => {
+                    const x = (i / (data.length - 1)) * 100;
+                    const y = 100 - (d / max) * 100;
+                    return <circle key={i} cx={x} cy={y} r="1.5" fill="white" stroke="#3b82f6" strokeWidth="1" vectorEffect="non-scaling-stroke" />;
+                })}
+            </svg>
+            <div className="flex justify-between mt-2 text-[10px] opacity-60">
+                {labels.map((l, i) => <span key={i}>{l}</span>)}
+            </div>
+        </div>
+    );
+};
+
+const DonutChart: React.FC<{ segments: { value: number, color: string }[] }> = ({ segments }) => {
+    const total = segments.reduce((acc, s) => acc + s.value, 0);
+    let cumulative = 0;
+
+    return (
+        <div className="w-32 h-32 relative">
+            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                {segments.map((s, i) => {
+                    if(s.value === 0) return null;
+                    const percent = s.value / total;
+                    const dashArray = `${percent * 314} 314`; // 2 * PI * R (R=50 approx)
+                    const dashOffset = -cumulative * 314;
+                    cumulative += percent;
+                    return (
+                        <circle 
+                            key={i} 
+                            cx="50" cy="50" r="40" 
+                            fill="transparent" 
+                            stroke={s.color} 
+                            strokeWidth="20" 
+                            strokeDasharray={dashArray} 
+                            strokeDashoffset={dashOffset} 
+                        />
+                    );
+                })}
+                {total === 0 && <circle cx="50" cy="50" r="40" fill="transparent" stroke="#e5e7eb" strokeWidth="20" />}
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center font-bold text-xs opacity-60">
+                Total<br/>{total}
+            </div>
+        </div>
+    );
+};
+
+const BarChart: React.FC<{ data: number[], labels: string[] }> = ({ data, labels }) => {
+    const max = Math.max(...data) || 1;
+    return (
+        <div className="w-full h-32 flex items-end gap-1">
+            {data.map((d, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center group">
+                    <div 
+                        className="w-full bg-blue-500/50 dark:bg-blue-500/30 rounded-t-sm hover:bg-blue-500 transition-all relative group-hover:scale-y-105 origin-bottom" 
+                        style={{ height: `${(d / max) * 100}%` }}
+                    >
+                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            {d}
+                        </div>
+                    </div>
+                    <span className="text-[10px] opacity-50 mt-1">{labels[i]}</span>
+                </div>
+            ))}
+        </div>
+    );
 }
 
 const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, customers, setCustomers }) => {
@@ -33,32 +125,64 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
 
         // Totals
         const totalRevenue = monthlySales.reduce((acc, s) => acc + s.totalAmount, 0);
-        
-        // Robust Profit Calculation: If buy price missing, treat revenue as profit is misleading.
-        // We accumulate calculated profit from sale items.
-        // Note: sales[].totalProfit is stored at time of sale.
         const totalProfit = monthlySales.reduce((acc, s) => acc + (s.totalProfit || 0), 0);
-        
         const totalCost = monthlyExpenses.reduce((acc, e) => acc + e.amount, 0);
         const netProfit = totalProfit - totalCost;
         
+        // --- CHARTS DATA PREP ---
+        
+        // 1. Weekly Trend (Last 7 days)
+        const last7Days = Array.from({length: 7}, (_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (6 - i));
+            return d.toISOString().split('T')[0];
+        });
+        
+        const trendData = last7Days.map(dateStr => {
+            return sales
+                .filter(s => s.date.startsWith(dateStr))
+                .reduce((acc, s) => acc + s.totalAmount, 0);
+        });
+        const trendLabels = last7Days.map(d => new Date(d).toLocaleDateString(undefined, {weekday: 'short'}));
+
+        // 2. Category Pie
+        const categoryMap = new Map<string, number>();
+        monthlySales.forEach(s => {
+            s.items.forEach(item => {
+                const cat = item.category || 'General';
+                categoryMap.set(cat, (categoryMap.get(cat) || 0) + (item.sellingPrice * item.quantity));
+            });
+        });
+        const catSegments = Array.from(categoryMap.entries())
+            .sort((a,b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([label, value], i) => ({
+                label,
+                value: Math.round(value),
+                color: ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6'][i] || '#9ca3af'
+            }));
+
+        // 3. Peak Hours
+        const hourCounts = new Array(24).fill(0);
+        monthlySales.forEach(s => {
+            const h = new Date(s.date).getHours();
+            hourCounts[h]++;
+        });
+        // Group into 4-hour blocks for simpler chart: 0-4, 4-8, 8-12, 12-16, 16-20, 20-24
+        const hourBlocks = [0,0,0,0,0,0];
+        const blockLabels = ['Late', 'Early', 'Morn', 'Aftn', 'Eve', 'Night'];
+        hourCounts.forEach((count, h) => {
+            const blockIdx = Math.floor(h / 4);
+            hourBlocks[blockIdx] += count;
+        });
+
         // Average Basket Size
         const avgSaleValue = monthlySales.length > 0 ? totalRevenue / monthlySales.length : 0;
 
-        // Top Items Logic
-        const itemMap = new Map<string, number>();
-        monthlySales.forEach(sale => {
-            sale.items.forEach(item => {
-                const existing = itemMap.get(item.name) || 0;
-                itemMap.set(item.name, existing + item.quantity);
-            });
-        });
-        const topItems = Array.from(itemMap.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
-            .map(([name, qty], index) => ({ name, qty, color: ['bg-blue-500', 'bg-purple-500', 'bg-pink-500', 'bg-orange-500', 'bg-teal-500'][index] || 'bg-gray-500' }));
-
-        return { totalRevenue, totalProfit, totalCost, netProfit, topItems, avgSaleValue };
+        return { 
+            totalRevenue, totalProfit, totalCost, netProfit, avgSaleValue,
+            trendData, trendLabels, catSegments, hourBlocks, blockLabels
+        };
     }, [sales, expenses]);
 
     // --- EXPENSE LOGIC ---
@@ -115,7 +239,7 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
             {/* Navigation Tabs for Finance Section */}
             <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-xl overflow-x-auto">
                 {[
-                    { id: 'dashboard', label: 'Dashboard', icon: <TrendingUp className="w-4 h-4" /> },
+                    { id: 'dashboard', label: 'Analytics', icon: <TrendingUp className="w-4 h-4" /> },
                     { id: 'expenses', label: 'Expenses', icon: <Wallet className="w-4 h-4" /> },
                     { id: 'debt', label: 'Credit Book', icon: <AlertCircle className="w-4 h-4" /> }
                 ].map(tab => (
@@ -163,71 +287,51 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                                 </div>
                             </Card>
                             <Card className="!p-4">
-                                <div className="text-sm opacity-60 mb-1">Avg Sale Value</div>
+                                <div className="text-sm opacity-60 mb-1">Avg Ticket</div>
                                 <div className="text-2xl font-bold flex items-center gap-2 text-purple-600 dark:text-purple-400">
                                     <BarChart3 className="w-5 h-5" /> {dashboardData.avgSaleValue.toFixed(0)}
                                 </div>
                             </Card>
                         </div>
 
+                        {/* Interactive Charts */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Top Selling Items Custom Chart */}
-                            <Card className="min-h-[300px]">
-                                <h3 className="font-bold mb-6 flex items-center gap-2">
-                                    <TrendingUp className="w-5 h-5 text-blue-500" /> Best Selling Items (This Month)
+                            
+                            {/* Revenue Trend Chart */}
+                            <Card>
+                                <h3 className="font-bold mb-4 flex items-center gap-2">
+                                    <TrendingUp className="w-5 h-5 text-blue-500" /> Revenue Trend (7 Days)
                                 </h3>
-                                <div className="space-y-4">
-                                    {dashboardData.topItems.length > 0 ? (
-                                        dashboardData.topItems.map((item, i) => (
-                                            <div key={i} className="relative">
-                                                <div className="flex justify-between text-sm mb-1 font-medium z-10 relative">
-                                                    <span>{item.name}</span>
-                                                    <span>{item.qty} units</span>
-                                                </div>
-                                                <div className="h-2 w-full bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
-                                                    <motion.div 
-                                                        initial={{ width: 0 }}
-                                                        animate={{ width: `${(item.qty / dashboardData.topItems[0].qty) * 100}%` }}
-                                                        className={`h-full rounded-full ${item.color}`}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-center opacity-40 py-10">Not enough sales data</div>
-                                    )}
-                                </div>
+                                <LineChart data={dashboardData.trendData} labels={dashboardData.trendLabels} />
                             </Card>
 
-                            {/* Profit vs Expense Visual */}
-                            <Card className="min-h-[300px] flex flex-col justify-center items-center">
-                                <h3 className="font-bold mb-6 w-full text-left flex items-center gap-2">
-                                    <PieChart className="w-5 h-5 text-purple-500" /> Income Breakdown
+                            {/* Peak Hours Bar Chart */}
+                            <Card>
+                                <h3 className="font-bold mb-4 flex items-center gap-2">
+                                    <Clock className="w-5 h-5 text-orange-500" /> Peak Sales Hours
                                 </h3>
-                                <div className="relative w-48 h-48">
-                                    <svg viewBox="0 0 36 36" className="w-full h-full rotate-[-90deg]">
-                                        {/* Background Circle */}
-                                        <circle cx="18" cy="18" r="16" fill="none" className="stroke-gray-100 dark:stroke-white/5" strokeWidth="3.8" />
-                                        {/* Profit Segment */}
-                                        <circle 
-                                            cx="18" cy="18" r="16" fill="none" 
-                                            className="stroke-green-500" strokeWidth="3.8" 
-                                            strokeDasharray={`${(dashboardData.netProfit / (dashboardData.netProfit + dashboardData.totalCost)) * 100}, 100`} 
-                                        />
-                                        {/* Expense Segment (Overlay for simplicity visualization, improved for real logic usually) */}
-                                    </svg>
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-3xl font-bold">{dashboardData.totalRevenue > 0 ? Math.round((dashboardData.netProfit / dashboardData.totalRevenue) * 100) : 0}%</span>
-                                        <span className="text-xs opacity-60">Profit Margin</span>
+                                <BarChart data={dashboardData.hourBlocks} labels={dashboardData.blockLabels} />
+                            </Card>
+
+                            {/* Category Pie Chart */}
+                            <Card className="flex flex-col md:flex-row items-center gap-6">
+                                <div className="flex-1">
+                                    <h3 className="font-bold mb-2 flex items-center gap-2">
+                                        <PieChart className="w-5 h-5 text-purple-500" /> Sales by Category
+                                    </h3>
+                                    <p className="text-xs opacity-60 mb-4">Top product categories by revenue.</p>
+                                    <div className="space-y-2">
+                                        {dashboardData.catSegments.map((s, i) => (
+                                            <div key={i} className="flex items-center gap-2 text-xs">
+                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
+                                                <span className="flex-grow">{s.label}</span>
+                                                <span className="font-bold">{s.value}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                                <div className="flex gap-4 mt-6 text-sm">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full bg-green-500"></div> Profit
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full bg-gray-200 dark:bg-white/20"></div> Cost/Exp
-                                    </div>
+                                <div className="flex-shrink-0">
+                                    <DonutChart segments={dashboardData.catSegments} />
                                 </div>
                             </Card>
                         </div>
