@@ -178,7 +178,7 @@ const OnlineStore: React.FC<OnlineStoreProps> = ({ inventory, setInventory, sale
                    <div className={`px-3 py-1 rounded-full text-xs font-bold ${isSupabaseConfigured() ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                        {isSupabaseConfigured() ? 'Database Connected' : 'Database Not Connected'}
                    </div>
-                   {!isSupabaseConfigured() && <span className="text-xs opacity-60">Go to Settings > Manager to setup Supabase.</span>}
+                   {!isSupabaseConfigured() && <span className="text-xs opacity-60">Go to Settings &gt; Manager to setup Supabase.</span>}
               </div>
           </Card>
 
