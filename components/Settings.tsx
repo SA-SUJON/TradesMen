@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { ThemeType, BusinessProfile } from '../types';
+import { ThemeType, BusinessProfile, TelegramConfig } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus, Smartphone, Key, Moon, Code } from 'lucide-react';
+import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus, Smartphone, Key, Moon, Code, MessageSquare, Bot } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAI } from '../contexts/AIContext';
 import { initGapi, handleAuth, uploadBackup, downloadBackup, getClientIdStatus } from '../utils/googleDrive';
 import useLocalStorage from '../hooks/useLocalStorage';
+import { getBotInfo } from '../utils/telegramBot';
 
 const Settings: React.FC = () => {
   const { 
@@ -31,6 +32,25 @@ const Settings: React.FC = () => {
   const [supabaseUrl, setSupabaseUrl] = useLocalStorage<string>('tradesmen-supabase-url', '');
   const [supabaseKey, setSupabaseKey] = useLocalStorage<string>('tradesmen-supabase-key', '');
   const [showSqlHelp, setShowSqlHelp] = useState(false);
+
+  // Telegram Config
+  const [telegramConfig, setTelegramConfig] = useLocalStorage<TelegramConfig>('tradesmen-telegram-config', { botToken: '', chatId: '', isEnabled: false });
+  const [botName, setBotName] = useState<string | null>(null);
+  const [isCheckingBot, setIsCheckingBot] = useState(false);
+
+  const checkBot = async () => {
+      if(!telegramConfig.botToken) return;
+      setIsCheckingBot(true);
+      const info = await getBotInfo(telegramConfig.botToken);
+      setIsCheckingBot(false);
+      if(info) {
+          setBotName(`@${info.username}`);
+          alert(`Connected to ${info.first_name} (@${info.username})`);
+      } else {
+          setBotName(null);
+          alert("Invalid Bot Token");
+      }
+  };
 
   // Business Profile State
   const [profile, setProfile] = useLocalStorage<BusinessProfile>('tradesmen-business-profile', {
@@ -66,6 +86,13 @@ const Settings: React.FC = () => {
           
           const savedSync = localStorage.getItem('tradesmen-last-sync');
           if (savedSync) setLastSync(savedSync);
+
+          // Check bot name if token exists
+          if(telegramConfig.botToken && telegramConfig.isEnabled) {
+              getBotInfo(telegramConfig.botToken).then(info => {
+                  if(info) setBotName(`@${info.username}`);
+              });
+          }
       }
   }, []);
 
@@ -228,8 +255,68 @@ const Settings: React.FC = () => {
   return (
     <div className="space-y-6 pb-24">
 
-      {/* Database Connection (Supabase) - New */}
-      <Card className="border-2 border-green-500/20 shadow-lg">
+      {/* Telegram Bot Integration */}
+      <Card className="border-2 border-blue-500/20 shadow-lg">
+          <div className="flex justify-between items-start">
+             <h2 className={`text-xl font-bold flex items-center gap-2 mb-4 ${styles.accentText}`}>
+                <Bot className="w-5 h-5" /> Telegram Bot Integration
+            </h2>
+            <div className="flex items-center gap-2">
+                 <span className={`text-xs px-2 py-1 rounded-full font-bold ${telegramConfig.isEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                     {telegramConfig.isEnabled ? 'Active' : 'Disabled'}
+                 </span>
+            </div>
+          </div>
+          <p className="text-sm opacity-70 mb-4">
+              Manage your shop remotely via Telegram. Your web app must be open on this device to process messages.
+          </p>
+          
+          <div className="space-y-4">
+               <div className="flex gap-2">
+                  <div className="flex-grow">
+                      <Input 
+                        label="Bot Token" 
+                        type="password"
+                        placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+                        value={telegramConfig.botToken}
+                        onChange={(e) => setTelegramConfig({...telegramConfig, botToken: e.target.value})}
+                      />
+                  </div>
+                  <Button onClick={checkBot} className="mb-0.5 mt-auto" variant="secondary">
+                     {isCheckingBot ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Check'}
+                  </Button>
+              </div>
+              
+              {botName && <div className="text-xs text-green-600 font-bold ml-1">Connected to: {botName}</div>}
+
+              <Input 
+                label="Allowed Chat ID" 
+                placeholder="e.g. 123456789"
+                value={telegramConfig.chatId}
+                onChange={(e) => setTelegramConfig({...telegramConfig, chatId: e.target.value})}
+              />
+              <p className="text-xs opacity-50 ml-1">
+                  Only messages from this Chat ID will be processed. You can get your ID from @userinfobot.
+              </p>
+
+              <div className="flex items-center gap-2 pt-2">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={telegramConfig.isEnabled} 
+                          onChange={(e) => setTelegramConfig({...telegramConfig, isEnabled: e.target.checked})} 
+                          disabled={!telegramConfig.botToken}
+                      />
+                      <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
+                  </label>
+                  <span className="text-sm font-medium">Enable Bot Polling</span>
+              </div>
+          </div>
+      </Card>
+
+      {/* Database Connection (Supabase) */}
+      <Card>
           <h2 className={`text-xl font-bold flex items-center gap-2 mb-4 ${styles.accentText}`}>
              <Database className="w-5 h-5" /> Real Database (Supabase)
           </h2>

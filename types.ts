@@ -13,6 +13,12 @@ export interface BusinessProfile {
   terms?: string;
 }
 
+export interface TelegramConfig {
+  botToken: string;
+  chatId: string; // The allowed user ID
+  isEnabled: boolean;
+}
+
 export interface ProductHistoryEvent {
   id: string;
   date: string;

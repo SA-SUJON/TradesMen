@@ -12,6 +12,7 @@ import MagicBar from './components/MagicBar';
 import QuickScan from './components/QuickScan';
 import InsightCards from './components/InsightCards';
 import { Card, Button } from './components/ui/BaseComponents';
+import TelegramManager from './components/TelegramManager'; // Imported
 
 // Components
 import Calculator from './components/Calculator';
@@ -307,7 +308,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
   return (
       <div className={`flex h-[100dvh] w-full overflow-hidden transition-colors duration-500 ${styles.appBg} font-sans bg-dot-pattern`}>
-          
+          <TelegramManager /> 
+
           {/* LAYOUT CONTAINER */}
           <div className="flex w-full h-full flex-col md:flex-row md:p-4 md:gap-4 overflow-hidden relative">
 

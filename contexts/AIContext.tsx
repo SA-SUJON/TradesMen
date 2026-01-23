@@ -6,7 +6,7 @@ import useLocalStorage from '../hooks/useLocalStorage';
 
 interface AIContextType {
   messages: ChatMessage[];
-  sendMessage: (text: string, image?: string) => Promise<void>;
+  sendMessage: (text: string, image?: string) => Promise<string>; // Updated return type
   filterInventory: (query: string, currentInventory: Product[]) => Promise<string[]>;
   isProcessing: boolean;
   isOpen: boolean;
@@ -146,7 +146,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
       if (currentSessionId === id) setCurrentSessionId(null);
   };
 
-  const sendMessage = async (text: string, image?: string) => {
+  const sendMessage = async (text: string, image?: string): Promise<string> => {
     // 1. Prepare User Message
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -357,6 +357,8 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
           }
           return s;
       }));
+      
+      return finalResponse || "Done.";
 
     } catch (error: any) {
       console.error("AI Error:", error);
@@ -377,6 +379,8 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
           }
           return s;
       }));
+      
+      return `Error: ${errorMsg}`;
     } finally {
       setIsProcessing(false);
     }
