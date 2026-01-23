@@ -1,20 +1,44 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# <p align="center">🚀 Business Management Tool</p>
 
-# Run and deploy your AI Studio app
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&height=300&color=gradient&text=TradesMen&animation=blinking&desc=Utility%20For%20Your%20Business&descSize=30&descAlign=50&descAlignY=65" />
+</p>
 
-This contains everything you need to run your app locally.
+## 📊 Overview
+This is a professional **Business Management Tool** designed for efficiency and streamlined workflows. Think of it as the mission control for your business operations.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1mQzRbzJR_nOTcU68Eq2OYobC7qemCYad
+---
 
-## Run Locally
+## ⚡ Tech Stack & Special Thanks
+A huge shoutout to the engines powering this development:
 
-**Prerequisites:**  Node.js
+<p align="left">
+  <img src="https://img.shields.io/badge/Google%20AI%20Studio-4285F4?style=for-the-badge&logo=google&logoColor=white" />
+  <img src="https://img.shields.io/badge/Google%20Gemini-8E75FF?style=for-the-badge&logo=googlegemini&logoColor=white" />
+  <img src="https://img.shields.io/badge/Google%20AntiGravity-EA4335?style=for-the-badge&logo=googlecloud&logoColor=white" />
+</p>
 
+> [!IMPORTANT]
+> This project was refined and optimized with the assistance of cutting-edge AI.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+---
+
+## 🛠 Features
+* **Intuitive Dashboard:** Manage everything in one place.
+* **AI Integration:** Leverages Google's latest models.
+* **Custom Setups:** Flexible architecture for developers.
+
+---
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=venom&height=500&color=gradient&text=SA%20SUJON&animation=twinkling" />
+</p>
+
+<p align="center">
+  <b>SIGNING OUT.</b><br>
+  <i>"The mission is complete."</i>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/STATUS-GOODBYE-red?style=plastic&logo=marvel" />
+</p>
