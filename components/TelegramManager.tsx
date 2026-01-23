@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useAI } from '../contexts/AIContext';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { TelegramConfig } from '../types';
@@ -11,7 +11,10 @@ const POLL_INTERVAL = 3000;
 const TelegramManager: React.FC = () => {
     const { sendMessage } = useAI();
     const [config] = useLocalStorage<TelegramConfig>('tradesmen-telegram-config', { botToken: '', chatId: '', isEnabled: false });
-    const [lastUpdateId, setLastUpdateId] = useState<number>(0);
+    
+    // Persist offset to avoid re-replying to old messages on reload
+    const [lastUpdateId, setLastUpdateId] = useLocalStorage<number>('tradesmen-telegram-offset', 0);
+    
     const intervalRef = useRef<any>(null);
     const isProcessingRef = useRef(false);
     
@@ -22,7 +25,8 @@ const TelegramManager: React.FC = () => {
     }, [sendMessage]);
 
     useEffect(() => {
-        if (!config.isEnabled || !config.botToken) {
+        // Basic validation before starting poll
+        if (!config.isEnabled || !config.botToken || config.botToken.length < 10) {
             if (intervalRef.current) clearInterval(intervalRef.current);
             return;
         }
@@ -39,12 +43,14 @@ const TelegramManager: React.FC = () => {
                     let maxId = lastUpdateId;
                     
                     for (const update of updates) {
+                        // Track max ID seen
                         maxId = Math.max(maxId, update.update_id);
 
                         const senderId = String(update.message?.chat.id);
+                        const allowedId = config.chatId?.trim();
                         
-                        // Strict ID Check
-                        if (config.chatId && senderId !== config.chatId) {
+                        // Strict ID Check (only if configured)
+                        if (allowedId && senderId !== allowedId) {
                             console.warn(`Blocking message from unauthorized chat ID: ${senderId}`);
                             continue; 
                         }
@@ -52,18 +58,21 @@ const TelegramManager: React.FC = () => {
                         if (update.message && update.message.text) {
                             const userText = update.message.text;
                             
-                            // Send "Typing..." status to Telegram
-                            sendChatAction(config.botToken, senderId, 'typing');
+                            // Send "Typing..." status to Telegram so user knows it's working
+                            await sendChatAction(config.botToken, senderId, 'typing');
 
+                            // Tag message source for clarity in Manager History
+                            const contextText = `[Telegram Message]: ${userText}`;
+                            
                             // Send to AI Manager using the ref
-                            // We prepend [Telegram] to the prompt internally if needed, but for history sake, raw text is fine.
-                            // The AI Context will add it to the history.
-                            const aiResponse = await sendMessageRef.current(userText);
+                            // This will automatically add it to the AI Context history/sessions
+                            const aiResponse = await sendMessageRef.current(contextText);
                             
                             // Send Response back to Telegram
                             await sendTelegramMessage(config.botToken, senderId, aiResponse);
                         }
                     }
+                    // Update offset only after successful processing
                     setLastUpdateId(maxId);
                 }
             } catch (e) {
@@ -79,7 +88,7 @@ const TelegramManager: React.FC = () => {
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [config, lastUpdateId]); // removed sendMessage from dependency
+    }, [config, lastUpdateId, setLastUpdateId]);
 
     return null; // Invisible Background Component
 };
