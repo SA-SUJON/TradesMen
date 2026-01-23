@@ -26,7 +26,6 @@ A huge shoutout to the engines powering this development:
 ## 🛠 Features
 * **Intuitive Dashboard:** Manage everything in one place.
 * **AI Integration:** Leverages Google's latest models.
-* **Custom Setups:** Flexible architecture for developers.
 
 ---
 
