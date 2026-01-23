@@ -13,6 +13,12 @@ export interface BusinessProfile {
   terms?: string;
 }
 
+export interface AuthConfig {
+  adminPin: string;
+  staffPin: string;
+  enableLock: boolean;
+}
+
 export interface TelegramConfig {
   botToken: string;
   chatId: string; // The allowed user ID
@@ -22,7 +28,7 @@ export interface TelegramConfig {
 export interface ProductHistoryEvent {
   id: string;
   date: string;
-  type: 'create' | 'update' | 'sale' | 'stock';
+  type: 'create' | 'update' | 'sale' | 'stock' | 'order';
   description: string;
 }
 
@@ -32,6 +38,7 @@ export interface Product {
   buyingPrice: number;
   sellingPrice: number;
   stock: number;
+  onOrder?: number; // Quantity currently ordered from supplier
   unit: string; // 'kg', 'g', 'pc'
   expiryDate?: string; // YYYY-MM-DD
   // Extended Metadata

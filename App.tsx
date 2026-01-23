@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Product, CartItem, Customer, Sale, Expense, Supplier } from './types';
+import React, { useState, useEffect } from 'react';
+import { Product, CartItem, Customer, Sale, Expense, Supplier, AuthConfig } from './types';
 import { getThemeClasses } from './utils/themeUtils';
 import useLocalStorage from './hooks/useLocalStorage';
 import { useSupabaseSync } from './hooks/useSupabaseSync';
@@ -13,6 +13,7 @@ import QuickScan from './components/QuickScan';
 import InsightCards from './components/InsightCards';
 import { Card, Button } from './components/ui/BaseComponents';
 import TelegramManager from './components/TelegramManager'; 
+import LockScreen from './components/LockScreen';
 
 // Components
 import Calculator from './components/Calculator';
@@ -23,7 +24,7 @@ import Conversions from './components/Conversions';
 import Settings from './components/Settings';
 import Finance from './components/Finance';
 import Reports from './components/Reports';
-import OnlineStore from './components/OnlineStore'; // Imported
+import OnlineStore from './components/OnlineStore';
 
 // Icons
 import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users, PieChart, FileBarChart, Grid, ChevronLeft, Store, Menu, LogOut, LayoutDashboard, ChevronRight, Database, Cloud, Globe } from 'lucide-react';
@@ -45,6 +46,7 @@ interface MainLayoutProps {
   expenses: Expense[];
   setExpenses: SetValue<Expense[]>;
   syncStatus?: string;
+  userRole: 'admin' | 'staff';
 }
 
 // --- Animated Branding Components ---
@@ -171,7 +173,7 @@ const getIconVariant = (id: string) => {
 };
 
 const MainLayout: React.FC<MainLayoutProps> = ({ 
-  inventory, setInventory, cart, setCart, customers, setCustomers, suppliers, setSuppliers, sales, setSales, expenses, setExpenses, syncStatus
+  inventory, setInventory, cart, setCart, customers, setCustomers, suppliers, setSuppliers, sales, setSales, expenses, setExpenses, syncStatus, userRole
 }) => {
   const { theme, showNavLabels, showQuickScan } = useTheme();
   const { showAssistant } = useAI(); 
@@ -191,12 +193,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   const MOBILE_MENU_TAB = { id: 'menu', label: 'More', icon: <Menu className="w-5 h-5" /> };
 
   // Secondary Tools (Available in More Menu on Mobile, Sidebar on Desktop)
+  // FILTERED BY ROLE
   const MENU_TOOLS = [
-    { id: 'finance', label: 'Business Biz', icon: <PieChart className="w-5 h-5" />, desc: 'Expenses & Profits' },
-    { id: 'reports', label: 'Reports', icon: <FileBarChart className="w-5 h-5" />, desc: 'GSTR-1 & Stock' },
+    ...(userRole === 'admin' ? [{ id: 'finance', label: 'Business Biz', icon: <PieChart className="w-5 h-5" />, desc: 'Expenses & Profits' }] : []),
+    ...(userRole === 'admin' ? [{ id: 'reports', label: 'Reports', icon: <FileBarChart className="w-5 h-5" />, desc: 'GSTR-1 & Stock' }] : []),
     { id: 'calculator', label: 'Calculator', icon: <CalcIcon className="w-5 h-5" />, desc: 'Price & Weight' },
     { id: 'conversions', label: 'Tools', icon: <ArrowRightLeft className="w-5 h-5" />, desc: 'Converter & Bulk' },
   ];
+
+  // Restrict Manager Tab for Staff
+  if (userRole === 'staff') {
+      const idx = MAIN_TABS.findIndex(t => t.id === 'manager');
+      if(idx > -1) MAIN_TABS.splice(idx, 1);
+  }
 
   const handleMagicActivate = () => {
     setActiveTab('manager');
@@ -213,10 +222,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   const isMenuContext = ['menu', 'finance', 'calculator', 'conversions', 'reports', 'settings'].includes(activeTab);
   const isSettings = activeTab === 'settings';
   const isManagerTab = activeTab === 'manager';
-  const isAssistantVisible = showAssistant && !isManagerTab && !isSettings;
+  const isAssistantVisible = showAssistant && !isManagerTab && !isSettings && userRole === 'admin';
   const isQuickScanVisible = showQuickScan && !isSettings && !isManagerTab;
   const isQuickScanPrimary = !isAssistantVisible;
-  const isMagicBarVisible = !isManagerTab && !isSettings && !isMenuContext;
+  const isMagicBarVisible = !isManagerTab && !isSettings && !isMenuContext && activeTab !== 'online_store' && userRole === 'admin';
 
   const getHeaderTitle = () => {
       if (activeTab === 'settings') return 'Settings';
@@ -255,7 +264,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                   <h3 className="font-bold text-blue-800 dark:text-blue-300 text-sm">TradesMen Pro</h3>
                   <div className="flex items-center gap-2 mt-1">
                       <p className="text-xs text-blue-600 dark:text-blue-400 opacity-80">
-                          Version 1.2.0
+                          Version 1.2.0 • {userRole === 'admin' ? 'Admin' : 'Staff'} Mode
                       </p>
                       {syncStatus && syncStatus !== 'idle' && (
                           <div className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 ${
@@ -357,9 +366,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                   </div>
 
                   {/* Sidebar Footer */}
-                  <div className="p-4 mt-2 flex-shrink-0">
-                      <SidebarItem id="settings" label="Settings" icon={<SettingsIcon className={`w-5 h-5`} />} />
-                  </div>
+                  {userRole === 'admin' && (
+                      <div className="p-4 mt-2 flex-shrink-0">
+                          <SidebarItem id="settings" label="Settings" icon={<SettingsIcon className={`w-5 h-5`} />} />
+                      </div>
+                  )}
               </aside>
 
 
@@ -428,16 +439,18 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                     <Cloud className="w-3 h-3" />
                                 </div>
                             )}
-                            <motion.button 
-                                onClick={() => setActiveTab('settings')}
-                                className={`md:hidden p-3 rounded-full transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/10`}
-                                title="Settings"
-                                variants={getIconVariant('settings')}
-                                initial="initial"
-                                animate={activeTab === 'settings' ? 'active' : 'initial'}
-                            >
-                                <SettingsIcon className={`w-6 h-6`} />
-                            </motion.button>
+                            {userRole === 'admin' && (
+                                <motion.button 
+                                    onClick={() => setActiveTab('settings')}
+                                    className={`md:hidden p-3 rounded-full transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/10`}
+                                    title="Settings"
+                                    variants={getIconVariant('settings')}
+                                    initial="initial"
+                                    animate={activeTab === 'settings' ? 'active' : 'initial'}
+                                >
+                                    <SettingsIcon className={`w-6 h-6`} />
+                                </motion.button>
+                            )}
                         </div>
                     </div>
 
@@ -459,7 +472,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                 transition={{ duration: 0.2, ease: "easeOut" }}
                                 className="h-full w-full"
                             >
-                                {activeTab === 'inventory' && <Inventory inventory={inventory} setInventory={setInventory} />}
+                                {activeTab === 'inventory' && <Inventory inventory={inventory} setInventory={setInventory} userRole={userRole} />}
                                 {activeTab === 'billing' && (
                                     <Billing 
                                         inventory={inventory}
@@ -477,7 +490,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                         setSales={setSales} 
                                     />
                                 )}
-                                {activeTab === 'finance' && (
+                                {activeTab === 'finance' && userRole === 'admin' && (
                                     <Finance 
                                         sales={sales} 
                                         expenses={expenses} setExpenses={setExpenses}
@@ -492,11 +505,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                 )}
                                 
                                 {activeTab === 'menu' && <MenuGrid />}
-                                {activeTab === 'reports' && <Reports sales={sales} inventory={inventory} expenses={expenses} />}
+                                {activeTab === 'reports' && userRole === 'admin' && <Reports sales={sales} inventory={inventory} expenses={expenses} />}
                                 {activeTab === 'calculator' && <Calculator inventory={inventory} />}
                                 {activeTab === 'conversions' && <Conversions />}
-                                {activeTab === 'settings' && <Settings />}
-                                {activeTab === 'manager' && (
+                                {activeTab === 'settings' && userRole === 'admin' && <Settings />}
+                                {activeTab === 'manager' && userRole === 'admin' && (
                                     <div className="flex flex-col h-full gap-4 pb-0 md:pb-6">
                                         <div className="flex-shrink-0 z-10">
                                             <InsightCards inventory={inventory} />
@@ -580,6 +593,11 @@ const AppDataWrapper: React.FC = () => {
   const [suppliers, setSuppliers] = useLocalStorage<Supplier[]>('tradesmen-suppliers', []);
   const [sales, setSales] = useLocalStorage<Sale[]>('tradesmen-sales', []);
   const [expenses, setExpenses] = useLocalStorage<Expense[]>('tradesmen-expenses', []);
+  
+  // Auth State
+  const [authConfig] = useLocalStorage<AuthConfig>('tradesmen-auth-config', { adminPin: '1234', staffPin: '0000', enableLock: false });
+  const [isLocked, setIsLocked] = useState(authConfig.enableLock);
+  const [userRole, setUserRole] = useState<'admin' | 'staff'>('admin');
 
   // Sync Hooks for each major data category
   const invStatus = useSupabaseSync('inventory', inventory, setInventory);
@@ -594,32 +612,48 @@ const AppDataWrapper: React.FC = () => {
                         : [invStatus, custStatus, suppStatus, salesStatus, expStatus].every(s => s === 'synced' || s === 'idle') ? 'synced' 
                         : 'idle';
 
+  const handleUnlock = (role: 'admin' | 'staff') => {
+      setUserRole(role);
+      setIsLocked(false);
+  };
+
   return (
-    <AIProvider 
-        inventory={inventory} 
-        setInventory={setInventory} 
-        cart={cart} 
-        setCart={setCart}
-        sales={sales}
-        expenses={expenses}
-        customers={customers}
-    >
-      <MainLayout 
-        inventory={inventory} 
-        setInventory={setInventory}
-        cart={cart}
-        setCart={setCart}
-        customers={customers}
-        setCustomers={setCustomers}
-        suppliers={suppliers}
-        setSuppliers={setSuppliers}
-        sales={sales}
-        setSales={setSales}
-        expenses={expenses}
-        setExpenses={setExpenses}
-        syncStatus={aggregateStatus}
+    <>
+      <LockScreen 
+          isLocked={isLocked} 
+          config={authConfig} 
+          onUnlock={handleUnlock} 
       />
-    </AIProvider>
+      
+      {!isLocked && (
+          <AIProvider 
+              inventory={inventory} 
+              setInventory={setInventory} 
+              cart={cart} 
+              setCart={setCart}
+              sales={sales}
+              expenses={expenses}
+              customers={customers}
+          >
+            <MainLayout 
+              inventory={inventory} 
+              setInventory={setInventory}
+              cart={cart}
+              setCart={setCart}
+              customers={customers}
+              setCustomers={setCustomers}
+              suppliers={suppliers}
+              setSuppliers={setSuppliers}
+              sales={sales}
+              setSales={setSales}
+              expenses={expenses}
+              setExpenses={setExpenses}
+              syncStatus={aggregateStatus}
+              userRole={userRole}
+            />
+          </AIProvider>
+      )}
+    </>
   );
 };
 
