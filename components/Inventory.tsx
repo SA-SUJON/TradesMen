@@ -42,7 +42,7 @@ const POS_COLORS = [
 ];
 
 const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole = 'admin' }) => {
-  const { theme, unitSystem, voiceEnabled } = useTheme();
+  const { theme, unitSystem, voiceEnabled, currencySymbol } = useTheme();
   const styles = getThemeClasses(theme);
   const { filterInventory, apiKey, aiModel } = useAI();
 
@@ -337,7 +337,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
                     <div className="opacity-50 text-xs mb-1">META</div>
                     {/* Hide Buying Price for Staff */}
                     {userRole === 'admin' && (
-                        <div className="flex items-center gap-2"><Tag className="w-3 h-3" /> Buy: {item.buyingPrice}</div>
+                        <div className="flex items-center gap-2"><Tag className="w-3 h-3" /> Buy: {currencySymbol}{item.buyingPrice}</div>
                     )}
                     <div className="flex items-center gap-2 mt-1"><ScanBarcode className="w-3 h-3" /> {item.barcode || '-'}</div>
                 </div>
@@ -451,7 +451,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
                                   <div key={item.id} className="border border-gray-100 rounded-xl p-4 flex flex-col items-center text-center">
                                       <div className="text-4xl mb-2">{item.emoji || '📦'}</div>
                                       <div className="font-bold text-gray-900 text-sm mb-1 line-clamp-2 h-10">{item.name}</div>
-                                      <div className="text-blue-600 font-bold text-lg">{item.sellingPrice} <span className="text-xs text-gray-400 font-normal">/ {item.unit}</span></div>
+                                      <div className="text-blue-600 font-bold text-lg">{currencySymbol}{item.sellingPrice} <span className="text-xs text-gray-400 font-normal">/ {item.unit}</span></div>
                                   </div>
                               ))}
                           </div>
@@ -555,7 +555,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
                                 </div>
                             ) : (
                                 <div className="text-right">
-                                    <div className="text-xl font-bold">{item.sellingPrice}</div>
+                                    <div className="text-xl font-bold">{currencySymbol}{item.sellingPrice}</div>
                                     <div className={`text-xs ${item.stock < (item.lowStockThreshold || 10) ? 'text-orange-500 font-bold' : 'opacity-60'}`}>
                                         Stock: {formatUnit(item.stock, item.unit, unitSystem)}
                                     </div>

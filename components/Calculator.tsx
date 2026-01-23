@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Product } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
@@ -12,7 +13,7 @@ interface CalculatorProps {
 }
 
 const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
-  const { theme, voiceEnabled, setVoiceEnabled, unitSystem, setUnitSystem } = useTheme();
+  const { theme, voiceEnabled, setVoiceEnabled, unitSystem, setUnitSystem, currencySymbol } = useTheme();
   const styles = getThemeClasses(theme);
   
   const [mode, setMode] = useState<'price_to_weight' | 'weight_to_price' | 'value_compare'>('weight_to_price');
@@ -182,7 +183,7 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
                         >
                             <option value="">-- Select Item --</option>
                             {inventory.map(p => (
-                                <option key={p.id} value={p.id}>{p.name} (@ {p.sellingPrice}/kg)</option>
+                                <option key={p.id} value={p.id}>{p.name} (@ {currencySymbol}{p.sellingPrice}/kg)</option>
                             ))}
                         </Select>
                      </div>
@@ -230,7 +231,7 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
                      <div className={`mt-4 p-4 rounded-lg text-center ${theme === 'glass' ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800'}`}>
                         <span className="text-sm opacity-70">Final Price</span>
                         <div className={`text-3xl font-bold ${styles.accentText}`}>
-                            {Number(targetPrice).toLocaleString()}
+                            {currencySymbol}{Number(targetPrice).toLocaleString()}
                         </div>
                         {/* Speak Button for Result */}
                         <div className="mt-2">
@@ -347,7 +348,7 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
                         <div className="flex justify-between items-center mb-1">
                             <span className="font-medium opacity-80">Net Profit/Loss per KG</span>
                             <span className={`font-bold text-lg ${profit.value >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                {profit.value >= 0 ? '+' : ''}{profit.value.toFixed(2)}
+                                {profit.value >= 0 ? '+' : ''}{currencySymbol}{profit.value.toFixed(2)}
                             </span>
                         </div>
                         <div className="flex justify-between items-center">

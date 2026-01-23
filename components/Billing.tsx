@@ -33,7 +33,7 @@ const POINTS_PER_CURRENCY = 0.1; // Earn 1 point for every 10 currency spent
 const VALUE_PER_POINT = 1; // 1 Point = 1 Currency redemption
 
 const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCart, customers, setCustomers, sales, setSales }) => {
-  const { theme, voiceEnabled, unitSystem } = useTheme();
+  const { theme, voiceEnabled, unitSystem, currencySymbol } = useTheme();
   const styles = getThemeClasses(theme);
   
   // Business Profile for Invoice Printing
@@ -436,7 +436,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                            <div key={item.cartId} className="flex flex-col">
                                <div className="font-bold text-xs">{item.name}</div>
                                <div className="flex justify-between text-xs opacity-80">
-                                   <span className="flex-[2] pl-2 opacity-70">@{item.sellingPrice}</span>
+                                   <span className="flex-[2] pl-2 opacity-70">@{currencySymbol}{item.sellingPrice}</span>
                                    <span className="flex-1 text-right">{item.quantity}{item.unit}</span>
                                    <span className="flex-1 text-right font-medium">{val.toFixed(2)}</span>
                                </div>
@@ -451,7 +451,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                {redeemPoints && selectedCustomer?.loyaltyPoints && (
                    <div className="flex justify-between items-center text-xs mb-1 text-green-600">
                        <span>Points Redeemed</span>
-                       <span>-{calculateDiscountAmount().toFixed(2)}</span>
+                       <span>-{currencySymbol}{calculateDiscountAmount().toFixed(2)}</span>
                    </div>
                )}
 
@@ -463,7 +463,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                       animate={{ scale: 1, color: '#000000' }}
                       transition={{ duration: 0.3 }}
                    >
-                      {calculateGrandTotal().toFixed(2)}
+                      <span>{currencySymbol}</span>{calculateGrandTotal().toFixed(2)}
                    </motion.span>
                </div>
                
@@ -507,7 +507,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                 <div className="text-center mb-6">
                     <div className="text-sm opacity-60 uppercase tracking-wide">Total Amount to Pay</div>
                     <div className="text-4xl font-black text-blue-600 dark:text-blue-400 mt-1">
-                        {calculateGrandTotal().toFixed(2)}
+                        <span className="text-2xl align-top">{currencySymbol}</span>{calculateGrandTotal().toFixed(2)}
                     </div>
                 </div>
 
@@ -519,7 +519,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                                 <Gift className="w-5 h-5 text-purple-600" />
                                 <div>
                                     <div className="font-bold text-sm text-purple-900 dark:text-purple-200">Use Loyalty Points</div>
-                                    <div className="text-xs opacity-70">Available: {selectedCustomer.loyaltyPoints} pts (${(selectedCustomer.loyaltyPoints * VALUE_PER_POINT).toFixed(2)})</div>
+                                    <div className="text-xs opacity-70">Available: {selectedCustomer.loyaltyPoints} pts ({currencySymbol}{(selectedCustomer.loyaltyPoints * VALUE_PER_POINT).toFixed(2)})</div>
                                 </div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
@@ -539,7 +539,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                     <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl">
                         <label className="text-xs font-bold opacity-60 uppercase block mb-2">Cash Tendered (Received)</label>
                         <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">$</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">{currencySymbol}</span>
                             <input 
                                 type="number" 
                                 autoFocus
@@ -649,7 +649,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
 
                         {selectedProduct && (
                             <div className="text-xs space-y-1 bg-gray-50 dark:bg-white/5 p-2 rounded flex justify-between">
-                                 <span className="font-bold">{selectedProduct.sellingPrice} / {selectedProduct.unit}</span>
+                                 <span className="font-bold">{currencySymbol}{selectedProduct.sellingPrice} / {selectedProduct.unit}</span>
                                  <span className={selectedProduct.stock < 10 ? 'text-red-500 font-bold' : 'text-green-600'}>
                                      Stock: {selectedProduct.stock}
                                  </span>
@@ -705,7 +705,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                                              {item.name}
                                          </div>
                                          <div className="text-[10px] font-bold opacity-70 text-black dark:text-white">
-                                             {item.sellingPrice}
+                                             {currencySymbol}{item.sellingPrice}
                                          </div>
                                      </div>
                                      {/* Stock Low Indicator */}
@@ -834,7 +834,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                 <div className="hidden md:block mt-6 pt-6 border-t border-gray-200 dark:border-white/10 space-y-4">
                     <div className="flex justify-between items-center text-xl font-bold border-t border-dashed border-gray-300 dark:border-gray-700 pt-2">
                         <span>Grand Total</span>
-                        <span className={styles.accentText}>{calculateGrandTotal().toFixed(2)}</span>
+                        <span className={styles.accentText}>{currencySymbol}{calculateGrandTotal().toFixed(2)}</span>
                     </div>
                     
                     <div className="grid grid-cols-3 gap-4">
@@ -873,7 +873,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                     Total ({cart.length})
                  </span>
                  <span className={`text-xl font-black leading-none ${dockStyles.value}`}>
-                    {calculateGrandTotal().toFixed(0)}<span className="text-sm opacity-70">.{calculateGrandTotal().toFixed(2).split('.')[1]}</span>
+                    <span className="text-sm align-top mr-0.5">{currencySymbol}</span>{calculateGrandTotal().toFixed(0)}<span className="text-sm opacity-70">.{calculateGrandTotal().toFixed(2).split('.')[1]}</span>
                  </span>
              </div>
 

@@ -109,7 +109,7 @@ const BarChart: React.FC<{ data: number[], labels: string[] }> = ({ data, labels
 }
 
 const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, customers, setCustomers }) => {
-    const { theme } = useTheme();
+    const { theme, currencySymbol } = useTheme();
     const styles = getThemeClasses(theme);
     const [subTab, setSubTab] = useState<'dashboard' | 'expenses' | 'debt'>('dashboard');
 
@@ -205,7 +205,7 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
     const debtCustomers = useMemo(() => customers.filter(c => c.debt > 0), [customers]);
     
     const sendDebtReminder = (customer: Customer) => {
-        const msg = `Hello ${customer.name}, your total outstanding balance at our shop is ${customer.debt.toFixed(2)}. Please pay at your earliest convenience. Thank you!`;
+        const msg = `Hello ${customer.name}, your total outstanding balance at our shop is ${currencySymbol}${customer.debt.toFixed(2)}. Please pay at your earliest convenience. Thank you!`;
         openWhatsApp(customer.phone, msg);
     };
 
@@ -271,25 +271,25 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                             <Card className="!p-4">
                                 <div className="text-sm opacity-60 mb-1">Monthly Revenue</div>
                                 <div className="text-2xl font-bold flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                                    <DollarSign className="w-5 h-5" /> {dashboardData.totalRevenue.toLocaleString()}
+                                    <DollarSign className="w-5 h-5" /> {currencySymbol} {dashboardData.totalRevenue.toLocaleString()}
                                 </div>
                             </Card>
                             <Card className="!p-4">
                                 <div className="text-sm opacity-60 mb-1">Monthly Expenses</div>
                                 <div className="text-2xl font-bold flex items-center gap-2 text-red-500 dark:text-red-400">
-                                    <ArrowDownLeft className="w-5 h-5" /> {dashboardData.totalCost.toLocaleString()}
+                                    <ArrowDownLeft className="w-5 h-5" /> {currencySymbol} {dashboardData.totalCost.toLocaleString()}
                                 </div>
                             </Card>
                             <Card className="!p-4 bg-gradient-to-br from-green-500 to-emerald-600 text-white border-none">
                                 <div className="text-sm opacity-80 mb-1 text-white">Net Profit</div>
                                 <div className="text-2xl font-bold flex items-center gap-2">
-                                    <ArrowUpRight className="w-5 h-5" /> {dashboardData.netProfit.toLocaleString()}
+                                    <ArrowUpRight className="w-5 h-5" /> {currencySymbol} {dashboardData.netProfit.toLocaleString()}
                                 </div>
                             </Card>
                             <Card className="!p-4">
                                 <div className="text-sm opacity-60 mb-1">Avg Ticket</div>
                                 <div className="text-2xl font-bold flex items-center gap-2 text-purple-600 dark:text-purple-400">
-                                    <BarChart3 className="w-5 h-5" /> {dashboardData.avgSaleValue.toFixed(0)}
+                                    <BarChart3 className="w-5 h-5" /> {currencySymbol} {dashboardData.avgSaleValue.toFixed(0)}
                                 </div>
                             </Card>
                         </div>
@@ -378,7 +378,7 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <span className="font-bold text-red-500">- {exp.amount.toFixed(2)}</span>
+                                        <span className="font-bold text-red-500">- {currencySymbol}{exp.amount.toFixed(2)}</span>
                                         <button 
                                             type="button"
                                             onClick={(e) => { e.stopPropagation(); deleteExpense(exp.id); }}
@@ -407,7 +407,7 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                                 <div className="text-right">
                                     <div className="text-xs opacity-60">Total Receivables</div>
                                     <div className="text-2xl font-bold text-orange-500">
-                                        {debtCustomers.reduce((acc, c) => acc + c.debt, 0).toFixed(2)}
+                                        {currencySymbol}{debtCustomers.reduce((acc, c) => acc + c.debt, 0).toFixed(2)}
                                     </div>
                                 </div>
                             </div>
@@ -420,7 +420,7 @@ const Finance: React.FC<FinanceProps> = ({ sales, expenses, setExpenses, custome
                                             <div className="font-bold text-lg">{c.name}</div>
                                             <div className="text-sm opacity-60">{c.phone || 'No Phone'}</div>
                                             <div className="mt-2 text-xs font-mono bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 px-2 py-1 rounded inline-block">
-                                                Due: {c.debt.toFixed(2)}
+                                                Due: {currencySymbol}{c.debt.toFixed(2)}
                                             </div>
                                         </div>
                                         <div className="flex gap-2 w-full md:w-auto">
