@@ -12,7 +12,7 @@ import MagicBar from './components/MagicBar';
 import QuickScan from './components/QuickScan';
 import InsightCards from './components/InsightCards';
 import { Card, Button } from './components/ui/BaseComponents';
-import TelegramManager from './components/TelegramManager'; // Imported
+import TelegramManager from './components/TelegramManager'; 
 
 // Components
 import Calculator from './components/Calculator';
@@ -23,9 +23,10 @@ import Conversions from './components/Conversions';
 import Settings from './components/Settings';
 import Finance from './components/Finance';
 import Reports from './components/Reports';
+import OnlineStore from './components/OnlineStore'; // Imported
 
 // Icons
-import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users, PieChart, FileBarChart, Grid, ChevronLeft, Store, Menu, LogOut, LayoutDashboard, ChevronRight, Database, Cloud } from 'lucide-react';
+import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users, PieChart, FileBarChart, Grid, ChevronLeft, Store, Menu, LogOut, LayoutDashboard, ChevronRight, Database, Cloud, Globe } from 'lucide-react';
 
 // Type for state setters to match useLocalStorage signature
 type SetValue<T> = (value: T | ((val: T) => T)) => void;
@@ -136,6 +137,12 @@ const getIconVariant = (id: string) => {
                 initial: { scale: 1 },
                 hover: { scale: 1.1 }
             };
+        case 'online_store':
+             return {
+                active: { rotate: 360, transition: { duration: 2, repeat: Infinity, ease: "linear" } },
+                initial: { rotate: 0 },
+                hover: { rotate: 180 }
+            };
         case 'manager':
              return {
                 active: { rotate: 360, scale: [1, 1.1, 1], transition: { rotate: { duration: 4, repeat: Infinity, ease: "linear" }, scale: { duration: 2, repeat: Infinity } } },
@@ -176,6 +183,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     { id: 'inventory', label: 'Items', icon: <Package className="w-5 h-5" /> },
     { id: 'billing', label: 'Bill', icon: <ShoppingCart className="w-5 h-5" /> },
     { id: 'customers', label: 'Parties', icon: <Users className="w-5 h-5" /> },
+    { id: 'online_store', label: 'Online', icon: <Globe className="w-5 h-5" /> }, // New Tab
     { id: 'manager', label: 'Manager', icon: <Sparkles className="w-5 h-5" /> },
   ];
   
@@ -459,6 +467,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                         cart={cart} setCart={setCart} 
                                         customers={customers} setCustomers={setCustomers}
                                         sales={sales} setSales={setSales}
+                                    />
+                                )}
+                                {activeTab === 'online_store' && (
+                                    <OnlineStore 
+                                        inventory={inventory} 
+                                        setInventory={setInventory} 
+                                        sales={sales} 
+                                        setSales={setSales} 
                                     />
                                 )}
                                 {activeTab === 'finance' && (

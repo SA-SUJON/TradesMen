@@ -133,3 +133,26 @@ export interface ChatSession {
   date: string; // ISO string
   messages: ChatMessage[];
 }
+
+// New Interface for External Website Orders
+export interface OnlineOrderItem {
+  productName: string;
+  quantity: number;
+  price: number;
+  unit: string;
+}
+
+export interface OnlineOrder {
+  id: string;
+  orderNumber: string; // e.g. WEB-1001
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  items: OnlineOrderItem[];
+  totalAmount: number;
+  paymentMethod: 'cod' | 'prepaid';
+  paymentStatus: 'pending' | 'paid';
+  status: 'new' | 'accepted' | 'rejected' | 'delivered';
+  date: string;
+  platform?: string; // e.g., 'Shopify', 'WooCommerce', 'Custom'
+}
