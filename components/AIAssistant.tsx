@@ -4,7 +4,7 @@ import { useAI } from '../contexts/AIContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff, History, MessageSquarePlus, Trash2, ArrowLeft, Wand2, Lightbulb } from 'lucide-react';
+import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff, History, MessageSquarePlus, Trash2, ArrowLeft, Wand2, Lightbulb, Bot } from 'lucide-react';
 import { Button, Card } from './ui/BaseComponents';
 
 // --- Helper: Simple Markdown Renderer ---
@@ -48,6 +48,20 @@ const SimpleMarkdown: React.FC<{ text: string }> = ({ text }) => {
         </div>
     );
 }
+
+// --- Helper: Date Formatting ---
+const formatHistoryDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+    
+    if (isToday) return new Intl.DateTimeFormat('default', { hour: 'numeric', minute: 'numeric' }).format(date);
+    if (isYesterday) return 'Yesterday';
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
 
 // --- Helper: Suggestion Chips ---
 const SuggestionChips: React.FC<{ onSelect: (text: string) => void }> = ({ onSelect }) => {
@@ -105,12 +119,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     }, [messages, showHistory]);
 
     // --- PROACTIVE BRIEFING ---
-    // If the chat session is new (only has the system intro) and hasn't been engaged,
-    // trigger a "Morning Briefing" automatically.
     useEffect(() => {
         const hasUserMessages = messages.some(m => m.role === 'user');
         if (!hasUserMessages && messages.length <= 1 && !isProcessing) {
-             // We use a timeout to let the UI mount properly
              const timer = setTimeout(() => {
                  sendMessage("Generate a daily briefing summarizing sales trends, low stock warnings, and opportunities for profit.");
              }, 800);
@@ -201,6 +212,27 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
         return 'Gemini';
     };
 
+    // Styles for history items based on theme
+    const getHistoryItemClasses = (isActive: boolean) => {
+        const base = "p-3 rounded-xl cursor-pointer transition-all group relative flex flex-col gap-1 border ";
+        
+        if (isActive) {
+            switch(theme) {
+                case 'glass': return base + "bg-blue-500/20 border-blue-500/30 text-blue-800 dark:text-blue-100 backdrop-blur-sm";
+                case 'neumorphism': return base + "shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff] dark:shadow-[inset_2px_2px_5px_#1f2330,inset_-2px_-2px_5px_#33374a] bg-[#E0E5EC] dark:bg-[#292d3e] border-transparent text-blue-600 font-bold";
+                case 'fluent': return base + "bg-white border-l-4 border-l-blue-600 border-y-gray-200 border-r-gray-200 dark:bg-gray-800 dark:border-gray-700 shadow-sm";
+                default: return base + "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-100";
+            }
+        } else {
+            switch(theme) {
+                case 'glass': return base + "hover:bg-white/10 border-transparent hover:border-white/20 text-slate-700 dark:text-gray-300";
+                case 'neumorphism': return base + "hover:shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] dark:hover:shadow-[4px_4px_8px_#1f2330,-4px_-4px_8px_#33374a] border-transparent bg-transparent";
+                case 'fluent': return base + "hover:bg-gray-50 dark:hover:bg-gray-800 border-transparent";
+                default: return base + "hover:bg-gray-100 dark:hover:bg-gray-800 border-transparent text-gray-600 dark:text-gray-400";
+            }
+        }
+    };
+
     // Layout Logic
     let containerClasses = "";
     if (variant === 'modal') {
@@ -255,13 +287,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                 </div>
                 
                 <div className="flex items-center gap-2">
-                    <button 
-                        onClick={handleNewChat}
-                        className={`p-1.5 rounded-full ${theme === 'glass' ? 'hover:bg-black/5 dark:hover:bg-white/10' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
-                        title="New Chat"
-                    >
-                        <MessageSquarePlus className="w-5 h-5" />
-                    </button>
                     {!isPageDesktop && (
                         <button 
                             onClick={() => setShowHistory(!showHistory)}
@@ -285,37 +310,74 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                 {(showHistory || isPageDesktop) && (
                     <div className={`${
                         isPageDesktop 
-                            ? 'w-1/3 border-r border-gray-100 dark:border-white/10 flex flex-col' 
-                            : 'absolute inset-0 z-20 bg-white dark:bg-gray-900 flex flex-col'
-                    } ${!showHistory && !isPageDesktop ? 'hidden' : ''}`}>
-                         <div className="flex-grow overflow-y-auto p-2 space-y-2">
+                            ? `w-80 flex-shrink-0 border-r ${theme === 'glass' ? 'border-white/10 bg-white/30 dark:bg-black/20' : 'border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-black/20'}` 
+                            : 'absolute inset-0 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col'
+                    } ${!showHistory && !isPageDesktop ? 'hidden' : ''} transition-all duration-300`}>
+                        
+                        {/* Mobile Overlay Header */}
+                        {!isPageDesktop && (
+                            <div className="p-4 border-b border-gray-100 dark:border-white/10 flex justify-between items-center bg-transparent">
+                                <h3 className="font-bold text-lg flex items-center gap-2">
+                                    <History className="w-5 h-5 text-blue-500" /> Recent Chats
+                                </h3>
+                                <button onClick={() => setShowHistory(false)} className="p-2 bg-gray-100 dark:bg-white/10 rounded-full">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* New Chat Button */}
+                        <div className="p-3">
+                             <button 
+                                onClick={handleNewChat}
+                                className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm ${
+                                    theme === 'material' ? 'bg-[#E8DEF8] text-[#1D192B]' : 
+                                    theme === 'neumorphism' ? 'shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] dark:shadow-[4px_4px_8px_#1f2330,-4px_-4px_8px_#33374a] bg-[#E0E5EC] dark:bg-[#292d3e]' : 
+                                    'bg-blue-600 text-white hover:bg-blue-700'
+                                }`}
+                             >
+                                <MessageSquarePlus className="w-4 h-4" /> New Conversation
+                             </button>
+                        </div>
+
+                         <div className="flex-grow overflow-y-auto p-3 space-y-2 custom-scrollbar">
+                            <div className="text-xs font-bold opacity-40 uppercase tracking-widest px-2 mb-2">Previous Sessions</div>
                             {sessions.length > 0 ? (
                                 sessions.map(session => (
                                     <div 
                                         key={session.id}
                                         onClick={() => handleSelectSession(session.id)}
-                                        className={`p-3 rounded-xl cursor-pointer transition-all group relative ${
-                                            currentSessionId === session.id 
-                                                ? (theme === 'glass' ? 'bg-black/5 dark:bg-white/10' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-900') 
-                                                : (theme === 'glass' ? 'hover:bg-black/5 dark:hover:bg-white/5' : 'hover:bg-gray-50 dark:hover:bg-white/5')
-                                        }`}
+                                        className={getHistoryItemClasses(currentSessionId === session.id)}
                                     >
-                                        <div className="font-bold text-sm truncate pr-6">{session.title || 'New Chat'}</div>
-                                        <div className="text-xs opacity-60 truncate">{session.lastMessage}</div>
-                                        <div className="text-[10px] opacity-40 mt-1">{new Date(session.date).toLocaleDateString()}</div>
+                                        <div className="flex justify-between items-start w-full">
+                                            <div className="font-bold text-sm truncate flex-grow pr-2">
+                                                {session.title || 'Untitled Chat'}
+                                            </div>
+                                            <div className="text-[10px] opacity-50 whitespace-nowrap mt-0.5 font-medium">
+                                                {formatHistoryDate(session.date)}
+                                            </div>
+                                        </div>
                                         
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); deleteSession(session.id); }}
-                                            className="absolute right-2 top-3 opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-opacity"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex justify-between items-end">
+                                            <div className="text-xs opacity-60 truncate flex-grow pr-4">
+                                                {session.lastMessage}
+                                            </div>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); deleteSession(session.id); }}
+                                                className={`p-1.5 rounded-lg transition-colors z-10 ${theme === 'neumorphism' ? 'text-red-500' : 'hover:bg-red-100 text-gray-400 hover:text-red-600 dark:hover:bg-red-900/30'}`}
+                                                title="Delete Chat"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))
                             ) : (
-                                <div className="text-center opacity-50 py-10 text-sm">
-                                    <History className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                                    No chat history.
+                                <div className="flex flex-col items-center justify-center py-12 opacity-40 gap-3">
+                                    <div className="p-4 rounded-full bg-gray-100 dark:bg-white/5">
+                                        <History className="w-6 h-6" />
+                                    </div>
+                                    <div className="text-sm">No history yet</div>
                                 </div>
                             )}
                          </div>
