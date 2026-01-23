@@ -13,6 +13,7 @@ import QuickScan from './components/QuickScan';
 import InsightCards from './components/InsightCards';
 import { Card, Button } from './components/ui/BaseComponents';
 import TelegramManager from './components/TelegramManager'; // Imported
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // Components
 import Calculator from './components/Calculator';
@@ -610,7 +611,8 @@ const AppDataWrapper: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ThemeProvider>
-      <AppDataWrapper /> 
+      <AppDataWrapper />
+      <SpeedInsights />
     </ThemeProvider>
   );
 };
