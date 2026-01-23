@@ -346,45 +346,100 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
 
   return (
     <div className="space-y-6 pb-64 md:pb-0 relative">
-      {/* THERMAL PRINTER INVOICE TEMPLATE (58mm/80mm Optimized) */}
-      <div id="printable-invoice">
-           <div className="print-center print-bold" style={{ fontSize: '16px', marginBottom: '5px' }}>{profile.name}</div>
-           <div className="print-center">{profile.address}</div>
-           <div className="print-center">{profile.phone}</div>
-           <div className="print-divider"></div>
-           <div className="print-row">
-               <span>Inv:{invoiceNumber}</span>
-               <span>{new Date().toLocaleDateString()}</span>
-           </div>
-           {selectedCustomerId && <div className="print-center">Cust: {customers.find(c => c.id === selectedCustomerId)?.name}</div>}
-           <div className="print-divider"></div>
-           <div className="print-row print-bold">
-                <span style={{flex: 2}}>Item</span>
-                <span style={{flex: 1, textAlign: 'right'}}>Qty</span>
-                <span style={{flex: 1, textAlign: 'right'}}>Val</span>
-           </div>
-           <div className="print-divider"></div>
-           {cart.map(item => {
-               const val = ((item.sellingPrice * item.quantity) * (1 - item.discount/100));
-               return (
-                   <div key={item.cartId} style={{marginBottom: '3px'}}>
-                       <div>{item.name}</div>
-                       <div className="print-row">
-                           <span style={{fontSize: '10px', paddingLeft: '5px'}}>@{item.sellingPrice}</span>
-                           <span style={{flex: 1, textAlign: 'right'}}>{item.quantity}{item.unit}</span>
-                           <span style={{flex: 1, textAlign: 'right'}}>{val.toFixed(2)}</span>
-                       </div>
-                   </div>
-               )
-           })}
-           <div className="print-divider"></div>
-           <div className="print-row print-bold" style={{ fontSize: '14px' }}>
-               <span>TOTAL</span>
-               <span>{calculateGrandTotal().toFixed(2)}</span>
-           </div>
-           <div className="print-divider"></div>
-           <div className="print-center" style={{marginTop: '10px'}}>{profile.terms || 'Thank You!'}</div>
-      </div>
+      
+      {/* 
+        INVOICE PREVIEW / PRINT TEMPLATE 
+        Note: We maintain 'id="printable-invoice"' for the print @media query in index.html, 
+        but use Tailwind classes to style it beautifully for the screen.
+      */}
+      <motion.div 
+        id="printable-invoice"
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="mx-auto max-w-[320px] md:max-w-[380px] bg-white text-black p-6 shadow-2xl my-6 relative overflow-hidden font-mono text-sm leading-relaxed select-none"
+        style={{ borderRadius: '12px' }} // Smooth rounded corners for screen
+      >
+           {/* Decorative Top Gradient for Screen Only */}
+           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 print:hidden" />
+           
+           {/* Floating Animation Wrapper for visual flair */}
+           <motion.div
+              animate={{ y: [0, -4, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+           >
+               <div className="text-center mb-6">
+                   <div className="font-black text-xl tracking-widest uppercase mb-1">{profile.name}</div>
+                   <div className="text-xs opacity-70">{profile.address}</div>
+                   <div className="text-xs opacity-70">{profile.phone}</div>
+               </div>
+    
+               <div className="border-b-2 border-dashed border-gray-300 my-4 opacity-50" />
+    
+               <div className="flex justify-between text-xs opacity-80 mb-1">
+                   <span>Inv: <span className="font-bold text-black">{invoiceNumber}</span></span>
+                   <span>{new Date().toLocaleDateString()}</span>
+               </div>
+               {selectedCustomerId && (
+                    <div className="text-center text-xs font-bold my-2 bg-gray-100 py-1 rounded">
+                        Cust: {customers.find(c => c.id === selectedCustomerId)?.name}
+                    </div>
+               )}
+    
+               <div className="border-b-2 border-dashed border-gray-300 my-4 opacity-50" />
+    
+               {/* Headers */}
+               <div className="flex justify-between font-bold text-xs uppercase tracking-wide mb-2">
+                    <span className="flex-[2]">Item</span>
+                    <span className="flex-1 text-right">Qty</span>
+                    <span className="flex-1 text-right">Val</span>
+               </div>
+    
+               {/* Items */}
+               <div className="space-y-2">
+                   {cart.map(item => {
+                       const val = ((item.sellingPrice * item.quantity) * (1 - item.discount/100));
+                       return (
+                           <div key={item.cartId} className="flex flex-col">
+                               <div className="font-bold text-xs">{item.name}</div>
+                               <div className="flex justify-between text-xs opacity-80">
+                                   <span className="flex-[2] pl-2 opacity-70">@{item.sellingPrice}</span>
+                                   <span className="flex-1 text-right">{item.quantity}{item.unit}</span>
+                                   <span className="flex-1 text-right font-medium">{val.toFixed(2)}</span>
+                               </div>
+                           </div>
+                       )
+                   })}
+                   {cart.length === 0 && <div className="text-center opacity-30 italic py-4">Cart is empty</div>}
+               </div>
+    
+               <div className="border-b-2 border-black my-4" />
+    
+               <div className="flex justify-between items-center text-xl font-black">
+                   <span>TOTAL</span>
+                   <motion.span 
+                      key={calculateGrandTotal()}
+                      initial={{ scale: 1.2, color: '#2563eb' }}
+                      animate={{ scale: 1, color: '#000000' }}
+                      transition={{ duration: 0.3 }}
+                   >
+                      {calculateGrandTotal().toFixed(2)}
+                   </motion.span>
+               </div>
+    
+               <div className="border-b-2 border-dashed border-gray-300 my-4 opacity-50" />
+    
+               <div className="text-center text-[10px] opacity-60 italic mt-4">
+                   {profile.terms || 'Thank You!'}
+               </div>
+               
+               {/* Barcode visual for screen only */}
+               <div className="mt-4 flex justify-center opacity-40 print:hidden">
+                    <div className="h-8 w-48 bg-current" style={{ clipPath: 'polygon(0% 0%, 5% 0%, 5% 100%, 10% 100%, 10% 0%, 15% 0%, 15% 100%, 20% 100%, 20% 0%, 25% 0%, 25% 100%, 30% 100%, 30% 0%, 40% 0%, 40% 100%, 45% 100%, 45% 0%, 50% 0%, 50% 100%, 55% 100%, 55% 0%, 65% 0%, 65% 100%, 70% 100%, 70% 0%, 80% 0%, 80% 100%, 85% 100%, 85% 0%, 90% 0%, 90% 100%, 95% 100%, 95% 0%, 100% 0%, 100% 100%, 0% 100%)' }}></div>
+               </div>
+
+           </motion.div>
+      </motion.div>
 
       {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
       
