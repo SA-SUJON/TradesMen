@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Product, CartItem, Customer, Transaction, Sale, ProductHistoryEvent, BusinessProfile } from '../types';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle, MapPin, Building2, Phone, ArrowRight, Grid, List, PauseCircle, PlayCircle, Clock, X, AlertTriangle, Filter, Gift, QrCode } from 'lucide-react';
+import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle, MapPin, Building2, Phone, ArrowRight, Grid, List, PauseCircle, PlayCircle, Clock, X, AlertTriangle, Filter, Gift, QrCode, Wallet, Globe, Smartphone } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { speak, formatUnit, openWhatsApp, formatBillMessage } from '../utils/appUtils';
@@ -31,6 +31,20 @@ interface ParkedBill {
 // Config for Loyalty
 const POINTS_PER_CURRENCY = 0.1; // Earn 1 point for every 10 currency spent
 const VALUE_PER_POINT = 1; // 1 Point = 1 Currency redemption
+
+// Payment Methods Config
+const PAYMENT_METHODS = [
+    { id: 'cash', label: 'Cash', icon: <Banknote className="w-5 h-5" />, color: 'text-green-600 bg-green-50' },
+    { id: 'card', label: 'Card', icon: <CreditCard className="w-5 h-5" />, color: 'text-blue-600 bg-blue-50' },
+    { id: 'bank', label: 'Bank Transfer', icon: <Building2 className="w-5 h-5" />, color: 'text-purple-600 bg-purple-50' },
+    { id: 'stripe', label: 'Stripe', icon: <span className="font-bold text-lg">S</span>, color: 'text-[#635BFF] bg-[#635BFF]/10' },
+    { id: 'paypal', label: 'PayPal', icon: <span className="font-bold text-lg">P</span>, color: 'text-[#003087] bg-[#003087]/10' },
+    { id: 'apple_pay', label: 'Apple Pay', icon: <Smartphone className="w-5 h-5" />, color: 'text-black bg-gray-100' },
+    { id: 'google_pay', label: 'G-Pay', icon: <Globe className="w-5 h-5" />, color: 'text-blue-500 bg-blue-50' },
+    { id: 'upi', label: 'UPI / QR', icon: <QrCode className="w-5 h-5" />, color: 'text-orange-600 bg-orange-50' },
+] as const;
+
+type PaymentMethodType = typeof PAYMENT_METHODS[number]['id'] | 'credit';
 
 const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCart, customers, setCustomers, sales, setSales }) => {
   const { theme, voiceEnabled, unitSystem, currencySymbol } = useTheme();
@@ -68,6 +82,8 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
   // Payment Modal State
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [tenderedAmount, setTenderedAmount] = useState<number | ''>('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType>('cash');
+  const [paymentRef, setPaymentRef] = useState(''); // Transaction ID for non-cash
 
   // Extract unique categories for filter
   const categories = useMemo(() => {
@@ -229,11 +245,12 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
       speak("Bill retrieved", voiceEnabled);
   };
 
-  const handleCompleteOrder = (method: 'cash' | 'credit') => {
+  const handleCompleteOrder = () => {
     if (cart.length === 0) return;
 
     const total = calculateGrandTotal();
     const totalTax = calculateTotalTax();
+    const method = selectedPaymentMethod;
     
     // Check Credit Limit
     if (method === 'credit' && selectedCustomerId) {
@@ -277,6 +294,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
         totalTax: totalTax,
         totalProfit: profit,
         paymentMethod: method,
+        paymentReference: paymentRef,
         items: [...cart],
         customerId: selectedCustomerId || undefined,
         pointsEarned: earnedPoints,
@@ -309,7 +327,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                     id: Date.now().toString(),
                     date: new Date().toISOString(),
                     amount: total,
-                    summary: `Invoice #${invoiceNumber}`,
+                    summary: `Invoice #${invoiceNumber} (${method})`,
                     type: method === 'credit' ? 'credit' : 'sale'
                 };
                 
@@ -333,6 +351,8 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
     setShowPaymentModal(false);
     setRedeemPoints(false);
     setTenderedAmount('');
+    setPaymentRef('');
+    setSelectedPaymentMethod('cash');
   };
 
   const getSelectedProductInfo = () => inventory.find(p => p.id === selectedId);
@@ -491,100 +511,172 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
 
       {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
       
-      {/* Cash Payment / Change Modal */}
+      {/* Payment Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
             <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-gray-800"
+                className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-gray-200 dark:border-gray-800 max-h-[90vh] flex flex-col"
             >
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="font-bold text-xl">Confirm Payment</h3>
-                    <button onClick={() => setShowPaymentModal(false)}><X className="w-6 h-6" /></button>
+                <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                    <div>
+                        <h3 className="font-bold text-xl">Payment Gateway</h3>
+                        <p className="text-xs opacity-50">Select method to complete transaction</p>
+                    </div>
+                    <button onClick={() => setShowPaymentModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full"><X className="w-5 h-5" /></button>
                 </div>
 
-                <div className="text-center mb-6">
-                    <div className="text-sm opacity-60 uppercase tracking-wide">Total Amount to Pay</div>
+                <div className="text-center mb-6 flex-shrink-0 bg-blue-50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                    <div className="text-xs opacity-60 uppercase tracking-wide font-bold">Total Due</div>
                     <div className="text-4xl font-black text-blue-600 dark:text-blue-400 mt-1">
-                        <span className="text-2xl align-top">{currencySymbol}</span>{calculateGrandTotal().toFixed(2)}
+                        <span className="text-2xl align-top mr-1">{currencySymbol}</span>{calculateGrandTotal().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                 </div>
 
-                {/* Loyalty Redemption Section */}
-                {selectedCustomer && selectedCustomer.loyaltyPoints && selectedCustomer.loyaltyPoints > 0 && (
-                    <div className="mb-6 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 rounded-xl">
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <Gift className="w-5 h-5 text-purple-600" />
-                                <div>
-                                    <div className="font-bold text-sm text-purple-900 dark:text-purple-200">Use Loyalty Points</div>
-                                    <div className="text-xs opacity-70">Available: {selectedCustomer.loyaltyPoints} pts ({currencySymbol}{(selectedCustomer.loyaltyPoints * VALUE_PER_POINT).toFixed(2)})</div>
-                                </div>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input 
-                                    type="checkbox" 
-                                    className="sr-only peer" 
-                                    checked={redeemPoints} 
-                                    onChange={(e) => setRedeemPoints(e.target.checked)} 
-                                />
-                                <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600`}></div>
-                            </label>
-                        </div>
+                {/* Method Selection Grid */}
+                <div className="mb-6 flex-grow overflow-y-auto min-h-[120px] custom-scrollbar px-1">
+                    <div className="text-xs font-bold opacity-50 uppercase mb-3 ml-1">Select Payment Method</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {PAYMENT_METHODS.map(method => (
+                            <button
+                                key={method.id}
+                                onClick={() => setSelectedPaymentMethod(method.id)}
+                                className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
+                                    selectedPaymentMethod === method.id 
+                                        ? `${method.color} border-current shadow-md scale-105` 
+                                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 opacity-80 hover:opacity-100'
+                                }`}
+                            >
+                                <div className="mb-2">{method.icon}</div>
+                                <span className="text-[10px] font-bold">{method.label}</span>
+                            </button>
+                        ))}
                     </div>
-                )}
-
-                <div className="mb-6 space-y-4">
-                    <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl">
-                        <label className="text-xs font-bold opacity-60 uppercase block mb-2">Cash Tendered (Received)</label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">{currencySymbol}</span>
-                            <input 
-                                type="number" 
-                                autoFocus
-                                className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-lg py-3 pl-8 text-xl font-bold outline-none focus:border-blue-500"
-                                placeholder="0.00"
-                                value={tenderedAmount}
-                                onChange={e => setTenderedAmount(e.target.valueAsNumber)}
-                            />
-                        </div>
-                        {/* Quick Cash Buttons */}
-                        <div className="flex gap-2 mt-2">
-                             {[100, 500, 1000, 2000].map(amt => (
-                                 <button 
-                                    key={amt} 
-                                    onClick={() => setTenderedAmount(amt)}
-                                    className="px-2 py-1 text-xs bg-white dark:bg-gray-800 border rounded hover:bg-gray-100"
-                                 >
-                                     +{amt}
-                                 </button>
-                             ))}
-                        </div>
-                    </div>
-
-                    {tenderedAmount && tenderedAmount >= calculateGrandTotal() && (
-                        <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 rounded-xl text-center">
-                            <div className="text-xs font-bold uppercase opacity-70">Change Due</div>
-                            <div className="text-3xl font-bold">
-                                {(Number(tenderedAmount) - calculateGrandTotal()).toFixed(2)}
-                            </div>
-                        </div>
+                    
+                    {/* Credit Option (Conditionally Visible) */}
+                    {selectedCustomer && (
+                        <button
+                            onClick={() => setSelectedPaymentMethod('credit')}
+                            className={`w-full mt-3 flex items-center justify-center gap-2 p-3 rounded-xl border transition-all ${
+                                selectedPaymentMethod === 'credit'
+                                    ? 'bg-orange-100 text-orange-700 border-orange-300 font-bold'
+                                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                            }`}
+                        >
+                            <AlertTriangle className="w-4 h-4" /> Record as Credit (Khata)
+                        </button>
                     )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Dynamic Input Area */}
+                <div className="mb-6 flex-shrink-0 space-y-4">
+                    <AnimatePresence mode="wait">
+                        {selectedPaymentMethod === 'cash' ? (
+                            <motion.div 
+                                key="cash-input"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="space-y-4"
+                            >
+                                <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                    <label className="text-xs font-bold opacity-60 uppercase block mb-2">Cash Received</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">{currencySymbol}</span>
+                                        <input 
+                                            type="number" 
+                                            autoFocus
+                                            className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-lg py-3 pl-8 text-xl font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                            placeholder="0.00"
+                                            value={tenderedAmount}
+                                            onChange={e => setTenderedAmount(e.target.valueAsNumber)}
+                                        />
+                                    </div>
+                                    <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide">
+                                         {[10, 20, 50, 100, 200, 500, 1000, 2000].map(amt => (
+                                             <button 
+                                                key={amt} 
+                                                onClick={() => setTenderedAmount(amt)}
+                                                className="px-3 py-1.5 text-xs font-bold bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors whitespace-nowrap"
+                                             >
+                                                 +{amt}
+                                             </button>
+                                         ))}
+                                    </div>
+                                </div>
+
+                                {tenderedAmount !== '' && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className={`p-4 rounded-xl text-center border-2 ${
+                                            (Number(tenderedAmount) - calculateGrandTotal()) >= 0 
+                                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300' 
+                                            : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
+                                        }`}
+                                    >
+                                        <div className="text-xs font-bold uppercase opacity-70 mb-1">
+                                            {(Number(tenderedAmount) - calculateGrandTotal()) >= 0 ? 'Change To Return' : 'Short Amount'}
+                                        </div>
+                                        <div className="text-3xl font-black">
+                                            {currencySymbol}{Math.abs(Number(tenderedAmount) - calculateGrandTotal()).toFixed(2)}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </motion.div>
+                        ) : selectedPaymentMethod !== 'credit' ? (
+                            <motion.div
+                                key="ref-input"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                            >
+                                <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                    <label className="text-xs font-bold opacity-60 uppercase block mb-2">Transaction Ref / Note (Optional)</label>
+                                    <input 
+                                        type="text" 
+                                        className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-lg py-3 px-4 outline-none focus:border-blue-500 transition-all"
+                                        placeholder="e.g. UPI Transaction ID or Auth Code"
+                                        value={paymentRef}
+                                        onChange={e => setPaymentRef(e.target.value)}
+                                    />
+                                    <div className="mt-3 flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+                                        <Globe className="w-3 h-3" />
+                                        <span>Recording external payment via {PAYMENT_METHODS.find(m => m.id === selectedPaymentMethod)?.label}</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="credit-info"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl text-center border border-orange-100 dark:border-orange-800"
+                            >
+                                <p className="text-sm text-orange-800 dark:text-orange-200">
+                                    This amount will be added to <strong>{selectedCustomer?.name}'s</strong> outstanding balance.
+                                </p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                <div className="flex gap-4 flex-shrink-0 pt-2">
                     <Button 
-                        onClick={() => handleCompleteOrder('credit')} 
-                        className="bg-orange-100 text-orange-700 hover:bg-orange-200 border-none"
+                        variant="secondary"
+                        onClick={() => setShowPaymentModal(false)} 
+                        className="flex-1"
                     >
-                        Credit Bill
+                        Cancel
                     </Button>
                     <Button 
-                        onClick={() => handleCompleteOrder('cash')} 
-                        className="bg-green-600 hover:bg-green-700 text-white"
+                        onClick={handleCompleteOrder} 
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/30"
+                        disabled={selectedPaymentMethod === 'cash' && (typeof tenderedAmount === 'string' || tenderedAmount < calculateGrandTotal())}
                     >
-                        Mark Paid
+                        <Check className="w-5 h-5 mr-2" /> 
+                        {selectedPaymentMethod === 'credit' ? 'Confirm Credit' : 'Complete Payment'}
                     </Button>
                 </div>
             </motion.div>

@@ -115,7 +115,8 @@ export interface Sale {
   totalAmount: number;
   totalTax?: number; // GST Total
   totalProfit: number;
-  paymentMethod: 'cash' | 'credit' | 'upi' | 'bank';
+  paymentMethod: 'cash' | 'card' | 'bank' | 'upi' | 'stripe' | 'paypal' | 'apple_pay' | 'google_pay' | 'credit';
+  paymentReference?: string; // Transaction ID for non-cash
   items: CartItem[];
   customerId?: string;
   pointsEarned?: number;
