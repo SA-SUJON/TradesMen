@@ -186,3 +186,49 @@ export interface Campaign {
   targetCount: number;
   date: string;
 }
+
+export interface Task {
+  id: string;
+  text: string;
+  completed: boolean;
+  priority: 'low' | 'medium' | 'high';
+  createdAt: string;
+}
+
+export interface AppDocument {
+  id: string;
+  title: string;
+  type: 'image' | 'text';
+  content: string; // base64 or text
+  date: string;
+  tags?: string[];
+}
+
+export interface Staff {
+  id: string;
+  name: string;
+  role: string; // e.g. Helper, Manager, Cleaner
+  phone: string;
+  salary: number; // Monthly salary
+  balance: number; // Pending salary or advances (positive = due to staff, negative = advance taken)
+  joinedDate: string;
+  isActive: boolean;
+}
+
+export interface Attendance {
+  id: string;
+  staffId: string;
+  date: string; // YYYY-MM-DD
+  status: 'present' | 'absent' | 'half-day' | 'leave';
+  checkIn?: string; // ISO timestamp
+  checkOut?: string;
+}
+
+export interface StaffPayment {
+    id: string;
+    staffId: string;
+    amount: number;
+    date: string;
+    type: 'salary' | 'advance' | 'bonus';
+    note?: string;
+}
