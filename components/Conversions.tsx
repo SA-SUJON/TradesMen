@@ -170,7 +170,17 @@ const Conversions: React.FC = () => {
                              </div>
                              
                              <div className="flex justify-between items-center text-xs opacity-50 mt-2">
-                                 <span>1 {fromCurrency} = {exchangeRate ? exchangeRate.toFixed(4) : '...'} {toCurrency}</span>
+                                 <div className="flex items-center gap-2">
+                                     <span>1 {fromCurrency} = {exchangeRate ? exchangeRate.toFixed(4) : '...'} {toCurrency}</span>
+                                     <button 
+                                        onClick={fetchRate}
+                                        disabled={isLoadingRate}
+                                        className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-white/20 transition-all"
+                                        title="Refresh Rates"
+                                     >
+                                         <RefreshCw className={`w-3 h-3 ${isLoadingRate ? 'animate-spin' : ''}`} />
+                                     </button>
+                                 </div>
                                  <span>Updated: {lastUpdated}</span>
                              </div>
                          </div>

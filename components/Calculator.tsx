@@ -229,9 +229,11 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
                 {/* Results Display Area */}
                 {mode === 'weight_to_price' && targetPrice && (
                      <div className={`mt-4 p-4 rounded-lg text-center ${theme === 'glass' ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                        <span className="text-sm opacity-70">Final Price</span>
+                        <span className="text-sm opacity-70">
+                            Price for <strong>{formatUnit(Number(weight), 'g', unitSystem)}</strong>
+                        </span>
                         <div className={`text-3xl font-bold ${styles.accentText}`}>
-                            {currencySymbol}{Number(targetPrice).toLocaleString()}
+                            {currencySymbol}{Number(targetPrice).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}
                         </div>
                         {/* Speak Button for Result */}
                         <div className="mt-2">
@@ -246,16 +248,22 @@ const Calculator: React.FC<CalculatorProps> = ({ inventory }) => {
                 )}
                  {mode === 'price_to_weight' && weight && (
                      <div className={`mt-4 p-4 rounded-lg text-center ${theme === 'glass' ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                        <span className="text-sm opacity-70">Weight Needed</span>
+                        <span className="text-sm opacity-70">
+                            Weight for <strong>{currencySymbol}{targetPrice}</strong>
+                        </span>
                         <div className={`text-3xl font-bold ${styles.accentText}`}>
-                            {unitSystem === 'local' 
-                                ? formatUnit(Number(weight), 'g', 'local') 
-                                : `${Number(weight).toLocaleString()} g`
-                            }
+                            {formatUnit(Number(weight), 'g', unitSystem)}
                         </div>
-                        <div className="text-sm opacity-70">
-                            ({(Number(weight)/1000).toFixed(3)} kg)
-                        </div>
+                        {unitSystem === 'local' && Number(weight) >= 1000 && Number(weight) < 40000 && (
+                            <div className="text-xs opacity-50 mt-1">
+                                ({(Number(weight)/1000).toFixed(2)} kg)
+                            </div>
+                        )}
+                        {unitSystem === 'local' && Number(weight) >= 40000 && (
+                            <div className="text-xs opacity-50 mt-1">
+                                ({(Number(weight)/1000).toFixed(2)} kg)
+                            </div>
+                        )}
                      </div>
                 )}
               </div>
