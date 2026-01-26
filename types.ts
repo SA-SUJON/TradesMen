@@ -1,4 +1,5 @@
 
+
 export type ThemeType = 'material' | 'glass' | 'neumorphism' | 'fluent';
 export type UnitSystem = 'metric' | 'local'; // local = Maund/Seer
 
@@ -175,4 +176,13 @@ export interface OnlineOrder {
   status: 'new' | 'accepted' | 'rejected' | 'delivered';
   date: string;
   platform?: string; // e.g., 'Shopify', 'WooCommerce', 'Custom'
+}
+
+export interface Campaign {
+  id: string;
+  name: string;
+  type: 'debt' | 'offer' | 'winback' | 'general';
+  message: string;
+  targetCount: number;
+  date: string;
 }

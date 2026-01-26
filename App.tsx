@@ -25,9 +25,10 @@ import Settings from './components/Settings';
 import Finance from './components/Finance';
 import Reports from './components/Reports';
 import OnlineStore from './components/OnlineStore';
+import Marketing from './components/Marketing';
 
 // Icons
-import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users, PieChart, FileBarChart, Grid, ChevronLeft, Store, Menu, LogOut, LayoutDashboard, ChevronRight, Database, Cloud, Globe } from 'lucide-react';
+import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users, PieChart, FileBarChart, Grid, ChevronLeft, Store, Menu, LogOut, LayoutDashboard, ChevronRight, Database, Cloud, Globe, Megaphone } from 'lucide-react';
 
 // Type for state setters to match useLocalStorage signature
 type SetValue<T> = (value: T | ((val: T) => T)) => void;
@@ -166,6 +167,7 @@ const getIconVariant = (id: string) => {
         // Menu Tools
         case 'finance': return { active: { scale: [1, 0.9, 1.1, 1], transition: { repeat: Infinity, repeatDelay: 2 } }, initial: { scale: 1 }, hover: { scale: 1.1 } };
         case 'reports': return { active: { y: [0, -3, 0], transition: { repeat: Infinity, repeatDelay: 1 } }, initial: { y: 0 }, hover: { y: -3 } };
+        case 'marketing': return { active: { rotate: [0, -20, 20, -20, 20, 0], transition: { repeat: Infinity, repeatDelay: 2 } }, initial: { rotate: 0 }, hover: { rotate: 20 } };
         case 'calculator': return { active: { rotate: [0, 10, -10, 0], transition: { repeat: Infinity, repeatDelay: 2 } }, initial: { rotate: 0 }, hover: { rotate: 10 } };
         case 'conversions': return { active: { rotate: 180 }, initial: { rotate: 0 }, hover: { rotate: 180 } };
         default: return { active: { scale: 1.1 }, initial: { scale: 1 }, hover: { scale: 1.1 } };
@@ -196,6 +198,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   // FILTERED BY ROLE
   const MENU_TOOLS = [
     ...(userRole === 'admin' ? [{ id: 'finance', label: 'Business Biz', icon: <PieChart className="w-5 h-5" />, desc: 'Expenses & Profits' }] : []),
+    ...(userRole === 'admin' ? [{ id: 'marketing', label: 'Marketing', icon: <Megaphone className="w-5 h-5" />, desc: 'Campaigns & Offers' }] : []),
     ...(userRole === 'admin' ? [{ id: 'reports', label: 'Reports', icon: <FileBarChart className="w-5 h-5" />, desc: 'GSTR-1 & Stock' }] : []),
     { id: 'calculator', label: 'Calculator', icon: <CalcIcon className="w-5 h-5" />, desc: 'Price & Weight' },
     { id: 'conversions', label: 'Tools', icon: <ArrowRightLeft className="w-5 h-5" />, desc: 'Converter & Bulk' },
@@ -219,7 +222,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       setActiveTab(id);
   };
 
-  const isMenuContext = ['menu', 'finance', 'calculator', 'conversions', 'reports', 'settings'].includes(activeTab);
+  const isMenuContext = ['menu', 'finance', 'calculator', 'conversions', 'reports', 'settings', 'marketing'].includes(activeTab);
   const isSettings = activeTab === 'settings';
   const isManagerTab = activeTab === 'manager';
   const isAssistantVisible = showAssistant && !isManagerTab && !isSettings && userRole === 'admin';
@@ -264,7 +267,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                   <h3 className="font-bold text-blue-800 dark:text-blue-300 text-sm">TradesMen Pro</h3>
                   <div className="flex items-center gap-2 mt-1">
                       <p className="text-xs text-blue-600 dark:text-blue-400 opacity-80">
-                          Version 1.2.0 • {userRole === 'admin' ? 'Admin' : 'Staff'} Mode
+                          Version 1.3.0 • {userRole === 'admin' ? 'Admin' : 'Staff'} Mode
                       </p>
                       {syncStatus && syncStatus !== 'idle' && (
                           <div className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 ${
@@ -506,6 +509,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                 
                                 {activeTab === 'menu' && <MenuGrid />}
                                 {activeTab === 'reports' && userRole === 'admin' && <Reports sales={sales} inventory={inventory} expenses={expenses} />}
+                                {activeTab === 'marketing' && userRole === 'admin' && <Marketing customers={customers} sales={sales} />}
                                 {activeTab === 'calculator' && <Calculator inventory={inventory} />}
                                 {activeTab === 'conversions' && <Conversions />}
                                 {activeTab === 'settings' && userRole === 'admin' && <Settings />}
