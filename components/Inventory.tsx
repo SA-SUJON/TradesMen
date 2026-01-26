@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Product, ProductHistoryEvent } from '../types';
-import { Card, Input, Button, Select } from './ui/BaseComponents';
+import { Card, Input, Button, Select, Toggle } from './ui/BaseComponents';
 import { Package, Search, Plus, Trash2, Edit2, X, Sparkles, Loader2, Calendar, Phone, Tag, Truck, ScanBarcode, MapPin, History, ShoppingBag, Clock, PlusCircle, Receipt, ChevronDown, ChevronUp, ArrowUp, ArrowDown, ArrowUpDown, Star, Palette, Smile, Copy, CheckCircle2, AlertTriangle, Camera, UploadCloud, FileImage, Download } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -620,7 +620,13 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
                                             <div className="flex-grow"><div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">{POS_COLORS.map(c => (<button key={c.id} type="button" onClick={() => setFormData({...formData, color: c.bg})} className={`w-8 h-8 rounded-full ${c.bg} border-2 flex-shrink-0 ${formData.color === c.bg ? 'border-black dark:border-white scale-110' : 'border-transparent'}`} />))}</div></div>
                                             <input className="w-12 text-center text-xl bg-transparent border-b" value={formData.emoji} onChange={e => setFormData({...formData, emoji: e.target.value})} placeholder="📦" />
                                         </div>
-                                        <label className="flex items-center gap-2 cursor-pointer pt-2"><input type="checkbox" checked={formData.isFavorite || false} onChange={e => setFormData({...formData, isFavorite: e.target.checked})} className="w-4 h-4 rounded text-blue-600" /><span className="text-sm font-medium">Add to Quick Grid</span></label>
+                                        <div className="flex items-center gap-3 pt-2">
+                                            <span className="text-sm font-medium">Add to Quick Grid</span>
+                                            <Toggle 
+                                                checked={formData.isFavorite || false} 
+                                                onChange={(val) => setFormData({...formData, isFavorite: val})} 
+                                            />
+                                        </div>
                                     </div>
                                 </motion.div>
                             )}

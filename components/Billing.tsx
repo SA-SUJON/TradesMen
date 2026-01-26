@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Product, CartItem, Customer, Transaction, Sale, ProductHistoryEvent, BusinessProfile } from '../types';
-import { Card, Input, Button, Select } from './ui/BaseComponents';
+import { Card, Input, Button, Select, Toggle } from './ui/BaseComponents';
 import { ShoppingCart, Plus, Trash, Receipt, Printer, User, Save, Check, CreditCard, Banknote, ScanBarcode, Share2, MessageCircle, MapPin, Building2, Phone, ArrowRight, Grid, List, PauseCircle, PlayCircle, Clock, X, AlertTriangle, Filter, Gift, QrCode, Wallet, Globe, Smartphone } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
@@ -534,6 +534,25 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                     </div>
                 </div>
 
+                {/* Loyalty Redemption Section */}
+                {selectedCustomer && selectedCustomer.loyaltyPoints && selectedCustomer.loyaltyPoints > 0 && (
+                    <div className="mb-6 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 rounded-2xl">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <Gift className="w-5 h-5 text-purple-600" />
+                                <div>
+                                    <div className="font-bold text-sm text-purple-900 dark:text-purple-200">Use Loyalty Points</div>
+                                    <div className="text-xs opacity-70">Available: {selectedCustomer.loyaltyPoints} pts ({currencySymbol}{(selectedCustomer.loyaltyPoints * VALUE_PER_POINT).toFixed(2)})</div>
+                                </div>
+                            </div>
+                            <Toggle 
+                                checked={redeemPoints} 
+                                onChange={setRedeemPoints} 
+                            />
+                        </div>
+                    </div>
+                )}
+
                 {/* Method Selection Grid */}
                 <div className="mb-6 flex-grow overflow-y-auto min-h-[120px] custom-scrollbar px-1">
                     <div className="text-xs font-bold opacity-50 uppercase mb-3 ml-1">Select Payment Method</div>
@@ -544,7 +563,7 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
                                 onClick={() => setSelectedPaymentMethod(method.id)}
                                 className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
                                     selectedPaymentMethod === method.id 
-                                        ? `${method.color} border-current shadow-md scale-105` 
+                                        ? `${method.color} border-current shadow-md scale-105 ring-2 ring-offset-2 ring-blue-100 dark:ring-blue-900` 
                                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 opacity-80 hover:opacity-100'
                                 }`}
                             >

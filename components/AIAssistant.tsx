@@ -66,11 +66,11 @@ const formatHistoryDate = (dateString: string) => {
 // --- Helper: Suggestion Chips ---
 const SuggestionChips: React.FC<{ onSelect: (text: string) => void }> = ({ onSelect }) => {
     const suggestions = [
-        "Analyze today's profit",
-        "Who owes me money?",
-        "Identify low stock items",
-        "Draft a WhatsApp sale message",
-        "Add a new item to inventory",
+        { label: "☀️ Daily Briefing", prompt: "Generate a daily briefing summarizing sales trends, low stock warnings, and opportunities for profit." },
+        { label: "📈 Today's Profit", prompt: "Analyze today's profit" },
+        { label: "⚠️ Low Stock", prompt: "Identify low stock items" },
+        { label: "💰 Debt Check", prompt: "Who owes me money?" },
+        { label: "📦 Add Item", prompt: "Add a new item to inventory" },
     ];
 
     return (
@@ -78,10 +78,10 @@ const SuggestionChips: React.FC<{ onSelect: (text: string) => void }> = ({ onSel
             {suggestions.map((s, i) => (
                 <button 
                     key={i}
-                    onClick={() => onSelect(s)}
+                    onClick={() => onSelect(s.prompt)}
                     className="flex-shrink-0 snap-start bg-gray-100 dark:bg-white/10 hover:bg-blue-100 dark:hover:bg-blue-900/40 hover:text-blue-600 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 rounded-full px-3 py-1.5 text-xs font-medium transition-all"
                 >
-                    {s}
+                    {s.label}
                 </button>
             ))}
         </div>
@@ -117,18 +117,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     useEffect(() => {
         if (!showHistory) scrollToBottom();
     }, [messages, showHistory]);
-
-    // --- PROACTIVE BRIEFING ---
-    useEffect(() => {
-        const hasUserMessages = messages.some(m => m.role === 'user');
-        if (!hasUserMessages && messages.length <= 1 && !isProcessing) {
-             const timer = setTimeout(() => {
-                 sendMessage("Generate a daily briefing summarizing sales trends, low stock warnings, and opportunities for profit.");
-             }, 800);
-             return () => clearTimeout(timer);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     // Initialize Speech Recognition
     useEffect(() => {
@@ -392,21 +380,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                         key={msg.id}
                         className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
-                            {/* Hidden User Prompt for Briefing */}
-                            {msg.role === 'user' && msg.text.startsWith("Generate a daily briefing") ? null : (
-                                <div
-                                    className={`max-w-[85%] p-3 rounded-2xl text-sm ${
-                                    msg.role === 'user'
-                                        ? `${theme === 'material' ? 'bg-[#6750A4]' : 'bg-blue-600'} text-white rounded-br-none shadow-md`
-                                        : `${theme === 'glass' ? 'bg-white/60 dark:bg-white/10 text-slate-800 dark:text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-bl-none`
-                                    } ${msg.isError ? 'bg-red-100 text-red-600' : ''}`}
-                                >
-                                    {msg.image && (
-                                        <img src={msg.image} alt="Upload" className="w-full h-32 object-cover rounded-lg mb-2" />
-                                    )}
-                                    <SimpleMarkdown text={msg.text} />
-                                </div>
-                            )}
+                            {/* Hidden User Prompt for Briefing (Optional: keep hidden or show) */}
+                            {/* We show it now so user knows what they asked */}
+                            <div
+                                className={`max-w-[85%] p-3 rounded-2xl text-sm ${
+                                msg.role === 'user'
+                                    ? `${theme === 'material' ? 'bg-[#6750A4]' : 'bg-blue-600'} text-white rounded-br-none shadow-md`
+                                    : `${theme === 'glass' ? 'bg-white/60 dark:bg-white/10 text-slate-800 dark:text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-bl-none`
+                                } ${msg.isError ? 'bg-red-100 text-red-600' : ''}`}
+                            >
+                                {msg.image && (
+                                    <img src={msg.image} alt="Upload" className="w-full h-32 object-cover rounded-lg mb-2" />
+                                )}
+                                <SimpleMarkdown text={msg.text} />
+                            </div>
                         </div>
                     ))}
                     {isProcessing && (
@@ -424,7 +411,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                     </div>
 
                     {/* Quick Suggestions */}
-                    {!isProcessing && messages.length < 3 && (
+                    {!isProcessing && (
                         <div className="mb-2">
                              <SuggestionChips onSelect={(text) => { sendMessage(text); }} />
                         </div>

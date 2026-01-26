@@ -3,13 +3,14 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, HTMLMotionProps } from 'framer-motion';
 import { getThemeClasses } from '../../utils/themeUtils';
 import { useTheme } from '../../contexts/ThemeContext';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, X, Moon, Sun } from 'lucide-react';
 
 interface BaseProps {
   className?: string;
   children?: React.ReactNode;
 }
 
+// --- BUTTON COMPONENT ---
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, BaseProps {
   variant?: 'primary' | 'secondary';
 }
@@ -23,7 +24,7 @@ export const Button: React.FC<ButtonProps> = ({ variant = 'primary', className =
     <motion.button
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.96 }}
-      className={`${baseClass} min-h-[48px] flex items-center justify-center ${className}`} 
+      className={`${baseClass} min-h-[48px] flex items-center justify-center cursor-pointer select-none ${className}`} 
       {...props as any}
     >
       {children}
@@ -31,6 +32,7 @@ export const Button: React.FC<ButtonProps> = ({ variant = 'primary', className =
   );
 };
 
+// --- CARD COMPONENT ---
 interface CardProps extends HTMLMotionProps<"div"> {
     onClick?: React.MouseEventHandler<HTMLDivElement>;
 }
@@ -40,10 +42,10 @@ export const Card: React.FC<CardProps> = ({ className = '', children, ...props }
   const styles = getThemeClasses(theme);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      exit={{ opacity: 0, y: 15 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       className={`${styles.card} ${className}`}
       {...props}
     >
@@ -52,6 +54,82 @@ export const Card: React.FC<CardProps> = ({ className = '', children, ...props }
   );
 };
 
+// --- TOGGLE COMPONENT ---
+interface ToggleProps {
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    icon?: React.ReactNode; // Optional icon override
+    className?: string;
+}
+
+export const Toggle: React.FC<ToggleProps> = ({ checked, onChange, icon, className = '' }) => {
+    const { theme, darkMode } = useTheme();
+    
+    // Theme-specific styles for the toggle track and knob
+    const getTrackStyles = () => {
+        if (theme === 'neumorphism') {
+            return checked 
+                ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a]' 
+                : 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a]';
+        }
+        if (theme === 'glass') {
+            return checked
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 border border-white/20'
+                : 'bg-black/10 dark:bg-white/10 border border-white/10 dark:border-white/5';
+        }
+        // Default / Material / Fluent
+        return checked 
+            ? 'bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-indigo-400 dark:to-purple-500' 
+            : 'bg-gray-200 dark:bg-gray-700';
+    };
+
+    const getKnobStyles = () => {
+        if (theme === 'neumorphism') {
+            return checked
+                ? 'bg-blue-500 shadow-[2px_2px_5px_#a3b1c6,-2px_-2px_5px_#ffffff] dark:shadow-[2px_2px_5px_#1f2330,-2px_-2px_5px_#33374a]'
+                : 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[3px_3px_6px_#a3b1c6,-3px_-3px_6px_#ffffff] dark:shadow-[3px_3px_6px_#1f2330,-3px_-3px_6px_#33374a]';
+        }
+        return 'bg-white shadow-md';
+    };
+
+    return (
+        <div 
+            onClick={() => onChange(!checked)}
+            className={`w-14 h-8 rounded-full flex items-center p-1 cursor-pointer transition-colors duration-300 relative ${getTrackStyles()} ${className}`}
+        >
+            <motion.div
+                layout
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${getKnobStyles()}`}
+                style={{ marginLeft: checked ? 'auto' : '0' }}
+            >
+                <AnimatePresence mode="wait">
+                    {checked ? (
+                        <motion.div 
+                            key="check"
+                            initial={{ scale: 0, rotate: -90 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            exit={{ scale: 0, rotate: 90 }}
+                        >
+                            {icon || (theme === 'neumorphism' ? <Check className="w-4 h-4 text-white" /> : <Check className="w-4 h-4 text-blue-600" />)}
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            key="cross"
+                            initial={{ scale: 0, rotate: 90 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            exit={{ scale: 0, rotate: -90 }}
+                        >
+                            <X className="w-4 h-4 opacity-30 text-gray-500" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </motion.div>
+        </div>
+    );
+};
+
+// --- INPUT COMPONENT ---
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement>, BaseProps {
   label?: string;
   icon?: React.ReactNode;
@@ -82,6 +160,7 @@ export const Input: React.FC<InputProps> = ({ label, icon, rightIcon, className 
   );
 };
 
+// --- SELECT COMPONENT ---
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement>, BaseProps {
     label?: string;
     icon?: React.ReactNode;

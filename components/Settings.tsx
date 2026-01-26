@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { ThemeType, BusinessProfile, TelegramConfig, AuthConfig } from '../types';
-import { Card, Input, Button, Select } from './ui/BaseComponents';
-import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus, Smartphone, Key, Moon, Code, MessageSquare, Bot, ShieldCheck, Globe } from 'lucide-react';
+import { Card, Input, Button, Select, Toggle } from './ui/BaseComponents';
+import { Palette, Layout, Box, Droplets, Check, AlertCircle, Sparkles, Monitor, Camera, Volume2, Scale, Database, Download, Upload, Cloud, RefreshCw, Loader2, Lock, Building2, FileText, Plus, Smartphone, Key, Moon, Code, MessageSquare, Bot, ShieldCheck, Globe, BrainCircuit, Sliders } from 'lucide-react';
 import { getThemeClasses } from '../utils/themeUtils';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAI } from '../contexts/AIContext';
@@ -25,7 +25,8 @@ const Settings: React.FC = () => {
   const { 
       showAssistant, setShowAssistant, 
       apiKey, setApiKey,
-      aiModel, setAiModel
+      aiModel, setAiModel,
+      aiConfig, setAiConfig
   } = useAI();
   
   const styles = getThemeClasses(theme);
@@ -95,7 +96,6 @@ const Settings: React.FC = () => {
       }
   }, []);
 
-  // ... (Backup logic same as before) ...
   const getAllData = () => {
     const data: Record<string, any> = {};
     if (typeof window !== 'undefined') {
@@ -143,7 +143,6 @@ const Settings: React.FC = () => {
       }
   };
 
-  // ... (Theme options same as before) ...
   const themeOptions: { id: ThemeType; label: string; desc: string; icon: React.ReactNode }[] = [
     { id: 'material', label: 'Material You', desc: 'Playful, rounded, pastel colors.', icon: <Palette className="w-5 h-5" /> },
     { id: 'fluent', label: 'Microsoft Fluent 2', desc: 'Professional, clean, acrylic feel.', icon: <Layout className="w-5 h-5" /> },
@@ -172,15 +171,10 @@ const Settings: React.FC = () => {
                       <div className="font-bold">Enable Lock Screen</div>
                       <div className="text-sm opacity-60">Require PIN to access app. Restricts sensitive features for Staff.</div>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={authConfig.enableLock} 
-                          onChange={(e) => setAuthConfig({...authConfig, enableLock: e.target.checked})} 
-                      />
-                      <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
-                  </label>
+                  <Toggle 
+                      checked={authConfig.enableLock} 
+                      onChange={(val) => setAuthConfig({...authConfig, enableLock: val})} 
+                  />
               </div>
 
               {authConfig.enableLock && (
@@ -249,23 +243,16 @@ const Settings: React.FC = () => {
                 value={telegramConfig.chatId}
                 onChange={(e) => setTelegramConfig({...telegramConfig, chatId: e.target.value})}
               />
-              <div className="flex items-center gap-2 pt-2">
-                  <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={telegramConfig.isEnabled} 
-                          onChange={(e) => setTelegramConfig({...telegramConfig, isEnabled: e.target.checked})} 
-                          disabled={!telegramConfig.botToken}
-                      />
-                      <div className={`w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600`}></div>
-                  </label>
+              <div className="flex items-center justify-between pt-2">
                   <span className="text-sm font-medium">Enable Bot Polling</span>
+                  <Toggle 
+                      checked={telegramConfig.isEnabled} 
+                      onChange={(val) => setTelegramConfig({...telegramConfig, isEnabled: val})} 
+                  />
               </div>
           </div>
       </Card>
 
-      {/* ... (Existing Cards: Database, Business Profile, AI Config, Local Backup, Interface, Theme) ... */}
       <Card>
           <h2 className={`text-xl font-bold flex items-center gap-2 mb-4 ${styles.accentText}`}>
              <Database className="w-5 h-5" /> Real Database (Supabase)
@@ -299,11 +286,78 @@ const Settings: React.FC = () => {
                   <div className="flex items-center gap-2 font-bold mb-2"><Key className="w-4 h-4 text-orange-500" /> Google Gemini API Key</div>
                   <div className="flex gap-2"><div className="flex-grow"><Input type="password" placeholder={apiKey ? "••••••••••••••••" : "Paste API Key Here"} value={apiKey} onChange={(e) => setApiKey(e.target.value)} className={apiKey ? "opacity-50 pointer-events-none bg-gray-100 dark:bg-gray-800" : ""} /></div>{apiKey && <Button variant="secondary" onClick={() => setApiKey('')} className="bg-red-50 text-red-500">Reset</Button>}</div>
               </div>
-              <div><Select label="AI Model Version" value={aiModel} onChange={(e) => setAiModel(e.target.value)}>{modelOptions.map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}</Select></div>
-              <div className="space-y-4">
-                  <div className="flex items-center justify-between"><div><div className="font-bold flex items-center gap-2"><Sparkles className="w-4 h-4 text-blue-500" /> Enable Manager Button</div></div><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" className="sr-only peer" checked={showAssistant} onChange={(e) => setShowAssistant(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-4"></div></label></div>
-                  <div className="flex items-center justify-between"><div><div className="font-bold flex items-center gap-2"><Plus className="w-4 h-4 text-green-500" /> Quick Scan Button</div></div><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" className="sr-only peer" checked={showQuickScan} onChange={(e) => setShowQuickScan(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-4"></div></label></div>
-                  <div className="flex items-center justify-between"><div><div className="font-bold flex items-center gap-2"><Volume2 className="w-4 h-4" /> Voice Feedback</div></div><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" className="sr-only peer" checked={voiceEnabled} onChange={(e) => setVoiceEnabled(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-4"></div></label></div>
+              
+              <div>
+                  <Select label="AI Model Version" value={aiModel} onChange={(e) => setAiModel(e.target.value)}>
+                      {modelOptions.map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
+                  </Select>
+              </div>
+
+              {/* Advanced AI Settings */}
+              <div className="border-t border-gray-200 dark:border-white/10 pt-4 mt-4">
+                  <h3 className="font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-wider opacity-70">
+                      <Sliders className="w-4 h-4" /> Advanced Controls
+                  </h3>
+                  
+                  <div className="space-y-6">
+                      <Input 
+                          label="Custom Persona" 
+                          placeholder="e.g. You are a strict accountant. Keep answers short."
+                          value={aiConfig.customPersona} 
+                          onChange={(e) => setAiConfig({...aiConfig, customPersona: e.target.value})} 
+                      />
+                      
+                      <div>
+                          <div className="flex justify-between mb-2">
+                              <label className="text-xs font-bold uppercase">Creativity (Temperature)</label>
+                              <span className="text-xs font-bold bg-blue-100 text-blue-800 px-2 rounded">{aiConfig.temperature}</span>
+                          </div>
+                          <input 
+                              type="range" 
+                              min="0" max="1" step="0.1" 
+                              value={aiConfig.temperature} 
+                              onChange={(e) => setAiConfig({...aiConfig, temperature: parseFloat(e.target.value)})}
+                              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+                          />
+                          <div className="flex justify-between text-[10px] opacity-50 mt-1">
+                              <span>Precise (0.0)</span>
+                              <span>Balanced</span>
+                              <span>Creative (1.0)</span>
+                          </div>
+                      </div>
+
+                      <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-xl space-y-3">
+                          <div className="text-xs font-bold uppercase opacity-60 mb-2 flex items-center gap-2"><BrainCircuit className="w-4 h-4" /> Data Access Scope</div>
+                          
+                          <div className="flex items-center justify-between">
+                              <span className="text-sm">Allow Sales Analysis</span>
+                              <Toggle checked={aiConfig.enableSalesRead} onChange={(val) => setAiConfig({...aiConfig, enableSalesRead: val})} />
+                          </div>
+                          <div className="flex items-center justify-between">
+                              <span className="text-sm">Allow Inventory Access</span>
+                              <Toggle checked={aiConfig.enableInventoryRead} onChange={(val) => setAiConfig({...aiConfig, enableInventoryRead: val})} />
+                          </div>
+                          <div className="flex items-center justify-between">
+                              <span className="text-sm">Allow Customer Debt Access</span>
+                              <Toggle checked={aiConfig.enableCustomerRead} onChange={(val) => setAiConfig({...aiConfig, enableCustomerRead: val})} />
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-white/10">
+                  <div className="flex items-center justify-between">
+                      <div><div className="font-bold flex items-center gap-2"><Sparkles className="w-4 h-4 text-blue-500" /> Enable Manager Button</div></div>
+                      <Toggle checked={showAssistant} onChange={setShowAssistant} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                      <div><div className="font-bold flex items-center gap-2"><Plus className="w-4 h-4 text-green-500" /> Quick Scan Button</div></div>
+                      <Toggle checked={showQuickScan} onChange={setShowQuickScan} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                      <div><div className="font-bold flex items-center gap-2"><Volume2 className="w-4 h-4" /> Voice Feedback</div></div>
+                      <Toggle checked={voiceEnabled} onChange={setVoiceEnabled} />
+                  </div>
               </div>
           </div>
       </Card>
@@ -325,9 +379,15 @@ const Settings: React.FC = () => {
                  </Select>
              </div>
            </div>
-           <div className="flex items-center justify-between"><div><div className="font-bold flex items-center gap-2"><Moon className="w-4 h-4" /> Dark Mode</div></div><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" className="sr-only peer" checked={darkMode} onChange={(e) => setDarkMode(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-4"></div></label></div>
+           <div className="flex items-center justify-between">
+               <div><div className="font-bold flex items-center gap-2"><Moon className="w-4 h-4" /> Dark Mode</div></div>
+               <Toggle checked={darkMode} onChange={setDarkMode} icon={darkMode ? <Moon className="w-4 h-4 text-white" /> : <div className="w-4 h-4 bg-yellow-400 rounded-full" />} />
+           </div>
            <div className="flex items-center justify-between"><div><div className="font-bold flex items-center gap-2"><Scale className="w-4 h-4" /> Unit System</div></div><div className={`flex rounded-lg p-1 ${theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-inner' : 'bg-gray-100 dark:bg-gray-800'}`}><button onClick={() => setUnitSystem('metric')} className={`px-3 py-1 text-xs rounded-md transition-all ${unitSystem === 'metric' ? 'bg-white shadow text-black' : 'opacity-60'}`}>Metric</button><button onClick={() => setUnitSystem('local')} className={`px-3 py-1 text-xs rounded-md transition-all ${unitSystem === 'local' ? 'bg-white shadow text-black' : 'opacity-60'}`}>Local</button></div></div>
-          <div className="flex items-center justify-between"><div><div className="font-bold">Show Navigation Labels</div></div><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" className="sr-only peer" checked={showNavLabels} onChange={(e) => setShowNavLabels(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-4"></div></label></div>
+          <div className="flex items-center justify-between">
+              <div><div className="font-bold">Show Navigation Labels</div></div>
+              <Toggle checked={showNavLabels} onChange={setShowNavLabels} />
+          </div>
         </div>
       </Card>
 

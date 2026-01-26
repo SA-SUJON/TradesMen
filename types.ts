@@ -25,6 +25,16 @@ export interface TelegramConfig {
   isEnabled: boolean;
 }
 
+// New AI Configuration Interface
+export interface AIConfig {
+  temperature: number; // 0.0 to 1.0
+  customPersona: string; // "You are a strict accountant..."
+  enableSalesRead: boolean;
+  enableInventoryRead: boolean;
+  enableCustomerRead: boolean;
+  enableExpenseRead: boolean;
+}
+
 export interface ProductHistoryEvent {
   id: string;
   date: string;
@@ -145,7 +155,6 @@ export interface ChatSession {
   messages: ChatMessage[];
 }
 
-// New Interface for External Website Orders
 export interface OnlineOrderItem {
   productName: string;
   quantity: number;

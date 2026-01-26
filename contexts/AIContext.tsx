@@ -1,23 +1,25 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
-import { Product, CartItem, ChatMessage, ChatSession, Sale, Expense, Customer } from '../types';
+import { Product, CartItem, ChatMessage, ChatSession, Sale, Expense, Customer, AIConfig } from '../types';
 import useLocalStorage from '../hooks/useLocalStorage';
 
 interface AIContextType {
   messages: ChatMessage[];
-  sendMessage: (text: string, image?: string) => Promise<string>; // Updated return type
+  sendMessage: (text: string, image?: string) => Promise<string>; 
   filterInventory: (query: string, currentInventory: Product[]) => Promise<string[]>;
   isProcessing: boolean;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   showAssistant: boolean;
   setShowAssistant: (show: boolean) => void;
-  // New Settings Config
+  // Settings Config
   apiKey: string;
   setApiKey: (key: string) => void;
   aiModel: string;
   setAiModel: (model: string) => void;
+  aiConfig: AIConfig;
+  setAiConfig: (config: AIConfig | ((val: AIConfig) => AIConfig)) => void;
   // History Management
   sessions: ChatSession[];
   currentSessionId: string | null;
@@ -107,7 +109,7 @@ const checkExpiryTool: FunctionDeclaration = {
 const INTRO_MESSAGE: ChatMessage = {
     id: 'intro',
     role: 'model',
-    text: "Hi! I'm your Shop Manager. I've analyzed your inventory and sales. Would you like a daily briefing?"
+    text: "Hi! I'm your Shop Manager. I'm ready to help with inventory, sales analysis, or billing. Tap 'Daily Briefing' if you want a summary."
 };
 
 export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, setInventory, cart, setCart, sales, expenses, customers }) => {
@@ -122,6 +124,16 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
   const [showAssistant, setShowAssistant] = useLocalStorage<boolean>('tradesmen-ai-visible', false);
   const [apiKey, setApiKey] = useLocalStorage<string>('tradesmen-api-key', '');
   const [aiModel, setAiModel] = useLocalStorage<string>('tradesmen-ai-model', 'gemini-3-flash-preview');
+  
+  // Advanced Settings
+  const [aiConfig, setAiConfig] = useLocalStorage<AIConfig>('tradesmen-ai-advanced', {
+      temperature: 0.4,
+      customPersona: '',
+      enableSalesRead: true,
+      enableInventoryRead: true,
+      enableCustomerRead: true,
+      enableExpenseRead: true
+  });
 
   // Initialize Gemini Client with Dynamic Key
   const clientKey = apiKey || process.env.API_KEY || '';
@@ -195,58 +207,68 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
     try {
       if (!clientKey) throw new Error("API Key Missing. Please set your API Key in Settings > Manager.");
 
-      // --- INTELLIGENCE LAYER ---
+      // --- INTELLIGENCE LAYER (Respecting Scopes) ---
+      let systemContext = `You are "Manager", an intelligent business partner for a shopkeeper using the "TradesMen" app.`;
       
-      // 1. Time Context
-      const today = new Date();
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(today.getDate() - 7);
+      // Inject Custom Persona if defined
+      if (aiConfig.customPersona) {
+          systemContext += `\n\nYOUR PERSONA: ${aiConfig.customPersona}\n\n`;
+      }
 
-      // 2. Daily Stats
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-      const salesToday = sales.filter(s => new Date(s.date).getTime() >= startOfDay);
-      const revenueToday = salesToday.reduce((acc, s) => acc + s.totalAmount, 0);
-      const profitToday = salesToday.reduce((acc, s) => acc + s.totalProfit, 0);
-      const expensesToday = expenses.filter(e => new Date(e.date).getTime() >= startOfDay).reduce((acc, e) => acc + e.amount, 0);
-      
-      // 3. Weekly Trends
-      const salesWeek = sales.filter(s => new Date(s.date) >= oneWeekAgo);
-      const revenueWeek = salesWeek.reduce((acc, s) => acc + s.totalAmount, 0);
-      
-      // 4. Inventory Health (Low Margin & Stock)
-      const lowMarginItems = inventory.filter(p => {
-          if(!p.buyingPrice || p.buyingPrice === 0) return false;
-          const margin = ((p.sellingPrice - p.buyingPrice) / p.buyingPrice) * 100;
-          return margin < 15; // Flag items with < 15% margin
-      }).map(p => `${p.name} (Margin: ${((p.sellingPrice - p.buyingPrice)/p.buyingPrice*100).toFixed(1)}%)`).slice(0, 5);
+      // 1. Sales Context
+      if (aiConfig.enableSalesRead) {
+          const today = new Date();
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(today.getDate() - 7);
+          const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+          
+          const salesToday = sales.filter(s => new Date(s.date).getTime() >= startOfDay);
+          const revenueToday = salesToday.reduce((acc, s) => acc + s.totalAmount, 0);
+          const profitToday = salesToday.reduce((acc, s) => acc + s.totalProfit, 0);
+          const salesWeek = sales.filter(s => new Date(s.date) >= oneWeekAgo);
+          const revenueWeek = salesWeek.reduce((acc, s) => acc + s.totalAmount, 0);
 
-      const totalDebt = customers.reduce((acc, c) => acc + c.debt, 0);
-      
-      // Simplify inventory list for token efficiency
-      const inventoryList = inventory.map(p => `${p.name} ($${p.sellingPrice}, Stock:${p.stock})`).join(', ');
+          systemContext += `\n**BUSINESS INTELLIGENCE:**\n- **Today:** Sales: ${revenueToday.toFixed(0)} | Profit: ${profitToday.toFixed(0)}\n- **Weekly Revenue:** ${revenueWeek.toFixed(0)}`;
+      }
 
-      const systemInstruction = `You are "Manager", an intelligent business partner for a shopkeeper using the "TradesMen" app.
-      
-      **BUSINESS INTELLIGENCE:**
-      - **Today:** Sales: ${revenueToday.toFixed(0)} | Profit: ${profitToday.toFixed(0)} | Expense: ${expensesToday.toFixed(0)}
-      - **Weekly Revenue:** ${revenueWeek.toFixed(0)}
-      - **Receivables (Debt):** ${totalDebt.toFixed(0)}
-      
-      **OPPORTUNITIES (Proactive Insights):**
-      - **Low Margin Items (Consider Price Increase):** ${lowMarginItems.length > 0 ? lowMarginItems.join(', ') : 'None'}
-      
-      **INVENTORY CONTEXT:**
-      [${inventoryList}]
+      // 2. Expenses Context
+      if (aiConfig.enableExpenseRead) {
+          const today = new Date();
+          const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+          const expensesToday = expenses.filter(e => new Date(e.date).getTime() >= startOfDay).reduce((acc, e) => acc + e.amount, 0);
+          systemContext += ` | Expense: ${expensesToday.toFixed(0)}`;
+      }
 
-      **YOUR ROLE:**
-      1. **Be Proactive:** If the user asks for a briefing, summarize today's performance, warn about low margins, and suggest actions.
+      // 3. Customer/Debt Context
+      if (aiConfig.enableCustomerRead) {
+          const totalDebt = customers.reduce((acc, c) => acc + c.debt, 0);
+          systemContext += `\n- **Receivables (Debt):** ${totalDebt.toFixed(0)}`;
+      }
+      
+      // 4. Inventory Context
+      if (aiConfig.enableInventoryRead) {
+          const lowMarginItems = inventory.filter(p => {
+              if(!p.buyingPrice || p.buyingPrice === 0) return false;
+              const margin = ((p.sellingPrice - p.buyingPrice) / p.buyingPrice) * 100;
+              return margin < 15; 
+          }).map(p => `${p.name} (${((p.sellingPrice - p.buyingPrice)/p.buyingPrice*100).toFixed(1)}%)`).slice(0, 5);
+
+          const inventoryList = inventory.map(p => `${p.name} ($${p.sellingPrice}, Stock:${p.stock})`).join(', ');
+          
+          systemContext += `\n\n**OPPORTUNITIES (Proactive Insights):**\n- **Low Margin Items:** ${lowMarginItems.length > 0 ? lowMarginItems.join(', ') : 'None'}`;
+          systemContext += `\n\n**INVENTORY CONTEXT:**\n[${inventoryList}]`;
+      } else {
+          systemContext += `\n\n**INVENTORY:** Access Disabled by user. Do not answer questions about specific stock levels.`;
+      }
+
+      systemContext += `\n\n**YOUR ROLE:**
+      1. **Be Proactive:** If the user asks for a briefing, summarize based on allowed data.
       2. **Manage Shop:** Use tools to add items, update prices (use 'updateProduct'), or bill items.
-      3. **Analyze:** If asked about trends, compare today vs weekly average.
-      4. **Format:** Use Markdown (bolding key numbers). Keep it conversational but professional.
+      3. **Format:** Use Markdown (bolding key numbers). Keep it conversational but professional.
       `;
 
       // 4. Construct Prompt History
-      // Take the last 8 messages for context
+      // Take the last 8 messages for context to manage token usage
       const historyText = sessionHistory.slice(-8, -1).map(m => `${m.role === 'user' ? 'User' : 'Manager'}: ${m.text}`).join('\n');
       
       const parts: any[] = [];
@@ -271,7 +293,8 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
         model: aiModel,
         contents: { parts },
         config: {
-          systemInstruction,
+          systemInstruction: systemContext,
+          temperature: aiConfig.temperature, // Use dynamic temperature
           tools: [{ functionDeclarations: [addInventoryTool, updateProductTool, addToCartTool, checkExpiryTool] }],
         }
       });
@@ -421,6 +444,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
         showAssistant, setShowAssistant,
         apiKey, setApiKey,
         aiModel, setAiModel,
+        aiConfig, setAiConfig,
         sessions, currentSessionId, startNewChat, loadSession, deleteSession
     }}>
       {children}

@@ -12,7 +12,9 @@
     <link rel="manifest" href="/manifest.json">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Google API Scripts for Cloud Sync -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -24,7 +26,7 @@
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
+              sans: ['"Plus Jakarta Sans"', 'sans-serif'],
               display: ['Outfit', 'sans-serif'],
             },
             colors: {
@@ -39,12 +41,17 @@
             animation: {
               'spin-slow': 'spin 3s linear infinite',
               'float': 'float 6s ease-in-out infinite',
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             },
             keyframes: {
               float: {
                 '0%, 100%': { transform: 'translateY(0)' },
                 '50%': { transform: 'translateY(-10px)' },
               }
+            },
+            boxShadow: {
+              'glow': '0 0 15px rgba(59, 130, 246, 0.5)',
+              'glow-primary': '0 4px 20px -2px rgba(103, 80, 164, 0.4)',
             }
           },
         },
@@ -57,6 +64,8 @@
         overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile web */
         -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
         touch-action: manipulation;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       /* Custom Scrollbar */
@@ -68,11 +77,11 @@
           background: transparent;
       }
       .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: rgba(156, 163, 175, 0.5);
+          background-color: rgba(156, 163, 175, 0.3);
           border-radius: 20px;
       }
       .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: rgba(107, 114, 128, 0.8);
+          background-color: rgba(107, 114, 128, 0.6);
       }
       
       /* Hide default scrollbar for clean look in main areas if needed */
