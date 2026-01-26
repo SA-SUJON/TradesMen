@@ -173,9 +173,19 @@ export interface OnlineOrder {
   totalAmount: number;
   paymentMethod: 'cod' | 'prepaid';
   paymentStatus: 'pending' | 'paid';
-  status: 'new' | 'accepted' | 'rejected' | 'delivered';
+  status: 'new' | 'accepted' | 'shipped' | 'rejected' | 'delivered';
   date: string;
   platform?: string; // e.g., 'Shopify', 'WooCommerce', 'Custom'
+}
+
+export interface Delivery {
+  id: string;
+  orderId: string; // Links to OnlineOrder
+  staffId: string;
+  status: 'assigned' | 'delivered' | 'failed';
+  codAmount: number; // Cash to collect
+  proofImage?: string; // base64
+  timestamp: string;
 }
 
 export interface Campaign {
@@ -231,4 +241,17 @@ export interface StaffPayment {
     date: string;
     type: 'salary' | 'advance' | 'bonus';
     note?: string;
+}
+
+export interface Cheque {
+  id: string;
+  number: string;
+  partyName: string;
+  amount: number;
+  date: string; // Due Date
+  type: 'issued' | 'received';
+  status: 'pending' | 'cleared' | 'bounced';
+  bankName?: string;
+  note?: string;
+  createdAt: string;
 }

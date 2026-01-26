@@ -1,13 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
-import { OnlineOrder, Product, Sale, CartItem } from '../types';
-import { Card, Button, Input } from './ui/BaseComponents';
-import { Globe, RefreshCw, CheckCircle, XCircle, Truck, ShoppingBag, AlertCircle, Copy, Code, Eye, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { OnlineOrder, Product, Sale, CartItem, Staff, Delivery } from '../types';
+import { Card, Button, Input, Select } from './ui/BaseComponents';
+import { Globe, RefreshCw, CheckCircle, XCircle, Truck, ShoppingBag, AlertCircle, Copy, Code, Eye, ExternalLink, ChevronDown, ChevronUp, MapPin, Phone, DollarSign, Camera, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { initSupabase, isSupabaseConfigured } from '../utils/supabaseClient';
 import useLocalStorage from '../hooks/useLocalStorage';
+import { openWhatsApp } from '../utils/appUtils';
 
 interface OnlineStoreProps {
   inventory: Product[];
@@ -17,14 +18,21 @@ interface OnlineStoreProps {
 }
 
 const OnlineStore: React.FC<OnlineStoreProps> = ({ inventory, setInventory, sales, setSales }) => {
-  const { theme, unitSystem } = useTheme();
+  const { theme, unitSystem, currencySymbol } = useTheme();
   const styles = getThemeClasses(theme);
   
-  const [activeTab, setActiveTab] = useState<'orders' | 'integration'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'dispatch' | 'integration'>('orders');
   const [orderFilter, setOrderFilter] = useState<'new' | 'active' | 'history'>('new');
   const [orders, setOrders] = useLocalStorage<OnlineOrder[]>('tradesmen-online-orders', []);
+  const [deliveries, setDeliveries] = useLocalStorage<Delivery[]>('tradesmen-deliveries', []);
+  const [staff] = useLocalStorage<Staff[]>('tradesmen-staff', []);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+
+  // Dispatch States
+  const [assignModalOpen, setAssignModalOpen] = useState<string | null>(null); // holds orderId
+  const [completeModalOpen, setCompleteModalOpen] = useState<string | null>(null); // holds deliveryId
+  const [proofImage, setProofImage] = useState<string>('');
 
   // Sync Logic
   const fetchOrders = async () => {
@@ -132,13 +140,238 @@ const OnlineStore: React.FC<OnlineStoreProps> = ({ inventory, setInventory, sale
       }
   };
 
+  // Dispatch Actions
+  const handleAssignRunner = (order: OnlineOrder, staffId: string) => {
+      const staffMember = staff.find(s => s.id === staffId);
+      if (!staffMember) return;
+
+      const newDelivery: Delivery = {
+          id: Date.now().toString(),
+          orderId: order.id,
+          staffId: staffId,
+          status: 'assigned',
+          codAmount: order.paymentMethod === 'cod' && order.paymentStatus !== 'paid' ? order.totalAmount : 0,
+          timestamp: new Date().toISOString()
+      };
+
+      setDeliveries(prev => [...prev, newDelivery]);
+      updateOrderStatus(order.id, 'shipped');
+      setAssignModalOpen(null);
+      
+      // WhatsApp notification to Runner
+      const msg = `🛵 *New Delivery Assigned*\n\nOrder: ${order.orderNumber}\nCustomer: ${order.customerName}\nAddress: ${order.customerAddress}\nPhone: ${order.customerPhone}\nCollect: ${newDelivery.codAmount > 0 ? currencySymbol + newDelivery.codAmount : 'PREPAID'}`;
+      openWhatsApp(staffMember.phone, msg);
+  };
+
+  const handleCompleteDelivery = (deliveryId: string) => {
+      const delivery = deliveries.find(d => d.id === deliveryId);
+      if(!delivery) return;
+
+      setDeliveries(prev => prev.map(d => d.id === deliveryId ? { ...d, status: 'delivered', proofImage } : d));
+      updateOrderStatus(delivery.orderId, 'delivered');
+      setCompleteModalOpen(null);
+      setProofImage('');
+  };
+
+  const handleProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              setProofImage(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+      }
+  };
+
   // Filter Logic
   const filteredOrders = orders.filter(o => {
       if (orderFilter === 'new') return o.status === 'new';
-      if (orderFilter === 'active') return o.status === 'accepted';
+      if (orderFilter === 'active') return o.status === 'accepted' || o.status === 'shipped';
       if (orderFilter === 'history') return o.status === 'rejected' || o.status === 'delivered';
       return false;
   });
+
+  // Dispatch Lists
+  const readyToShipOrders = orders.filter(o => o.status === 'accepted');
+  const activeDeliveries = deliveries.filter(d => d.status === 'assigned');
+
+  // Group deliveries by staff
+  const staffDeliveries = useMemo(() => {
+      const grouped: Record<string, { staff: Staff, deliveries: Delivery[], totalCOD: number }> = {};
+      activeDeliveries.forEach(d => {
+          if (!grouped[d.staffId]) {
+              const s = staff.find(staff => staff.id === d.staffId);
+              if(s) grouped[d.staffId] = { staff: s, deliveries: [], totalCOD: 0 };
+          }
+          if (grouped[d.staffId]) {
+              grouped[d.staffId].deliveries.push(d);
+              grouped[d.staffId].totalCOD += d.codAmount;
+          }
+      });
+      return Object.values(grouped);
+  }, [activeDeliveries, staff]);
+
+  // Tab Content: Dispatcher
+  const DispatcherTab = () => (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Left: Pending Dispatch */}
+              <div className="space-y-4">
+                  <h3 className="font-bold flex items-center gap-2 opacity-80"><ShoppingBag className="w-5 h-5 text-blue-500" /> Ready to Ship ({readyToShipOrders.length})</h3>
+                  {readyToShipOrders.length > 0 ? readyToShipOrders.map(order => (
+                      <Card key={order.id} className="!p-4 border-l-4 border-l-blue-500 relative">
+                          <div className="flex justify-between items-start mb-2">
+                              <div>
+                                  <div className="font-bold text-sm">{order.orderNumber}</div>
+                                  <div className="text-xs opacity-60">{order.customerName}</div>
+                              </div>
+                              <div className="text-right">
+                                  <div className="font-black text-sm">{currencySymbol}{order.totalAmount}</div>
+                                  <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${order.paymentMethod === 'cod' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                                      {order.paymentMethod.toUpperCase()}
+                                  </div>
+                              </div>
+                          </div>
+                          <div className="flex items-start gap-2 mb-3 text-xs opacity-80 bg-gray-50 dark:bg-white/5 p-2 rounded">
+                              <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                              <span className="line-clamp-2">{order.customerAddress}</span>
+                          </div>
+                          <Button onClick={() => setAssignModalOpen(order.id)} className="w-full text-xs h-8">Assign Runner</Button>
+                      </Card>
+                  )) : (
+                      <div className="p-8 text-center opacity-40 border-2 border-dashed border-gray-200 dark:border-white/10 rounded-2xl">
+                          <CheckCircle className="w-8 h-8 mx-auto mb-2" />
+                          No pending orders.
+                      </div>
+                  )}
+              </div>
+
+              {/* Right: Active Runners */}
+              <div className="space-y-4">
+                  <h3 className="font-bold flex items-center gap-2 opacity-80"><Truck className="w-5 h-5 text-green-500" /> Active Runners</h3>
+                  {staffDeliveries.length > 0 ? staffDeliveries.map(({ staff, deliveries, totalCOD }) => (
+                      <Card key={staff.id} className="!p-0 overflow-hidden">
+                          <div className="p-4 bg-gray-50 dark:bg-white/5 border-b border-gray-100 dark:border-white/10 flex justify-between items-center">
+                              <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                                      {staff.name.charAt(0)}
+                                  </div>
+                                  <div>
+                                      <div className="font-bold">{staff.name}</div>
+                                      <div className="text-xs opacity-60">{deliveries.length} Active Trips</div>
+                                  </div>
+                              </div>
+                              <div className="text-right">
+                                  <div className="text-xs opacity-60 uppercase font-bold">Holding Cash</div>
+                                  <div className="font-black text-green-600">{currencySymbol}{totalCOD}</div>
+                              </div>
+                          </div>
+                          <div className="p-2 space-y-2">
+                              {deliveries.map(d => {
+                                  const ord = orders.find(o => o.id === d.orderId);
+                                  return (
+                                      <div key={d.id} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm">
+                                          <div>
+                                              <div className="font-bold text-xs">{ord?.orderNumber || 'Unknown'}</div>
+                                              <div className="text-[10px] opacity-60">{ord?.customerName}</div>
+                                          </div>
+                                          <Button onClick={() => setCompleteModalOpen(d.id)} variant="secondary" className="h-7 text-[10px] px-2 bg-green-50 text-green-700 border-none">
+                                              Complete
+                                          </Button>
+                                      </div>
+                                  )
+                              })}
+                          </div>
+                          <div className="p-2 border-t border-gray-100 dark:border-white/10 text-center">
+                              <button onClick={() => alert("Generate Trip Sheet PDF (Simulated)")} className="text-xs font-bold text-blue-600 hover:underline">
+                                  Print Trip Sheet
+                              </button>
+                          </div>
+                      </Card>
+                  )) : (
+                      <div className="p-8 text-center opacity-40 border-2 border-dashed border-gray-200 dark:border-white/10 rounded-2xl">
+                          <Truck className="w-8 h-8 mx-auto mb-2" />
+                          No runners out.
+                      </div>
+                  )}
+              </div>
+          </div>
+
+          {/* Assign Modal */}
+          <AnimatePresence>
+              {assignModalOpen && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                      <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+                          <h3 className="font-bold text-lg mb-4">Select Runner</h3>
+                          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                              {staff.filter(s => s.isActive).map(s => (
+                                  <button 
+                                    key={s.id} 
+                                    onClick={() => handleAssignRunner(orders.find(o => o.id === assignModalOpen)!, s.id)}
+                                    className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 border border-transparent hover:border-gray-200 transition-all text-left"
+                                  >
+                                      <div className="font-bold">{s.name}</div>
+                                      <div className="text-xs opacity-60">{s.phone}</div>
+                                  </button>
+                              ))}
+                              {staff.length === 0 && <div className="text-center text-sm opacity-50">No staff available. Add in Staff Manager.</div>}
+                          </div>
+                          <Button variant="secondary" onClick={() => setAssignModalOpen(null)} className="w-full mt-4">Cancel</Button>
+                      </div>
+                  </motion.div>
+              )}
+          </AnimatePresence>
+
+          {/* Complete Delivery Modal */}
+          <AnimatePresence>
+              {completeModalOpen && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                      <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+                          <div className="flex justify-between items-center mb-4">
+                              <h3 className="font-bold text-lg">Delivery Proof</h3>
+                              <button onClick={() => setCompleteModalOpen(null)}><X className="w-5 h-5 opacity-50" /></button>
+                          </div>
+                          
+                          <div className="space-y-4">
+                              <div className="p-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-dashed border-gray-300 dark:border-white/20 text-center">
+                                  {proofImage ? (
+                                      <img src={proofImage} alt="Proof" className="w-full h-32 object-cover rounded-lg" />
+                                  ) : (
+                                      <label className="cursor-pointer block">
+                                          <input type="file" accept="image/*" className="hidden" onChange={handleProofUpload} />
+                                          <Camera className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                          <span className="text-xs font-bold text-blue-600">Tap to Snap Proof</span>
+                                      </label>
+                                  )}
+                              </div>
+                              
+                              {(() => {
+                                  const del = deliveries.find(d => d.id === completeModalOpen);
+                                  if (del && del.codAmount > 0) {
+                                      return (
+                                          <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                                              <span className="text-sm font-bold text-green-800 dark:text-green-300 flex items-center gap-2">
+                                                  <DollarSign className="w-4 h-4" /> Collect Cash
+                                              </span>
+                                              <span className="text-xl font-black text-green-700 dark:text-green-400">{currencySymbol}{del.codAmount}</span>
+                                          </div>
+                                      )
+                                  }
+                                  return null;
+                              })()}
+
+                              <Button onClick={() => handleCompleteDelivery(completeModalOpen!)} className="w-full bg-green-600 hover:bg-green-700 text-white">
+                                  Confirm Delivery
+                              </Button>
+                          </div>
+                      </div>
+                  </motion.div>
+              )}
+          </AnimatePresence>
+      </div>
+  );
 
   const IntegrationTab = () => (
       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -212,12 +445,18 @@ create policy "Public Update" on online_orders for update using (true);
     <div className="space-y-6 pb-24">
         {/* Header Tabs */}
         <div className="flex justify-between items-center">
-             <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-xl">
+             <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-xl overflow-x-auto">
                 <button 
                     onClick={() => setActiveTab('orders')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'orders' ? 'bg-white shadow text-blue-600 dark:bg-gray-800 dark:text-blue-400' : 'opacity-60'}`}
                 >
                     <ShoppingBag className="w-4 h-4" /> Orders
+                </button>
+                <button 
+                    onClick={() => setActiveTab('dispatch')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'dispatch' ? 'bg-white shadow text-green-600 dark:bg-gray-800 dark:text-green-400' : 'opacity-60'}`}
+                >
+                    <Truck className="w-4 h-4" /> Dispatcher
                 </button>
                 <button 
                     onClick={() => setActiveTab('integration')}
@@ -228,7 +467,7 @@ create policy "Public Update" on online_orders for update using (true);
             </div>
         </div>
 
-        {activeTab === 'integration' ? <IntegrationTab /> : (
+        {activeTab === 'integration' ? <IntegrationTab /> : activeTab === 'dispatch' ? <DispatcherTab /> : (
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
                 {/* Order Status Filters */}
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
@@ -257,6 +496,7 @@ create policy "Public Update" on online_orders for update using (true);
                             <div className={`absolute top-0 left-0 bottom-0 w-1.5 ${
                                 order.status === 'new' ? 'bg-blue-500' :
                                 order.status === 'accepted' ? 'bg-yellow-500' :
+                                order.status === 'shipped' ? 'bg-orange-500' :
                                 order.status === 'delivered' ? 'bg-green-500' : 'bg-gray-300'
                             }`} />
 
@@ -266,6 +506,7 @@ create policy "Public Update" on online_orders for update using (true);
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <span className="font-mono font-bold text-lg">{order.orderNumber}</span>
+                                            {order.status === 'shipped' && <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase flex items-center gap-1"><Truck className="w-3 h-3" /> On Way</span>}
                                             {order.paymentStatus === 'paid' && (
                                                 <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">PAID</span>
                                             )}
@@ -339,9 +580,9 @@ create policy "Public Update" on online_orders for update using (true);
                                                 </Button>
                                             </>
                                         )}
-                                        {order.status === 'accepted' && (
+                                        {(order.status === 'accepted' || order.status === 'shipped') && (
                                             <Button onClick={() => updateOrderStatus(order.id, 'delivered')} className="bg-green-600 text-white hover:bg-green-700 h-8 px-4 text-xs flex items-center gap-2">
-                                                <Truck className="w-3 h-3" /> Mark Delivered
+                                                <CheckCircle className="w-3 h-3" /> Mark Delivered
                                             </Button>
                                         )}
                                     </div>
