@@ -57,19 +57,24 @@ const TelegramManager: React.FC = () => {
 
                         if (update.message && update.message.text) {
                             const userText = update.message.text;
+                            console.log("Processing Telegram Message:", userText);
                             
                             // Send "Typing..." status to Telegram so user knows it's working
                             await sendChatAction(config.botToken, senderId, 'typing');
 
-                            // Tag message source for clarity in Manager History
-                            const contextText = `[Telegram Message]: ${userText}`;
+                            // Removed [Telegram Message]: prefix to make AI treat it as a direct command
+                            const contextText = userText;
                             
                             // Send to AI Manager using the ref
                             // This will automatically add it to the AI Context history/sessions
-                            const aiResponse = await sendMessageRef.current(contextText);
-                            
-                            // Send Response back to Telegram
-                            await sendTelegramMessage(config.botToken, senderId, aiResponse);
+                            try {
+                                const aiResponse = await sendMessageRef.current(contextText);
+                                // Send Response back to Telegram
+                                await sendTelegramMessage(config.botToken, senderId, aiResponse);
+                            } catch (err) {
+                                console.error("AI Error processing telegram message", err);
+                                await sendTelegramMessage(config.botToken, senderId, "Sorry, I encountered an error processing that request.");
+                            }
                         }
                     }
                     // Update offset only after successful processing

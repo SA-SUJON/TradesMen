@@ -45,15 +45,15 @@ interface AIProviderProps {
 
 const addInventoryTool: FunctionDeclaration = {
   name: 'addInventoryItem',
-  description: 'Add a new product to the shop inventory. Use this when the user wants to stock new items or scans a memo.',
+  description: 'Add a new product to inventory. Extract details from prompt. Example: "Add Garlic 18kg buy 150 sell 170" -> name="Garlic", stock=18, unit="kg", buyingPrice=150, sellingPrice=170.',
   parameters: {
     type: Type.OBJECT,
     properties: {
       name: { type: Type.STRING, description: 'Name of the product' },
       sellingPrice: { type: Type.NUMBER, description: 'Selling price per unit' },
-      buyingPrice: { type: Type.NUMBER, description: 'Cost price per unit (optional)' },
+      buyingPrice: { type: Type.NUMBER, description: 'Cost/Buying price per unit (optional)' },
       stock: { type: Type.NUMBER, description: 'Quantity to add to stock' },
-      unit: { type: Type.STRING, description: 'Unit of measurement (kg, g, pc)' },
+      unit: { type: Type.STRING, description: 'Unit of measurement (kg, g, pc, l, ml)' },
       shelfId: { type: Type.STRING, description: 'Shelf or Rack ID location (optional)' },
       expiryDate: { type: Type.STRING, description: 'Expiry date in YYYY-MM-DD format (optional)' },
       supplierName: { type: Type.STRING, description: 'Name of the supplier (optional)' },
@@ -67,7 +67,7 @@ const addInventoryTool: FunctionDeclaration = {
 
 const updateProductTool: FunctionDeclaration = {
   name: 'updateProduct',
-  description: 'Update details of an existing product (e.g. change price, update stock). Find the product by name.',
+  description: 'Update details of an existing product. Use this to change price or adjust stock levels.',
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -261,14 +261,13 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
           systemContext += `\n\n**INVENTORY:** Access Disabled by user. Do not answer questions about specific stock levels.`;
       }
 
-      systemContext += `\n\n**YOUR ROLE:**
-      1. **Be Proactive:** If the user asks for a briefing, summarize based on allowed data.
-      2. **Manage Shop:** Use tools to add items, update prices (use 'updateProduct'), or bill items.
-      3. **Format:** Use Markdown (bolding key numbers). Keep it conversational but professional.
+      systemContext += `\n\n**CRITICAL INSTRUCTIONS:**
+      1. **ACTION FIRST:** If the user request implies an action (e.g. 'Add Garlic', 'Bill 2 Rice', 'Update Price'), you **MUST** call the corresponding tool. Do NOT just say "Done" without calling the tool.
+      2. **PARAMETER EXTRACTION:** Accurately extract numbers for price, stock, and quantity from the user prompt. 
+      3. **FORMAT:** After the tool executes, confirm the action in the response.
       `;
 
       // 4. Construct Prompt History
-      // Take the last 8 messages for context to manage token usage
       const historyText = sessionHistory.slice(-8, -1).map(m => `${m.role === 'user' ? 'User' : 'Manager'}: ${m.text}`).join('\n');
       
       const parts: any[] = [];
@@ -294,7 +293,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
         contents: { parts },
         config: {
           systemInstruction: systemContext,
-          temperature: aiConfig.temperature, // Use dynamic temperature
+          temperature: aiConfig.temperature, 
           tools: [{ functionDeclarations: [addInventoryTool, updateProductTool, addToCartTool, checkExpiryTool] }],
         }
       });
@@ -323,7 +322,7 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
               purchaseDate: args.purchaseDate
             };
             setInventory((prev) => [...prev, newItem]);
-            toolResponseText += `Added ${args.name} to inventory${args.shelfId ? ` (Shelf ${args.shelfId})` : ''}. `;
+            toolResponseText += `Added ${args.name} (Stock: ${args.stock} ${args.unit || 'kg'}) to inventory. `;
           } 
           else if (call.name === 'updateProduct') {
             const prodIndex = inventory.findIndex(p => p.name.toLowerCase().includes(args.productName.toLowerCase()));
