@@ -140,11 +140,6 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
       setEditId(null);
   }
 
-  const openMap = (address: string) => {
-      if (!address) return;
-      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
-  };
-
   // Filter Lists
   const filteredClients = customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search));
   const filteredSuppliers = suppliers.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.phone.includes(search));
@@ -156,29 +151,36 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
         <div className="md:col-span-1 space-y-4">
             <Card className="h-full flex flex-col">
                  <div className="flex flex-col gap-4 mb-4 flex-shrink-0">
-                    <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-xl">
+                    <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl">
                         <button 
                             onClick={() => { setActiveTab('clients'); setSelectedSupplier(null); setSearch(''); }}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'clients' ? 'bg-white shadow text-blue-600 dark:bg-gray-800 dark:text-blue-400' : 'opacity-60 hover:opacity-100'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'clients' ? 'bg-white shadow text-blue-600 dark:bg-gray-800 dark:text-blue-400' : 'opacity-60 hover:opacity-100'}`}
                         >
                             <Users className="w-4 h-4" /> Clients
                         </button>
                         <button 
                             onClick={() => { setActiveTab('suppliers'); setSelectedClient(null); setSearch(''); }}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'suppliers' ? 'bg-white shadow text-purple-600 dark:bg-gray-800 dark:text-purple-400' : 'opacity-60 hover:opacity-100'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'suppliers' ? 'bg-white shadow text-purple-600 dark:bg-gray-800 dark:text-purple-400' : 'opacity-60 hover:opacity-100'}`}
                         >
                             <Truck className="w-4 h-4" /> Suppliers
                         </button>
                     </div>
 
-                    <div className="flex gap-2">
-                        <Input 
-                            placeholder="Search..." 
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                        <Button onClick={() => setIsAdding(true)} className={`px-3 ${activeTab === 'suppliers' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}>
-                            <Plus className="w-5 h-5" />
+                    <div className="flex items-stretch gap-2">
+                        <div className="flex-grow">
+                             <Input 
+                                wrapperClassName="!bg-white dark:!bg-gray-900/80 !shadow-md !border-gray-100 dark:!border-white/10 !rounded-full focus-within:!border-blue-500 focus-within:!ring-4 focus-within:!ring-blue-500/20 transition-all scale-100 focus-within:scale-[1.01]"
+                                placeholder="Search..." 
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                icon={<Search className="w-5 h-5 text-blue-600" />}
+                            />
+                        </div>
+                        <Button 
+                            onClick={() => setIsAdding(true)} 
+                            className={`px-4 h-auto rounded-3xl ${activeTab === 'suppliers' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                        >
+                            <Plus className="w-6 h-6" />
                         </Button>
                     </div>
                 </div>
@@ -191,7 +193,7 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
                                 onClick={() => setSelectedClient(customer)}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className={`p-3 rounded-xl cursor-pointer border transition-all relative ${
+                                className={`p-3 rounded-2xl cursor-pointer border transition-all relative ${
                                     selectedClient?.id === customer.id 
                                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
                                         : theme === 'glass' ? 'bg-white/5 border-white/10' : 'border-gray-100 bg-white dark:bg-gray-800 dark:border-gray-700'
@@ -228,7 +230,7 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
                                 onClick={() => setSelectedSupplier(supplier)}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className={`p-3 rounded-xl cursor-pointer border transition-all relative ${
+                                className={`p-3 rounded-2xl cursor-pointer border transition-all relative ${
                                     selectedSupplier?.id === supplier.id 
                                         ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' 
                                         : theme === 'glass' ? 'bg-white/5 border-white/10' : 'border-gray-100 bg-white dark:bg-gray-800 dark:border-gray-700'
@@ -310,7 +312,6 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
 
                             {/* Details Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                {/* ... Same details as before ... */}
                                 <div className="p-3 rounded-xl border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5">
                                     <div className="flex items-start gap-3">
                                         <MapPin className="w-5 h-5 opacity-50 mt-0.5 flex-shrink-0" />
@@ -320,7 +321,15 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
                                         </div>
                                     </div>
                                 </div>
-                                {/* ... Notes/GateCode ... */}
+                                 <div className="p-3 rounded-xl border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+                                    <div className="flex items-start gap-3">
+                                        <StickyNote className="w-5 h-5 opacity-50 mt-0.5 flex-shrink-0" />
+                                        <div className="flex-grow">
+                                            <div className="text-xs font-bold opacity-50 uppercase mb-1">Notes</div>
+                                            <div className="text-sm font-medium leading-relaxed">{selectedClient.notes || "No notes"}</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                              {/* Transaction History */}
@@ -356,12 +365,30 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
                 ) : activeTab === 'suppliers' && selectedSupplier ? (
                      <motion.div key={selectedSupplier.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="h-full">
                          <Card className="h-full flex flex-col">
-                             {/* ... Supplier Details (No changes needed logic wise here) ... */}
                              <div className="flex flex-col md:flex-row justify-between md:items-center mb-6">
                                 <h2 className="text-3xl font-display font-bold">{selectedSupplier.name}</h2>
                                 {selectedSupplier.category && <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-bold">{selectedSupplier.category}</span>}
                              </div>
-                             {/* ... */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div className="p-3 rounded-xl border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+                                    <div className="flex items-start gap-3">
+                                        <MapPin className="w-5 h-5 opacity-50 mt-0.5 flex-shrink-0" />
+                                        <div className="flex-grow">
+                                            <div className="text-xs font-bold opacity-50 uppercase mb-1">Warehouse Address</div>
+                                            <div className="text-sm font-medium leading-relaxed">{selectedSupplier.address || "No address provided"}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-3 rounded-xl border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+                                    <div className="flex items-start gap-3">
+                                        <Contact className="w-5 h-5 opacity-50 mt-0.5 flex-shrink-0" />
+                                        <div className="flex-grow">
+                                            <div className="text-xs font-bold opacity-50 uppercase mb-1">Contact Person</div>
+                                            <div className="text-sm font-medium leading-relaxed">{selectedSupplier.contactPerson || "N/A"}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                              </div>
                          </Card>
                      </motion.div>
                 ) : (
@@ -376,7 +403,7 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
         </div>
       </div>
       
-      {/* Add/Edit Modal (Existing Code) */}
+      {/* Add/Edit Modal */}
       <AnimatePresence>
         {isAdding && (
             <motion.div 
@@ -393,7 +420,6 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
                     className="w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-md flex flex-col bg-white dark:bg-gray-900 sm:rounded-2xl shadow-2xl overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {/* ... Existing Modal Content ... */}
                     <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-gray-100 dark:border-white/10 z-10 bg-white dark:bg-gray-900">
                         <h3 className={`text-lg font-bold ${styles.accentText}`}>
                             {editId ? 'Edit Profile' : `New ${activeTab === 'clients' ? 'Client' : 'Supplier'}`}
@@ -403,11 +429,11 @@ const Customers: React.FC<CustomersProps> = ({ customers, setCustomers, supplier
 
                     <div className="flex-grow overflow-y-auto p-4 custom-scrollbar">
                          <div className="space-y-4 pb-20 sm:pb-0">
-                            {/* ... Form Fields ... */}
                             <Input label={activeTab === 'clients' ? "Full Name" : "Company Name"} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} autoFocus />
                             <Input label="Phone Number" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="Mobile" />
                             <Input label={activeTab === 'clients' ? "Service Address" : "Warehouse Address"} value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
-                            {/* ... more fields ... */}
+                            {activeTab === 'clients' && <Input label="Gate Code / Entry" value={formData.gateCode} onChange={e => setFormData({...formData, gateCode: e.target.value})} />}
+                            {activeTab === 'suppliers' && <Input label="Contact Person" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} />}
                          </div>
                     </div>
 

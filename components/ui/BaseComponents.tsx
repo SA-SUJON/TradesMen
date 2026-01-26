@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, HTMLMotionProps } from 'framer-motion';
 import { getThemeClasses } from '../../utils/themeUtils';
 import { useTheme } from '../../contexts/ThemeContext';
-import { ChevronDown, Check, X, Moon, Sun } from 'lucide-react';
+import { ChevronDown, Check, X } from 'lucide-react';
 
 interface BaseProps {
   className?: string;
@@ -63,21 +63,20 @@ interface ToggleProps {
 }
 
 export const Toggle: React.FC<ToggleProps> = ({ checked, onChange, icon, className = '' }) => {
-    const { theme, darkMode } = useTheme();
+    const { theme } = useTheme();
     
     // Theme-specific styles for the toggle track and knob
     const getTrackStyles = () => {
         if (theme === 'neumorphism') {
             return checked 
-                ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a]' 
-                : 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a]';
+                ? 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a]' 
+                : 'bg-[#E0E5EC] dark:bg-[#292d3e] shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#1f2330,inset_-3px_-3px_6px_#33374a]';
         }
         if (theme === 'glass') {
             return checked
                 ? 'bg-gradient-to-r from-blue-500 to-indigo-500 border border-white/20'
                 : 'bg-black/10 dark:bg-white/10 border border-white/10 dark:border-white/5';
         }
-        // Default / Material / Fluent
         return checked 
             ? 'bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-indigo-400 dark:to-purple-500' 
             : 'bg-gray-200 dark:bg-gray-700';
@@ -134,27 +133,27 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement>, BasePr
   label?: string;
   icon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  wrapperClassName?: string;
 }
 
-export const Input: React.FC<InputProps> = ({ label, icon, rightIcon, className = '', type="text", ...props }) => {
+export const Input: React.FC<InputProps> = ({ label, icon, rightIcon, className = '', wrapperClassName = '', type="text", ...props }) => {
   const { theme } = useTheme();
   const styles = getThemeClasses(theme);
   
-  // Use inputMode for better mobile keyboards
   const inputMode = type === 'number' ? 'decimal' : props.inputMode;
 
   return (
     <div className={`w-full group ${className}`}>
       {label && <label className={styles.label}>{label}</label>}
-      <div className={styles.inputWrapper}>
-        {icon && <span className={styles.inputIcon}>{icon}</span>}
+      <div className={`${styles.inputWrapper} relative ${wrapperClassName}`}>
+        {icon && <div className={`flex items-center justify-center ${styles.inputIcon} flex-shrink-0`}>{icon}</div>}
         <input 
           type={type}
           inputMode={inputMode}
-          className={styles.inputField} 
+          className={`${styles.inputField} bg-transparent flex-grow min-w-0`} 
           {...props} 
         />
-        {rightIcon && <span className={`${styles.inputIcon} mr-0 ml-2`}>{rightIcon}</span>}
+        {rightIcon && <div className={`flex items-center gap-1 pl-2 flex-shrink-0 ${styles.inputIcon} mr-0`}>{rightIcon}</div>}
       </div>
     </div>
   );
@@ -164,15 +163,16 @@ export const Input: React.FC<InputProps> = ({ label, icon, rightIcon, className 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement>, BaseProps {
     label?: string;
     icon?: React.ReactNode;
+    wrapperClassName?: string;
 }
 
-export const Select: React.FC<SelectProps> = ({ label, icon, className = '', children, ...props }) => {
+export const Select: React.FC<SelectProps> = ({ label, icon, className = '', wrapperClassName = '', children, ...props }) => {
     const { theme } = useTheme();
     const styles = getThemeClasses(theme);
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Extract options from children to build custom list
+    // Extract options
     const options = useMemo(() => {
         return React.Children.toArray(children).map((child: any) => {
              if (child.type === 'option') {
@@ -184,7 +184,6 @@ export const Select: React.FC<SelectProps> = ({ label, icon, className = '', chi
 
     const selectedOption = options.find(o => String(o.value) === String(props.value));
 
-    // Handle Click Outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -197,11 +196,7 @@ export const Select: React.FC<SelectProps> = ({ label, icon, className = '', chi
 
     const handleSelect = (value: string | number) => {
         if (props.onChange) {
-            // Create synthetic event to maintain compatibility
-            const event = {
-                target: { value },
-                currentTarget: { value }
-            } as any;
+            const event = { target: { value }, currentTarget: { value } } as any;
             props.onChange(event);
         }
         setIsOpen(false);
@@ -214,39 +209,44 @@ export const Select: React.FC<SelectProps> = ({ label, icon, className = '', chi
              {/* Trigger */}
              <div 
                 onClick={() => setIsOpen(!isOpen)}
-                className={`${styles.inputWrapper} cursor-pointer relative !pr-10`}
+                className={`${styles.inputWrapper} cursor-pointer relative !pr-10 ${wrapperClassName}`}
              >
                 {icon && <span className={styles.inputIcon}>{icon}</span>}
                 <span className={`block w-full truncate ${styles.inputField} flex items-center ${!selectedOption?.value ? 'opacity-50' : ''}`}>
                     {selectedOption ? selectedOption.label : "Select..."}
                 </span>
-                <ChevronDown className={`w-4 h-4 transition-transform opacity-50 absolute right-4 ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-5 h-5 transition-transform absolute right-5 opacity-60 ${isOpen ? 'rotate-180 text-blue-500' : ''}`} />
              </div>
 
              {/* Dropdown Menu */}
              <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                        initial={{ opacity: 0, y: 10, scale: 0.98, originY: 0 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.98 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className={`absolute left-0 right-0 max-h-60 overflow-y-auto custom-scrollbar ${styles.dropdownMenu} z-[100]`}
+                        className={`absolute left-0 right-0 max-h-64 overflow-y-auto custom-scrollbar z-[100] ${styles.dropdownMenu}`}
                     >
-                        {options.map((opt, idx) => (
-                            <div 
-                                key={idx}
-                                onClick={() => handleSelect(opt.value)}
-                                className={`${styles.dropdownItem} min-h-[44px] ${String(props.value) === String(opt.value) ? styles.dropdownItemActive : ''}`}
-                            >
-                                {String(props.value) === String(opt.value) && (
-                                    <Check className="w-4 h-4 text-green-500 mr-2" />
-                                )}
-                                {opt.label}
-                            </div>
-                        ))}
+                        {options.map((opt, idx) => {
+                            const isSelected = String(props.value) === String(opt.value);
+                            return (
+                                <div 
+                                    key={idx}
+                                    onClick={() => handleSelect(opt.value)}
+                                    className={`${styles.dropdownItem} ${isSelected ? styles.dropdownItemActive : ''} mb-1 last:mb-0`}
+                                >
+                                    {isSelected && (
+                                        <motion.div layoutId="check" className="absolute left-3 flex items-center justify-center text-blue-500">
+                                            <Check className="w-4 h-4" />
+                                        </motion.div>
+                                    )}
+                                    <span className={isSelected ? 'ml-6' : ''}>{opt.label}</span>
+                                </div>
+                            )
+                        })}
                         {options.length === 0 && (
-                            <div className="p-3 text-sm opacity-50 text-center">No options available</div>
+                            <div className="p-4 text-sm opacity-50 text-center italic">No options available</div>
                         )}
                     </motion.div>
                 )}

@@ -48,6 +48,22 @@ const LockScreen: React.FC<LockScreenProps> = ({ isLocked, config, onUnlock }) =
         }
     };
 
+    // Keyboard Event Listener
+    useEffect(() => {
+        if (!isLocked) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key >= '0' && e.key <= '9') {
+                handleNumClick(e.key);
+            } else if (e.key === 'Backspace') {
+                handleDelete();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isLocked, pin]); // Dependency on pin to ensure state updates correctly
+
     if (!isLocked) return null;
 
     return (

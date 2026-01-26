@@ -286,23 +286,6 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
       setShowScanner(false);
   };
 
-  const handleSort = (key: 'name' | 'stock' | 'sellingPrice') => {
-      setSortConfig(current => ({
-          key,
-          direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
-      }));
-  };
-
-  const getEventIcon = (type: string) => {
-      switch(type) {
-          case 'create': return <PlusCircle className="w-3 h-3 text-green-500" />;
-          case 'sale': return <ShoppingBag className="w-3 h-3 text-blue-500" />;
-          case 'update': return <Tag className="w-3 h-3 text-orange-500" />;
-          case 'stock': return <Package className="w-3 h-3 text-purple-500" />;
-          default: return <Clock className="w-3 h-3 text-gray-500" />;
-      }
-  };
-
   // Determine items to show
   const processedInventory = useMemo(() => {
       let data = inventory;
@@ -377,13 +360,13 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
                  <div className="flex gap-2">
                      <button 
                         onClick={() => setActiveTab('items')} 
-                        className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'items' ? 'bg-blue-600 text-white shadow-md' : 'opacity-60 hover:opacity-100 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'items' ? 'bg-blue-600 text-white shadow-md' : 'opacity-60 hover:opacity-100 hover:bg-gray-100 dark:hover:bg-white/10'}`}
                      >
                          Items
                      </button>
                      <button 
                         onClick={() => setActiveTab('restock')} 
-                        className={`px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${activeTab === 'restock' ? 'bg-orange-500 text-white shadow-md' : 'opacity-60 hover:opacity-100 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        className={`px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${activeTab === 'restock' ? 'bg-orange-500 text-white shadow-md' : 'opacity-60 hover:opacity-100 hover:bg-gray-100 dark:hover:bg-white/10'}`}
                      >
                          Restock
                          {restockItems.length > 0 && <span className="bg-white text-orange-500 px-1.5 rounded-full text-xs">{restockItems.length}</span>}
@@ -398,7 +381,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
 
                      {/* Shelf Audit Button */}
                      {userRole === 'admin' && (
-                         <label className="flex items-center gap-2 px-3 py-2 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-lg text-sm font-bold cursor-pointer hover:bg-purple-200 transition-colors">
+                         <label className="flex items-center gap-2 px-3 py-2 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-2xl text-sm font-bold cursor-pointer hover:bg-purple-200 transition-colors">
                              <input type="file" accept="image/*" className="hidden" onChange={handleAuditUpload} />
                              {isAuditing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                              <span className="hidden md:inline">AI Audit</span>
@@ -410,20 +393,35 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
                  </div>
             </div>
             
-            <div className="relative w-full">
+            <div className="w-full">
                 <Input 
+                    wrapperClassName="!bg-white dark:!bg-gray-900/80 !shadow-md !border-gray-100 dark:!border-white/10 !rounded-full focus-within:!border-blue-500 focus-within:!ring-4 focus-within:!ring-blue-500/20 transition-all scale-100 focus-within:scale-[1.01]"
                     placeholder="Search items, barcodes..." 
                     value={search}
                     onChange={(e) => { setSearch(e.target.value); if (aiFilteredIds) setAiFilteredIds(null); }}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleAISearch(); }}
-                    className="pl-10 pr-24 py-3"
+                    icon={<Search className="w-5 h-5 text-blue-600" />}
+                    rightIcon={
+                        <div className="flex items-center gap-1">
+                             <button onClick={() => { setScanningFor('search'); setShowScanner(true); }} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors" title="Scan Barcode">
+                                <ScanBarcode className="w-5 h-5 opacity-60" />
+                            </button>
+                             {search && (
+                                <button onClick={() => { setSearch(''); setAiFilteredIds(null); }} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+                                    <X className="w-4 h-4 opacity-50" />
+                                </button>
+                            )}
+                            <button 
+                                onClick={handleAISearch} 
+                                disabled={!search.trim() || isSearchingAI} 
+                                className={`p-2 rounded-lg transition-all ${aiFilteredIds ? 'bg-blue-100 text-blue-600' : 'hover:bg-blue-50 text-blue-500'}`}
+                                title="AI Search"
+                            >
+                                {isSearchingAI ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                            </button>
+                        </div>
+                    }
                 />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 opacity-50" />
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-                    <button onClick={() => { setScanningFor('search'); setShowScanner(true); }} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10"><ScanBarcode className="w-5 h-5 opacity-70" /></button>
-                    {search && <button onClick={() => { setSearch(''); setAiFilteredIds(null); }} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10"><X className="w-4 h-4 opacity-50" /></button>}
-                    <button onClick={handleAISearch} disabled={!search.trim() || isSearchingAI} className={`p-2 rounded-lg transition-all ${aiFilteredIds ? 'bg-blue-100 text-blue-600' : 'hover:bg-blue-50 text-blue-500'}`}>{isSearchingAI ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}</button>
-                </div>
             </div>
         </div>
       </Card>
@@ -584,7 +582,7 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
           </AnimatePresence>
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Modal (Same as before but ensures correct styles applied) */}
       <AnimatePresence>
         {isAdding && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4" onClick={resetForm}>

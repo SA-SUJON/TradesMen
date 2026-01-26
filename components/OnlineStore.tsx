@@ -16,27 +16,6 @@ interface OnlineStoreProps {
   setSales: (sales: Sale[] | ((val: Sale[]) => Sale[])) => void;
 }
 
-// Mock Data for Simulation Mode
-const MOCK_ORDERS: OnlineOrder[] = [
-    {
-        id: 'mock-1',
-        orderNumber: 'WEB-1024',
-        customerName: 'Rahul Sharma',
-        customerPhone: '9876543210',
-        customerAddress: 'Flat 402, Green Valley Apts, MG Road',
-        items: [
-            { productName: 'Basmati Rice', quantity: 5, price: 120, unit: 'kg' },
-            { productName: 'Sugar', quantity: 2, price: 45, unit: 'kg' }
-        ],
-        totalAmount: 690,
-        paymentMethod: 'cod',
-        paymentStatus: 'pending',
-        status: 'new',
-        date: new Date().toISOString(),
-        platform: 'Website'
-    }
-];
-
 const OnlineStore: React.FC<OnlineStoreProps> = ({ inventory, setInventory, sales, setSales }) => {
   const { theme, unitSystem } = useTheme();
   const styles = getThemeClasses(theme);
@@ -50,10 +29,7 @@ const OnlineStore: React.FC<OnlineStoreProps> = ({ inventory, setInventory, sale
   // Sync Logic
   const fetchOrders = async () => {
       if (!isSupabaseConfigured()) {
-          // If no Supabase, allow simulation with mock data if empty
-          if (orders.length === 0) {
-            setOrders(MOCK_ORDERS);
-          }
+          // Simulation mode: Do not inject mock data automatically to keep UI clean
           return;
       }
 
@@ -250,8 +226,6 @@ create policy "Public Update" on online_orders for update using (true);
                     <Code className="w-4 h-4" /> Integration
                 </button>
             </div>
-            
-            {/* Refresh Button Removed here as per user request */}
         </div>
 
         {activeTab === 'integration' ? <IntegrationTab /> : (
@@ -380,7 +354,7 @@ create policy "Public Update" on online_orders for update using (true);
                             <p>No orders in this category.</p>
                             {!isSupabaseConfigured() && (
                                 <p className="text-xs mt-2 text-orange-500 flex items-center justify-center gap-1">
-                                    <AlertCircle className="w-3 h-3" /> DB Not Connected (Showing Mock Data)
+                                    <AlertCircle className="w-3 h-3" /> DB Not Connected
                                 </p>
                             )}
                         </div>

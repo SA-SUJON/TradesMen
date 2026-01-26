@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, Input, Button, Select } from './ui/BaseComponents';
 import { ArrowRightLeft, Package, Box, Scale, TrendingUp, AlertTriangle, DollarSign, Calculator, Table2, Coins, RefreshCw } from 'lucide-react';
@@ -184,8 +185,9 @@ const Conversions: React.FC = () => {
                          <div className="grid grid-cols-2 gap-4">
                              <Input label="Grams (g)" type="number" value={gram} onChange={e => handleGram(e.target.valueAsNumber)} />
                              <Input label="Kilograms (kg)" type="number" value={kg} onChange={e => handleKg(e.target.valueAsNumber)} />
-                             <Input label="Pounds (lbs)" type="number" value={pound} readOnly className="opacity-70 bg-gray-50 dark:bg-white/5" />
-                             <Input label="Ounces (oz)" type="number" value={ounce} readOnly className="opacity-70 bg-gray-50 dark:bg-white/5" />
+                             {/* Removed custom opaque styles, relying on new theme utils */}
+                             <Input label="Pounds (lbs)" type="number" value={pound} readOnly />
+                             <Input label="Ounces (oz)" type="number" value={ounce} readOnly />
                          </div>
                      </Card>
                  </motion.div>
