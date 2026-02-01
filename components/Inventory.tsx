@@ -355,69 +355,74 @@ const Inventory: React.FC<InventoryProps> = ({ inventory, setInventory, userRole
       {showScanner && <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
 
       <Card className="!p-4">
+        {/* Optimized Header Layout for Mobile */}
         <div className="flex flex-col gap-4">
-            <div className="flex justify-between items-center">
-                 <div className="flex gap-2">
-                     <button 
-                        onClick={() => setActiveTab('items')} 
-                        className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'items' ? 'bg-blue-600 text-white shadow-md' : 'opacity-60 hover:opacity-100 hover:bg-gray-100 dark:hover:bg-white/10'}`}
-                     >
-                         Items
-                     </button>
-                     <button 
-                        onClick={() => setActiveTab('restock')} 
-                        className={`px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${activeTab === 'restock' ? 'bg-orange-500 text-white shadow-md' : 'opacity-60 hover:opacity-100 hover:bg-gray-100 dark:hover:bg-white/10'}`}
-                     >
-                         Restock
-                         {restockItems.length > 0 && <span className="bg-white text-orange-500 px-1.5 rounded-full text-xs">{restockItems.length}</span>}
-                     </button>
-                 </div>
-                 
-                 <div className="flex gap-2">
-                     {/* Catalog Button */}
-                     <Button onClick={() => setShowCatalog(true)} className="flex items-center gap-2 px-3 py-2 text-sm bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none">
-                         <FileImage className="w-4 h-4" /> <span className="hidden md:inline">Catalog</span>
-                     </Button>
+            
+            {/* Top Row: Segmented Tab Control */}
+            <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-xl">
+                 <button 
+                    onClick={() => setActiveTab('items')} 
+                    className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'items' ? 'bg-white text-blue-600 shadow dark:bg-gray-800 dark:text-blue-400' : 'opacity-60'}`}
+                 >
+                     <Package className="w-4 h-4" /> Items
+                 </button>
+                 <button 
+                    onClick={() => setActiveTab('restock')} 
+                    className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'restock' ? 'bg-white text-orange-600 shadow dark:bg-gray-800 dark:text-orange-400' : 'opacity-60'}`}
+                 >
+                     <Truck className="w-4 h-4" /> Restock
+                     {restockItems.length > 0 && <span className="bg-orange-100 text-orange-700 px-1.5 rounded-full text-[10px] ml-1">{restockItems.length}</span>}
+                 </button>
+            </div>
 
-                     {/* Shelf Audit Button */}
-                     {userRole === 'admin' && (
-                         <label className="flex items-center gap-2 px-3 py-2 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-2xl text-sm font-bold cursor-pointer hover:bg-purple-200 transition-colors">
-                             <input type="file" accept="image/*" className="hidden" onChange={handleAuditUpload} />
-                             {isAuditing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
-                             <span className="hidden md:inline">AI Audit</span>
-                         </label>
-                     )}
-                     <Button onClick={() => setIsAdding(true)} className="flex items-center gap-2 whitespace-nowrap px-4 py-2 text-sm">
-                        <Plus className="w-4 h-4" /> Add Item
-                    </Button>
-                 </div>
+            {/* Middle Row: Action Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                 {/* Catalog */}
+                 <Button onClick={() => setShowCatalog(true)} variant="secondary" className="text-xs h-9 flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100">
+                     <FileImage className="w-3.5 h-3.5" /> Catalog
+                 </Button>
+
+                 {/* AI Audit */}
+                 {userRole === 'admin' && (
+                     <label className="flex items-center justify-center gap-2 h-9 px-3 bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-xl text-xs font-bold cursor-pointer hover:bg-purple-100 transition-colors border border-purple-100 dark:border-purple-900/50">
+                         <input type="file" accept="image/*" className="hidden" onChange={handleAuditUpload} />
+                         {isAuditing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                         <span>Audit</span>
+                     </label>
+                 )}
+
+                 {/* Add Item (Primary) - Spans 2 cols on mobile if odd count, else fits grid */}
+                 <Button onClick={() => setIsAdding(true)} className="col-span-2 md:col-span-1 h-9 text-xs flex items-center justify-center gap-2">
+                    <Plus className="w-4 h-4" /> Add Item
+                </Button>
             </div>
             
+            {/* Bottom Row: Search */}
             <div className="w-full">
                 <Input 
-                    wrapperClassName="!bg-white dark:!bg-gray-900/80 !shadow-md !border-gray-100 dark:!border-white/10 !rounded-full focus-within:!border-blue-500 focus-within:!ring-4 focus-within:!ring-blue-500/20 transition-all scale-100 focus-within:scale-[1.01]"
+                    wrapperClassName="!bg-white dark:!bg-gray-900/80 !shadow-sm !border-gray-200 dark:!border-white/10 !rounded-xl focus-within:!border-blue-500 transition-all"
                     placeholder="Search items, barcodes..." 
                     value={search}
                     onChange={(e) => { setSearch(e.target.value); if (aiFilteredIds) setAiFilteredIds(null); }}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleAISearch(); }}
-                    icon={<Search className="w-5 h-5 text-blue-600" />}
+                    icon={<Search className="w-4 h-4 text-gray-400" />}
                     rightIcon={
                         <div className="flex items-center gap-1">
-                             <button onClick={() => { setScanningFor('search'); setShowScanner(true); }} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors" title="Scan Barcode">
-                                <ScanBarcode className="w-5 h-5 opacity-60" />
+                             <button onClick={() => { setScanningFor('search'); setShowScanner(true); }} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" title="Scan Barcode">
+                                <ScanBarcode className="w-4 h-4 opacity-60" />
                             </button>
                              {search && (
-                                <button onClick={() => { setSearch(''); setAiFilteredIds(null); }} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+                                <button onClick={() => { setSearch(''); setAiFilteredIds(null); }} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
                                     <X className="w-4 h-4 opacity-50" />
                                 </button>
                             )}
                             <button 
                                 onClick={handleAISearch} 
                                 disabled={!search.trim() || isSearchingAI} 
-                                className={`p-2 rounded-lg transition-all ${aiFilteredIds ? 'bg-blue-100 text-blue-600' : 'hover:bg-blue-50 text-blue-500'}`}
+                                className={`p-1.5 rounded-lg transition-all ${aiFilteredIds ? 'bg-blue-100 text-blue-600' : 'hover:bg-blue-50 text-blue-500'}`}
                                 title="AI Search"
                             >
-                                {isSearchingAI ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                                {isSearchingAI ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                             </button>
                         </div>
                     }

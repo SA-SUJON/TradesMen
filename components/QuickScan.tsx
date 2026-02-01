@@ -1,3 +1,4 @@
+
 import React, { useRef } from 'react';
 import { useAI } from '../contexts/AIContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -28,15 +29,18 @@ const QuickScan: React.FC<QuickScanProps> = ({ onScanStart, isVisible = true, is
         }
     };
 
-    // Calculate position classes based on whether it is primary (alone) or secondary (with AI button)
-    // Mobile Bottom Nav height is ~70px. We need to clear it.
-    // If Primary: Bottom-24 (approx 96px, safe above nav).
-    // If Secondary (AI btn present): Side by side on mobile? 
-    //   - AI Btn is bottom-24 right-6. 
-    //   - QuickScan should be bottom-24 right-24 (left of AI btn).
+    // Responsive Positioning:
+    // Mobile (<768px): Bottom-40 (160px).
+    //   If isPrimary: Right-6 (24px).
+    //   If !isPrimary (AI exists): Right-24 (96px) -> Sit to the left of AI button.
+    // Desktop (>=768px): Bottom-6 (24px).
     
-    // We use a dynamic calculation for 'right' and 'bottom' in style/animate prop to be safe.
+    // Note: AI Button is at right-6. QuickScan should be left of it if secondary.
     
+    const positionClasses = isPrimary 
+        ? "right-6 bottom-40 md:bottom-6 md:right-6"
+        : "right-24 bottom-40 md:bottom-6 md:right-24";
+
     return (
         <AnimatePresence>
             {isVisible && (
@@ -50,22 +54,10 @@ const QuickScan: React.FC<QuickScanProps> = ({ onScanStart, isVisible = true, is
                     />
                     <motion.button
                         initial={{ scale: 0, opacity: 0 }}
-                        animate={{ 
-                            scale: 1, 
-                            opacity: 1,
-                            // On Mobile (<768px):
-                            //   If Primary: Right-6 (1.5rem), Bottom-24 (6rem) -> Above Nav
-                            //   If Secondary: Right-24 (6rem), Bottom-24 (6rem) -> Left of AI Btn, Above Nav
-                            // On Desktop (>=768px):
-                            //   If Primary: Right-6, Bottom-6
-                            //   If Secondary: Right-24, Bottom-6 (Left of AI Btn)
-                            
-                            right: isPrimary ? '1.5rem' : '6rem', 
-                            bottom: typeof window !== 'undefined' && window.innerWidth < 768 ? '6rem' : '1.5rem'
-                        }}
+                        animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                        className={`fixed z-50 p-4 rounded-full shadow-lg flex items-center justify-center transition-colors group ${
+                        className={`fixed z-[60] p-4 rounded-full shadow-lg flex items-center justify-center transition-colors group ${positionClasses} ${
                              theme === 'material' ? 'bg-[#E8DEF8] text-[#1D192B]' : 
                              theme === 'glass' ? 'bg-white/20 backdrop-blur-md border border-white/30 text-white' :
                              theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-700 dark:text-blue-400 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a]' :

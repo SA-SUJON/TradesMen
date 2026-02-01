@@ -4,7 +4,7 @@ import { useAI } from '../contexts/AIContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeClasses } from '../utils/themeUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff, History, MessageSquarePlus, Trash2, ArrowLeft, Wand2, Lightbulb, Bot } from 'lucide-react';
+import { Sparkles, Send, X, Camera, Image as ImageIcon, Loader2, Mic, MicOff, History, MessageSquarePlus, Trash2, ArrowLeft, Wand2, Lightbulb, Bot, ChevronDown } from 'lucide-react';
 import { Button, Card } from './ui/BaseComponents';
 
 // --- Helper: Simple Markdown Renderer ---
@@ -224,11 +224,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     // Layout Logic
     let containerClasses = "";
     if (variant === 'modal') {
-         containerClasses = `w-[calc(100vw-32px)] md:w-[400px] h-[500px] flex flex-col overflow-hidden shadow-2xl ${
-            theme === 'glass' ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/40 dark:border-white/10 rounded-2xl' :
-            theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] rounded-2xl border border-white/40 dark:border-white/5' :
-            'bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700'
-          }`;
+         // Desktop: floating card. Mobile: full height container within the bottom sheet
+         containerClasses = `w-full h-full flex flex-col overflow-hidden`;
     } else {
         // Page Variant (Full Height)
         containerClasses = `w-full flex flex-col overflow-hidden shadow-sm ${styles.card} p-0 ${className}`;
@@ -248,7 +245,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
     return (
         <div className={containerClasses}>
             {/* Header */}
-            <div className={`p-4 border-b ${theme === 'glass' ? 'border-gray-200/50 dark:border-white/10' : 'border-gray-100 dark:border-white/10'} flex items-center justify-between`}>
+            <div className={`p-4 border-b flex-shrink-0 ${theme === 'glass' ? 'border-gray-200/50 dark:border-white/10' : 'border-gray-100 dark:border-white/10'} flex items-center justify-between`}>
                 <div className="flex items-center gap-2">
                     {showHistory && !isPageDesktop ? (
                         <button onClick={() => setShowHistory(false)} className="mr-1">
@@ -285,8 +282,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                         </button>
                     )}
                     {variant === 'modal' && (
-                        <button onClick={onClose} className="opacity-50 hover:opacity-100 ml-2">
-                            <X className="w-5 h-5" />
+                        <button onClick={onClose} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 ml-2">
+                            {window.innerWidth < 768 ? <ChevronDown className="w-5 h-5" /> : <X className="w-5 h-5" />}
                         </button>
                     )}
                 </div>
@@ -412,13 +409,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
 
                     {/* Quick Suggestions */}
                     {!isProcessing && (
-                        <div className="mb-2">
+                        <div className="mb-2 flex-shrink-0">
                              <SuggestionChips onSelect={(text) => { sendMessage(text); }} />
                         </div>
                     )}
 
                     {/* Input Area */}
-                    <div className={`p-3 md:p-4 border-t ${theme === 'glass' ? 'border-gray-200/50 dark:border-white/10' : 'border-gray-100 dark:border-white/10'}`}>
+                    <div className={`p-3 md:p-4 border-t flex-shrink-0 ${theme === 'glass' ? 'border-gray-200/50 dark:border-white/10' : 'border-gray-100 dark:border-white/10'} pb-safe`}>
                     <div className="flex gap-2 items-center">
                         <input 
                             type="file" 
@@ -490,7 +487,7 @@ const AIAssistant: React.FC<{ forceHide?: boolean, isVisible?: boolean }> = ({ f
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0, opacity: 0 }}
-        className={`fixed bottom-24 md:bottom-6 right-6 z-50 p-4 rounded-full shadow-xl flex items-center justify-center transition-all ${
+        className={`fixed bottom-40 md:bottom-6 right-6 z-[60] p-4 rounded-full shadow-xl flex items-center justify-center transition-all ${
            theme === 'material' ? 'bg-[#6750A4] text-white' : 
            theme === 'fluent' ? 'bg-[#0078D4] text-white' :
            theme === 'neumorphism' ? 'bg-[#E0E5EC] dark:bg-[#292d3e] text-slate-700 dark:text-blue-400 shadow-[5px_5px_10px_#bebebe,-5px_-5px_10px_#ffffff] dark:shadow-[5px_5px_10px_#1f2330,-5px_-5px_10px_#33374a]' :
@@ -507,13 +504,40 @@ const AIAssistant: React.FC<{ forceHide?: boolean, isVisible?: boolean }> = ({ f
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-40 md:bottom-24 right-4 z-40 max-w-[calc(100vw-32px)]"
+            initial={{ opacity: 0, y: "100%" }} // Slide up from bottom
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className={`
+              fixed z-[100]
+              /* Desktop Styles */
+              md:bottom-24 md:right-4 md:max-w-[400px] md:h-auto md:max-h-[600px] md:w-auto md:rounded-2xl
+              /* Mobile Styles: Bottom Sheet */
+              inset-x-0 bottom-0 top-[15vh] w-full rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.2)]
+              overflow-hidden
+              ${theme === 'glass' ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl' : 'bg-white dark:bg-gray-900'}
+            `}
           >
-             <ChatInterface variant="modal" onClose={() => setIsOpen(false)} />
+             {/* Mobile drag handle indicator */}
+             <div className="md:hidden w-full flex justify-center pt-3 pb-1" onClick={() => setIsOpen(false)}>
+                 <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full opacity-50" />
+             </div>
+             
+             <ChatInterface variant="modal" onClose={() => setIsOpen(false)} className="h-full" />
           </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Mobile Backdrop */}
+      <AnimatePresence>
+        {isOpen && (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsOpen(false)}
+                className="md:hidden fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm"
+            />
         )}
       </AnimatePresence>
     </>

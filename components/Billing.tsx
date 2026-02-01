@@ -827,7 +827,9 @@ const Billing: React.FC<BillingProps> = ({ inventory, setInventory, cart, setCar
       </div>
 
       {/* Redesigned Mobile Floating Dock */}
-      <div className={`md:hidden fixed bottom-[76px] left-3 right-3 z-50 rounded-2xl p-3 transition-all duration-300 ${dockStyles.container}`}>
+      {/* Increased bottom distance to bottom-[80px] to strictly sit above the nav bar */}
+      {/* Added z-40 to sit above typical content but below modals/nav if needed, though Nav is usually z-50 */}
+      <div className={`md:hidden fixed bottom-[80px] left-3 right-3 z-40 rounded-2xl p-3 transition-all duration-300 backdrop-blur-xl ${dockStyles.container}`}>
          <div className="flex items-center gap-3 w-full">
              <div className="flex flex-col flex-shrink-0 min-w-[80px]">
                  <span className={`text-[10px] uppercase font-bold tracking-wider ${dockStyles.label}`}>

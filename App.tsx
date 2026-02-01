@@ -31,7 +31,7 @@ import Documents from './components/Documents';
 import StaffManager from './components/StaffManager';
 
 // Icons
-import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users, PieChart, FileBarChart, Grid, ChevronLeft, Store, Menu, LogOut, LayoutDashboard, ChevronRight, Database, Cloud, Globe, Megaphone, ClipboardList, FolderOpen, Briefcase } from 'lucide-react';
+import { Calculator as CalcIcon, Package, ShoppingCart, ArrowRightLeft, Settings as SettingsIcon, Sparkles, Users, PieChart, FileBarChart, Grid, ChevronLeft, Store, Menu, LogOut, LayoutDashboard, ChevronRight, Database, Cloud, Globe, Megaphone, ClipboardList, FolderOpen, Briefcase, LayoutGrid } from 'lucide-react';
 
 // Type for state setters to match useLocalStorage signature
 type SetValue<T> = (value: T | ((val: T) => T)) => void;
@@ -157,9 +157,13 @@ const getIconVariant = (id: string) => {
             };
         case 'menu':
              return {
-                active: { rotate: 90 },
-                initial: { rotate: 0 },
-                hover: { rotate: 45 }
+                active: { 
+                    rotate: [0, 45, 0, 45, 0], 
+                    scale: [1, 1.2, 1],
+                    transition: { duration: 0.6 }
+                },
+                initial: { rotate: 0, scale: 1 },
+                hover: { scale: 1.1, rotate: 10 }
             };
         case 'settings':
              return {
@@ -193,16 +197,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     { id: 'inventory', label: 'Items', icon: <Package className="w-5 h-5" /> },
     { id: 'billing', label: 'Bill', icon: <ShoppingCart className="w-5 h-5" /> },
     { id: 'customers', label: 'Parties', icon: <Users className="w-5 h-5" /> },
-    { id: 'online_store', label: 'Online', icon: <Globe className="w-5 h-5" /> }, // New Tab
+    // Removed Online Store from here to put in More menu
     { id: 'manager', label: 'Manager', icon: <Sparkles className="w-5 h-5" /> },
   ];
   
-  // Mobile only tab
-  const MOBILE_MENU_TAB = { id: 'menu', label: 'More', icon: <Menu className="w-5 h-5" /> };
+  // Mobile only tab - Updated Icon to LayoutGrid
+  const MOBILE_MENU_TAB = { id: 'menu', label: 'More', icon: <LayoutGrid className="w-5 h-5" /> };
 
   // Secondary Tools (Available in More Menu on Mobile, Sidebar on Desktop)
   // FILTERED BY ROLE
   const MENU_TOOLS = [
+    { id: 'online_store', label: 'Online Store', icon: <Globe className="w-5 h-5" />, desc: 'Orders & Dispatch' },
     ...(userRole === 'admin' ? [{ id: 'finance', label: 'Business Biz', icon: <PieChart className="w-5 h-5" />, desc: 'Expenses & Profits' }] : []),
     ...(userRole === 'admin' ? [{ id: 'marketing', label: 'Marketing', icon: <Megaphone className="w-5 h-5" />, desc: 'Campaigns & Offers' }] : []),
     ...(userRole === 'admin' ? [{ id: 'reports', label: 'Reports', icon: <FileBarChart className="w-5 h-5" />, desc: 'GSTR-1 & Stock' }] : []),
@@ -231,13 +236,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       setActiveTab(id);
   };
 
-  const isMenuContext = ['menu', 'finance', 'calculator', 'conversions', 'reports', 'settings', 'marketing', 'tasks', 'docs', 'staff'].includes(activeTab);
+  const isMenuContext = ['menu', 'online_store', 'finance', 'calculator', 'conversions', 'reports', 'settings', 'marketing', 'tasks', 'docs', 'staff'].includes(activeTab);
   const isSettings = activeTab === 'settings';
   const isManagerTab = activeTab === 'manager';
   const isAssistantVisible = showAssistant && !isManagerTab && !isSettings && userRole === 'admin';
   const isQuickScanVisible = showQuickScan && !isSettings && !isManagerTab;
   const isQuickScanPrimary = !isAssistantVisible;
-  const isMagicBarVisible = !isManagerTab && !isSettings && !isMenuContext && activeTab !== 'online_store' && userRole === 'admin';
+  const isMagicBarVisible = !isManagerTab && !isSettings && !isMenuContext && userRole === 'admin';
 
   const getHeaderTitle = () => {
       if (activeTab === 'settings') return 'Settings';
@@ -473,7 +478,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                 </header>
 
                 {/* Content Container */}
-                <main className={`flex-grow relative ${isManagerTab ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'} pb-32 md:pb-0 px-4 md:px-4 w-full`}>
+                {/* Increased pb-40 for mobile to allow safe scrolling past floating elements */}
+                <main className={`flex-grow relative ${isManagerTab ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'} pb-40 md:pb-0 px-4 md:px-4 w-full`}>
                     <div className="w-full max-w-[1600px] h-full mx-auto">
                         <AnimatePresence mode="wait">
                             <motion.div
