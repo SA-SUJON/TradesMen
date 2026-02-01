@@ -1,5 +1,4 @@
 
-
 export type ThemeType = 'material' | 'glass' | 'neumorphism' | 'fluent';
 export type UnitSystem = 'metric' | 'local'; // local = Maund/Seer
 
@@ -12,6 +11,17 @@ export interface BusinessProfile {
   logo?: string; // base64
   signature?: string; // base64
   terms?: string;
+  socialLinks?: {
+    facebook?: string;
+    instagram?: string;
+    googleBusiness?: string;
+    tiktok?: string;
+    twitter?: string;
+    youtube?: string;
+    website?: string;
+    linkedin?: string;
+    pinterest?: string;
+  };
 }
 
 export interface AuthConfig {
@@ -144,7 +154,7 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'model' | 'system';
   text: string;
-  image?: string; 
+  images?: string[]; // Supports multiple images
   isError?: boolean;
 }
 

@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { Product, CartItem, Customer, Sale, Expense, Supplier, AuthConfig } from './types';
 import { getThemeClasses } from './utils/themeUtils';
 import useLocalStorage from './hooks/useLocalStorage';
@@ -122,65 +123,199 @@ const AnimatedTitle: React.FC<{ subtitle?: boolean }> = ({ subtitle = true }) =>
     );
 };
 
-// Helper for Icon Animations
+// --- Unique Animation Variants ---
 const getIconVariant = (id: string) => {
     switch (id) {
+        // 1. Items (Package): Squash & Stretch (Bouncing Box)
         case 'inventory': 
             return {
-                active: { rotate: [0, -10, 10, -10, 10, 0], transition: { duration: 0.6, repeat: Infinity, repeatDelay: 3 } },
-                initial: { rotate: 0 },
-                hover: { rotate: [0, -10, 10, 0], transition: { duration: 0.3 } }
+                active: { 
+                    scaleY: [1, 0.8, 1.1, 1],
+                    scaleX: [1, 1.1, 0.9, 1],
+                    y: [0, 2, -4, 0],
+                    transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut" } 
+                },
+                initial: { scaleY: 1, scaleX: 1, y: 0 },
+                hover: { y: -2 }
             };
+
+        // 2. Bill (ShoppingCart): Scoop Motion (Forward & Up)
         case 'billing':
             return {
-                active: { x: [0, 3, -3, 3, -3, 0], transition: { duration: 0.6, repeat: Infinity, repeatDelay: 3 } },
-                initial: { x: 0 },
-                hover: { scale: 1.1 }
+                active: { 
+                    x: [0, 3, 5, 0],
+                    y: [0, 1, -2, 0],
+                    rotate: [0, 0, -5, 0],
+                    transition: { duration: 1.8, repeat: Infinity, ease: "backInOut" } 
+                },
+                initial: { x: 0, y: 0, rotate: 0 },
+                hover: { x: 3 }
             };
+
+        // 3. Parties (Users): Cheerful Hop
         case 'customers':
              return {
-                active: { scale: [1, 1.15, 1], transition: { duration: 1, repeat: Infinity, repeatDelay: 2 } },
-                initial: { scale: 1 },
+                active: { 
+                    y: [0, -3, 0, -1.5, 0],
+                    scale: [1, 1.05, 1, 1.02, 1],
+                    transition: { duration: 1.5, repeat: Infinity, ease: "easeOut", repeatDelay: 0.5 } 
+                },
+                initial: { y: 0, scale: 1 },
                 hover: { scale: 1.1 }
             };
-        case 'online_store':
-             return {
-                active: { rotate: 360, transition: { duration: 2, repeat: Infinity, ease: "linear" } },
-                initial: { rotate: 0 },
-                hover: { rotate: 180 }
-            };
+
+        // 4. Manager (Sparkles): Magic Spin & Pulse (KEPT AS REQUESTED)
         case 'manager':
              return {
-                active: { rotate: 360, scale: [1, 1.1, 1], transition: { rotate: { duration: 4, repeat: Infinity, ease: "linear" }, scale: { duration: 2, repeat: Infinity } } },
-                initial: { rotate: 0, scale: 1 },
-                hover: { rotate: 90 }
+                active: { 
+                    rotate: 360,
+                    scale: [1, 1.15, 1],
+                    transition: { 
+                        rotate: { duration: 4, repeat: Infinity, ease: "linear" },
+                        scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                    }
+                },
+                initial: { scale: 1, rotate: 0 },
+                hover: { scale: 1.1, rotate: 45 }
             };
-        case 'menu':
+
+        // 5. Online Store (Globe): Earth Orbit (Tilt + Spin)
+        case 'online_store':
              return {
                 active: { 
-                    rotate: [0, 45, 0, 45, 0], 
-                    scale: [1, 1.2, 1],
-                    transition: { duration: 0.6 }
+                    rotate: 360,
+                    scale: [1, 0.95, 1],
+                    transition: { 
+                        rotate: { duration: 10, repeat: Infinity, ease: "linear" },
+                        scale: { duration: 5, repeat: Infinity, ease: "easeInOut" }
+                    }
                 },
                 initial: { rotate: 0, scale: 1 },
-                hover: { scale: 1.1, rotate: 10 }
+                hover: { rotate: 15 }
             };
+
+        // 6. Business Biz (PieChart): Coin Flip (3D Rotation)
+        case 'finance': 
+            return { 
+                active: { 
+                    rotateY: [0, 180, 360],
+                    transition: { duration: 3, repeat: Infinity, ease: "linear", repeatDelay: 1 } 
+                }, 
+                initial: { rotateY: 0 }, 
+                hover: { rotateY: 45 } 
+            };
+
+        // 7. Marketing (Megaphone): Rapid Ringing/Vibration
+        case 'marketing': 
+            return { 
+                active: { 
+                    rotate: [0, -10, 10, -10, 10, 0],
+                    scale: [1, 1.1, 1],
+                    transition: { duration: 1.2, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 } 
+                }, 
+                initial: { rotate: 0, scale: 1 }, 
+                hover: { rotate: -15 } 
+            };
+
+        // 8. Reports (FileBarChart): Vertical Scan / Jiggle
+        case 'reports': 
+            return { 
+                active: { 
+                    y: [0, -2, 2, -1, 1, 0],
+                    transition: { duration: 2, repeat: Infinity, ease: "easeInOut" } 
+                }, 
+                initial: { y: 0 }, 
+                hover: { y: -3 } 
+            };
+
+        // 9. Tasks (ClipboardList): Tick / Checkmark Flick
+        case 'tasks': 
+            return { 
+                active: { 
+                    rotate: [0, -10, 10, 0],
+                    scale: [1, 0.9, 1.1, 1],
+                    transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut" } 
+                }, 
+                initial: { rotate: 0, scale: 1 }, 
+                hover: { rotate: -5 } 
+            };
+
+        // 10. Staff Book (Briefcase): Walking / Handle Bob
+        case 'staff': 
+            return { 
+                active: { 
+                    rotate: [0, 5, -5, 0],
+                    y: [0, -1, 0, -1, 0],
+                    transition: { duration: 1.5, repeat: Infinity, ease: "linear" } 
+                }, 
+                initial: { rotate: 0, y: 0 }, 
+                hover: { y: -2 } 
+            };
+
+        // 11. Locker (FolderOpen): Peek / Open Up
+        case 'docs': 
+            return { 
+                active: { 
+                    scaleY: [1, 0.8, 1.1, 1],
+                    skewX: [0, -5, 5, 0],
+                    transition: { duration: 2, repeat: Infinity, ease: "easeInOut" } 
+                }, 
+                initial: { scaleY: 1, skewX: 0 }, 
+                hover: { scaleY: 1.1 } 
+            };
+
+        // 12. Calculator (Calculator): Button Press / Tap
+        case 'calculator': 
+            return { 
+                active: { 
+                    scale: [1, 0.9, 1],
+                    y: [0, 1, 0],
+                    transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut", repeatDelay: 0.5 } 
+                }, 
+                initial: { scale: 1, y: 0 }, 
+                hover: { scale: 0.95 } 
+            };
+
+        // 13. Tools (ArrowRightLeft): Elastic Exchange
+        case 'conversions': 
+            return { 
+                active: { 
+                    rotate: [0, 180, 360],
+                    transition: { duration: 2, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 } 
+                }, 
+                initial: { rotate: 0 }, 
+                hover: { rotate: 90 } 
+            };
+
+        // 14. Settings (Gear): Mechanical Cog Turn
         case 'settings':
              return {
-                active: { rotate: 180 },
+                active: { 
+                    rotate: 360,
+                    transition: { duration: 6, repeat: Infinity, ease: "linear" }
+                },
                 initial: { rotate: 0 },
                 hover: { rotate: 90 }
              };
-        // Menu Tools
-        case 'finance': return { active: { scale: [1, 0.9, 1.1, 1], transition: { repeat: Infinity, repeatDelay: 2 } }, initial: { scale: 1 }, hover: { scale: 1.1 } };
-        case 'reports': return { active: { y: [0, -3, 0], transition: { repeat: Infinity, repeatDelay: 1 } }, initial: { y: 0 }, hover: { y: -3 } };
-        case 'marketing': return { active: { rotate: [0, -20, 20, -20, 20, 0], transition: { repeat: Infinity, repeatDelay: 2 } }, initial: { rotate: 0 }, hover: { rotate: 20 } };
-        case 'calculator': return { active: { rotate: [0, 10, -10, 0], transition: { repeat: Infinity, repeatDelay: 2 } }, initial: { rotate: 0 }, hover: { rotate: 10 } };
-        case 'conversions': return { active: { rotate: 180 }, initial: { rotate: 0 }, hover: { rotate: 180 } };
-        case 'tasks': return { active: { rotate: [0, 15, -15, 0], transition: { repeat: Infinity, repeatDelay: 3 } }, initial: { rotate: 0 }, hover: { rotate: 5 } };
-        case 'docs': return { active: { scale: [1, 1.1, 1], transition: { repeat: Infinity, repeatDelay: 2 } }, initial: { scale: 1 }, hover: { scale: 1.1 } };
-        case 'staff': return { active: { y: [0, -2, 2, 0], transition: { repeat: Infinity, repeatDelay: 2 } }, initial: { y: 0 }, hover: { y: -2 } };
-        default: return { active: { scale: 1.1 }, initial: { scale: 1 }, hover: { scale: 1.1 } };
+
+        // 15. Menu (LayoutGrid): Rubik's Cube Turn
+        case 'menu':
+             return {
+                active: { 
+                    rotate: [0, 90, 180, 270, 360],
+                    scale: [1, 0.8, 1],
+                    transition: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+                },
+                initial: { rotate: 0, scale: 1 },
+                hover: { rotate: 45 }
+            };
+
+        default: 
+            return { 
+                active: { scale: 1.1 }, 
+                initial: { scale: 1 }, 
+                hover: { scale: 1.1 } 
+            };
     }
 };
 
@@ -263,7 +398,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                         variants={getIconVariant(tool.id)}
                         initial="initial"
                         whileHover="active"
-                        className="p-3 bg-gray-50 dark:bg-white/5 rounded-full mb-1 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300"
+                        className="p-3 bg-gray-50 dark:bg-white/5 rounded-full mb-1 text-blue-600 dark:text-blue-400"
                       >
                           {tool.icon}
                       </motion.div>
@@ -620,6 +755,34 @@ const AppDataWrapper: React.FC = () => {
   const [authConfig] = useLocalStorage<AuthConfig>('tradesmen-auth-config', { adminPin: '1234', staffPin: '0000', enableLock: false });
   const [isLocked, setIsLocked] = useState(authConfig.enableLock);
   const [userRole, setUserRole] = useState<'admin' | 'staff'>('admin');
+
+  // Auto-Lock Inactivity Timer
+  useEffect(() => {
+      let inactivityTimer: any;
+      
+      const resetTimer = () => {
+          if (!authConfig.enableLock) return;
+          clearTimeout(inactivityTimer);
+          // Lock after 5 minutes of inactivity (300000 ms)
+          inactivityTimer = setTimeout(() => {
+              if (!isLocked) {
+                  setIsLocked(true);
+              }
+          }, 300000); 
+      };
+
+      const events = ['mousemove', 'keypress', 'touchstart', 'scroll', 'click'];
+      
+      if (!isLocked && authConfig.enableLock) {
+          events.forEach(e => window.addEventListener(e, resetTimer));
+          resetTimer(); // Start timer
+      }
+
+      return () => {
+          clearTimeout(inactivityTimer);
+          events.forEach(e => window.removeEventListener(e, resetTimer));
+      };
+  }, [isLocked, authConfig.enableLock]);
 
   // Sync Hooks for each major data category
   const invStatus = useSupabaseSync('inventory', inventory, setInventory);

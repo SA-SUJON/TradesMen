@@ -1,7 +1,11 @@
+
 import { useState, useEffect } from 'react';
+import { encryptData, decryptData, SENSITIVE_KEYS } from '../utils/security';
 
 function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
-  // Get from local storage then parse stored json or return initialValue
+  // Check if this key requires security
+  const isSensitive = SENSITIVE_KEYS.some(k => key.includes(k));
+
   const readValue = (): T => {
     if (typeof window === 'undefined') {
       return initialValue;
@@ -9,7 +13,15 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
 
     try {
       const item = window.localStorage.getItem(key);
-      return item ? (JSON.parse(item) as T) : initialValue;
+      if (!item) return initialValue;
+
+      if (isSensitive) {
+          // Attempt decrypt
+          const decrypted = decryptData(item);
+          return decrypted !== null ? decrypted : initialValue;
+      }
+
+      return JSON.parse(item);
     } catch (error) {
       console.warn(`Error reading localStorage key “${key}”:`, error);
       return initialValue;
@@ -20,17 +32,18 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
 
   const setValue = (value: T | ((val: T) => T)) => {
     try {
-      // Use functional update to ensure we refer to the latest state (prevValue)
       setStoredValue((prevValue) => {
-        // Resolve the value: if it's a function, call it with the previous value
-        // We use typeof === 'function' which is safer and more standard for hooks than instanceof
         const valueToStore = typeof value === 'function' 
           ? (value as (val: T) => T)(prevValue) 
           : value;
         
-        // Save to local storage
         if (typeof window !== 'undefined') {
-          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+            if (isSensitive) {
+                const encrypted = encryptData(valueToStore);
+                window.localStorage.setItem(key, encrypted);
+            } else {
+                window.localStorage.setItem(key, JSON.stringify(valueToStore));
+            }
         }
         
         return valueToStore;

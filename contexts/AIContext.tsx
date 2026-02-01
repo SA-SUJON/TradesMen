@@ -1,12 +1,12 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
-import { Product, CartItem, ChatMessage, ChatSession, Sale, Expense, Customer, AIConfig } from '../types';
+import { Product, CartItem, ChatMessage, ChatSession, Sale, Expense, Customer, AIConfig, BusinessProfile } from '../types';
 import useLocalStorage from '../hooks/useLocalStorage';
 
 interface AIContextType {
   messages: ChatMessage[];
-  sendMessage: (text: string, image?: string) => Promise<string>; 
+  sendMessage: (text: string, images?: string[]) => Promise<string>; 
   filterInventory: (query: string, currentInventory: Product[]) => Promise<string[]>;
   isProcessing: boolean;
   isOpen: boolean;
@@ -135,6 +135,16 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
       enableExpenseRead: true
   });
 
+  // Read Business Profile for Context
+  const [profile] = useLocalStorage<BusinessProfile>('tradesmen-business-profile', {
+      name: 'My Store',
+      address: '',
+      phone: '',
+      email: '',
+      gstin: '',
+      terms: ''
+  });
+
   // Initialize Gemini Client with Dynamic Key
   const clientKey = apiKey || process.env.API_KEY || '';
   const ai = new GoogleGenAI({ apiKey: clientKey });
@@ -158,13 +168,13 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
       if (currentSessionId === id) setCurrentSessionId(null);
   };
 
-  const sendMessage = async (text: string, image?: string): Promise<string> => {
+  const sendMessage = async (text: string, images?: string[]): Promise<string> => {
     // 1. Prepare User Message
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
       text,
-      image
+      images
     };
 
     setIsProcessing(true);
@@ -245,7 +255,24 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
           systemContext += `\n- **Receivables (Debt):** ${totalDebt.toFixed(0)}`;
       }
       
-      // 4. Inventory Context
+      // 4. Marketing Context
+      const activeSocials = [];
+      if (profile.socialLinks?.facebook) activeSocials.push('Facebook');
+      if (profile.socialLinks?.instagram) activeSocials.push('Instagram');
+      if (profile.socialLinks?.googleBusiness) activeSocials.push('Google Business');
+      if (profile.socialLinks?.twitter) activeSocials.push('X (Twitter)');
+      if (profile.socialLinks?.youtube) activeSocials.push('YouTube');
+      if (profile.socialLinks?.tiktok) activeSocials.push('TikTok');
+
+      if (activeSocials.length > 0) {
+          systemContext += `\n\n**CONNECTED MARKETING PLATFORMS:** ${activeSocials.join(', ')}. 
+          When creating content or strategies, optimize for these specific platforms. 
+          If asked for a post, format it appropriately (e.g. hashtags for Instagram, professional for LinkedIn/Google).`;
+      } else {
+          systemContext += `\n\n**MARKETING:** No social platforms linked yet. Advise the user to link accounts in Marketing > Social Hub.`;
+      }
+
+      // 5. Inventory Context
       if (aiConfig.enableInventoryRead) {
           const lowMarginItems = inventory.filter(p => {
               if(!p.buyingPrice || p.buyingPrice === 0) return false;
@@ -271,17 +298,19 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children, inventory, set
       const historyText = sessionHistory.slice(-8, -1).map(m => `${m.role === 'user' ? 'User' : 'Manager'}: ${m.text}`).join('\n');
       
       const parts: any[] = [];
-      if (image) {
-        let mimeType = 'image/jpeg';
-        let base64Data = image;
-        if (image.includes('data:')) {
-            const matches = image.match(/^data:(.+);base64,(.+)$/);
-            if (matches && matches.length === 3) {
-                mimeType = matches[1];
-                base64Data = matches[2];
+      if (images && images.length > 0) {
+        images.forEach(img => {
+            let mimeType = 'image/jpeg';
+            let base64Data = img;
+            if (img.includes('data:')) {
+                const matches = img.match(/^data:(.+);base64,(.+)$/);
+                if (matches && matches.length === 3) {
+                    mimeType = matches[1];
+                    base64Data = matches[2];
+                }
             }
-        }
-        parts.push({ inlineData: { mimeType, data: base64Data } });
+            parts.push({ inlineData: { mimeType, data: base64Data } });
+        });
       }
       
       const fullPrompt = historyText ? `History:\n${historyText}\n\nUser Input: ${text}` : text;

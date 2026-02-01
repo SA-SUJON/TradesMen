@@ -163,7 +163,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
         const reader = new FileReader();
         reader.onloadend = () => {
             const base64String = reader.result as string;
-            sendMessage("Please scan this memo and add items to inventory.", base64String);
+            // Updated call to pass single image as array
+            sendMessage("Please scan this memo and add items to inventory.", [base64String]);
         };
         reader.readAsDataURL(file);
         }
@@ -386,8 +387,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ variant = 'modal',
                                     : `${theme === 'glass' ? 'bg-white/60 dark:bg-white/10 text-slate-800 dark:text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-bl-none`
                                 } ${msg.isError ? 'bg-red-100 text-red-600' : ''}`}
                             >
-                                {msg.image && (
-                                    <img src={msg.image} alt="Upload" className="w-full h-32 object-cover rounded-lg mb-2" />
+                                {/* Render multiple images if present */}
+                                {msg.images && msg.images.length > 0 && (
+                                    <div className={`grid gap-2 mb-2 ${msg.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                        {msg.images.map((img, i) => (
+                                            <img key={i} src={img} alt={`Upload ${i}`} className="w-full h-32 object-cover rounded-lg" />
+                                        ))}
+                                    </div>
                                 )}
                                 <SimpleMarkdown text={msg.text} />
                             </div>
